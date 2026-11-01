@@ -1,0 +1,100 @@
+/* Dra. Rubia - identidade: linho claro, verde-sálvia, tipografia de sistema.
+   Painel clínico (body.clinico): denso. Portal da família (body.portal): acolhedor, alvos grandes. */
+:root {
+  --linho: #f6f4ee;
+  --papel: #ffffff;
+  --tinta: #1f2b27;
+  --tinta-suave: #52605b;
+  --salvia: #2f6b5f;
+  --salvia-escura: #234f46;
+  --salvia-clara: #e3eee9;
+  --linha: #d9ddd4;
+  --alerta: #8f3d1f;
+  --alerta-fundo: #f8e9e2;
+  --ok-fundo: #e3eee9;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --raio: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--linho);
+  color: var(--tinta);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.25; margin: 0 0 .6em; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.25rem; }
+a { color: var(--salvia-escura); text-underline-offset: 2px; }
+:focus-visible { outline: 3px solid #1d5fa8; outline-offset: 2px; }
+
+.skip { position: absolute; left: -999px; top: 0; background: var(--papel); padding: .5rem 1rem; z-index: 10; }
+.skip:focus { left: .5rem; top: .5rem; }
+
+.brand { display: inline-flex; align-items: center; gap: .55rem; font-family: var(--serif); font-size: 1.2rem; font-weight: 600; color: var(--salvia-escura); text-decoration: none; }
+.brand-mark { width: 1.1rem; height: 1.1rem; background: var(--salvia); border-radius: 0 100% 0 100%; display: inline-block; }
+
+.btn {
+  display: inline-block; min-height: 2.5rem; padding: .55rem 1.1rem;
+  background: var(--salvia); color: #fff; border: 1px solid var(--salvia);
+  border-radius: var(--raio); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.btn:hover { background: var(--salvia-escura); }
+.btn-quiet { background: transparent; color: var(--salvia-escura); border-color: var(--linha); }
+.btn-quiet:hover { background: var(--salvia-clara); }
+
+label { display: block; font-weight: 600; margin-bottom: .25rem; }
+input[type=text], input[type=email], input[type=password], input[type=date], input[type=number], input[type=search], select, textarea {
+  width: 100%; min-height: 2.5rem; padding: .5rem .65rem; font: inherit; color: inherit;
+  background: var(--papel); border: 1px solid #aeb6ac; border-radius: var(--raio);
+}
+.campo { margin-bottom: 1rem; }
+.ajuda { color: var(--tinta-suave); font-size: .875rem; }
+
+.aviso { padding: .7rem 1rem; border-radius: var(--raio); margin: 0 0 1rem; }
+.aviso-ok { background: var(--ok-fundo); color: var(--salvia-escura); }
+.aviso-erro { background: var(--alerta-fundo); color: var(--alerta); }
+
+table { width: 100%; border-collapse: collapse; background: var(--papel); }
+th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--linha); }
+th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
+
+.erro-pagina { max-width: 34rem; margin: 3rem auto; padding: 0 1rem; }
+
+/* Painel clínico: barra superior, conteúdo denso */
+.clinico .topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem;
+  padding: .6rem 1rem; background: var(--papel); border-bottom: 1px solid var(--linha);
+}
+.clinico .nav { display: flex; flex-wrap: wrap; gap: .25rem; flex: 1 1 auto; }
+.clinico .nav a { padding: .35rem .7rem; border-radius: var(--raio); text-decoration: none; color: var(--tinta); }
+.clinico .nav a:hover { background: var(--salvia-clara); }
+.clinico .nav a[aria-current=page] { background: var(--salvia-clara); color: var(--salvia-escura); font-weight: 600; }
+.topbar-user { display: flex; align-items: center; gap: .6rem; font-size: .9rem; color: var(--tinta-suave); }
+.clinico .conteudo { max-width: 72rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.clinico .btn { min-height: 2.25rem; padding: .4rem .9rem; font-size: .95rem; }
+
+@media (min-width: 60rem) {
+  .clinico .topbar { padding: .6rem 2rem; }
+  .clinico .conteudo { padding: 1.75rem 2rem 4rem; }
+}
+
+/* Portal da família: tipografia maior, alvos de toque grandes */
+.portal { font-size: 1.125rem; line-height: 1.65; background: #faf6ee; }
+.portal-topo { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; }
+.portal .conteudo { max-width: 40rem; margin: 0 auto; padding: .5rem 1.25rem 3rem; }
+.portal h1 { font-size: 1.9rem; }
+.portal .btn { min-height: 3.25rem; padding: .8rem 1.5rem; font-size: 1.1rem; border-radius: 12px; }
+.portal input[type=text], .portal input[type=email], .portal input[type=password], .portal input[type=date], .portal input[type=number], .portal select, .portal textarea {
+  min-height: 3.25rem; font-size: 1.1rem; border-radius: 12px;
+}
+.portal-rodape { max-width: 40rem; margin: 0 auto; padding: 1rem 1.25rem 2rem; color: var(--tinta-suave); font-size: .95rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
