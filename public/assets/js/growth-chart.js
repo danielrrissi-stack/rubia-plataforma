@@ -43,14 +43,16 @@
     destroy();
     var lines = j.reference.lines;
     var FRIENDLY = { P85: 'Faixa esperada para a idade', P50: 'Meio da faixa', P3: 'limite', P15: 'limite', P97: 'limite' };
-    var p15 = -1;
-    lines.forEach(function (l, i) { if (l.label === 'P15') { p15 = i; } });
+    // Faixa do modo simples (portal): P3 (z -1,881) a P85 (z +1,036), alinhada ao texto tranquilizador,
+    // que segue a Eutrofia da OMS (-2 <= z <= +1, ~P2,3-P84).
+    var p3 = -1;
+    lines.forEach(function (l, i) { if (l.label === 'P3') { p3 = i; } });
     var datasets = lines.map(function (l) {
       var median = l.label === '0' || l.label === 'P50';
-      var band = simple && l.label === 'P85' && p15 >= 0;
+      var band = simple && l.label === 'P85' && p3 >= 0;
       return {
         label: simple ? (FRIENDLY[l.label] || l.label) : l.label,
-        fill: band ? p15 : false,
+        fill: band ? p3 : false,
         bandColor: band, data: l.points.map(function (p) { return { x: p[0], y: p[1] }; }),
         showLine: true, pointRadius: 0, borderWidth: median ? 2 : 1, borderColor: median ? '#4a5a52' : '#9aa59e',
         backgroundColor: band ? 'rgba(47,107,95,0.16)' : '#9aa59e', tension: 0.2, order: 2
