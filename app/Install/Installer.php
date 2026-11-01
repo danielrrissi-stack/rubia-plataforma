@@ -113,53 +113,89 @@ final class Installer
             throw new \RuntimeException('A pasta de configuração não é gravável: ' . $configDir);
         }
 
-        $dbCfg = [
-            'host' => trim((string) $input['db_host']),
-            'name' => trim((string) $input['db_name']),
-            'user' => trim((string) $input['db_user']),
-            'pass' => (string) ($input['db_pass'] ?? ''),
-        ];
-        $db = new Database($dbCfg);
+        $lockPath = $configDir . '/.install.lock';
+        $lock = @fopen($lockPath, 'x');
+        if ($lock === false) {
+            throw new \RuntimeException('Instalação já realizada ou em andamento.');
+        }
+        fclose($lock);
+
+        $cfgHandle = null;
+        $committed = false;
         try {
-            $db->pdo();
-        } catch (\PDOException) {
-            throw new \RuntimeException('Não foi possível conectar ao banco de dados. Confira servidor, nome, usuário e senha.');
-        }
+            $dbCfg = [
+                'host' => trim((string) $input['db_host']),
+                'name' => trim((string) $input['db_name']),
+                'user' => trim((string) $input['db_user']),
+                'pass' => (string) ($input['db_pass'] ?? ''),
+            ];
+            $db = new Database($dbCfg);
+            try {
+                $db->pdo();
+            } catch (\PDOException) {
+                throw new \RuntimeException('Não foi possível conectar ao banco de dados. Confira servidor, nome, usuário e senha.');
+            }
 
-        $chosen = $this->chooseStorage();
-        $this->storagePath = $chosen['path'];
-        $this->storageWarning = $chosen['warning'];
+            $chosen = $this->chooseStorage();
+            $this->storagePath = $chosen['path'];
+            $this->storageWarning = $chosen['warning'];
 
-        (new Migrator($db, $this->appRoot . '/database/migrations'))->migrate();
-        if ((int) ($db->one('SELECT COUNT(*) AS n FROM users')['n'] ?? 0) > 0) {
-            throw new \RuntimeException('O banco de dados já contém usuários; sistema já instalado.');
-        }
+            (new Migrator($db, $this->appRoot . '/database/migrations'))->migrate();
+            if ((int) ($db->one('SELECT COUNT(*) AS n FROM users')['n'] ?? 0) > 0) {
+                throw new \RuntimeException('O banco de dados já contém usuários; sistema já instalado.');
+            }
 
-        $this->prepareStorage();
-        $keys = BackupKeys::generate((string) $input['backup_pass'], $this->storagePath . '/keys');
-        $pem = file_get_contents($keys['private']);
-        $this->privateKeyPem = $pem === false ? '' : $pem;
+            $this->prepareStorage();
+            $keys = BackupKeys::generate((string) $input['backup_pass'], $this->storagePath . '/keys');
+            $pem = file_get_contents($keys['private']);
+            $this->privateKeyPem = $pem === false ? '' : $pem;
 
-        $term = (string) file_get_contents(__DIR__ . '/default_consent_v1.html');
-        $db->transaction(function (Database $db) use ($input, $term): void {
-            (new UserRepository($db))->create([
-                'name' => trim((string) $input['admin_name']),
-                'email' => (string) $input['admin_email'],
-                'password' => (string) $input['admin_password'],
-                'role' => 'medico',
-                'is_admin' => 1,
-                'professional_register' => trim((string) $input['admin_crm']),
-                'totp_enabled' => 0,
-                'active' => 1,
-            ]);
-            $db->insert('consent_terms', ['version' => '1.0', 'body_html' => $term, 'active' => 1]);
-            $db->run(
-                'INSERT INTO settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
-                ['installed_at', date('Y-m-d H:i:s')]
+            $cfgHandle = @fopen($this->configPath, 'x');
+            if ($cfgHandle === false) {
+                $cfgHandle = null;
+                throw new \RuntimeException('Não foi possível criar o arquivo de configuração (ou ele já existe).');
+            }
+
+            $term = (string) file_get_contents(__DIR__ . '/default_consent_v1.html');
+            $db->transaction(function (Database $db) use ($input, $term): void {
+                (new UserRepository($db))->create([
+                    'name' => trim((string) $input['admin_name']),
+                    'email' => (string) $input['admin_email'],
+                    'password' => (string) $input['admin_password'],
+                    'role' => 'medico',
+                    'is_admin' => 1,
+                    'professional_register' => trim((string) $input['admin_crm']),
+                    'totp_enabled' => 0,
+                    'active' => 1,
+                ]);
+                $db->insert('consent_terms', ['version' => '1.0', 'body_html' => $term, 'active' => 1]);
+                $db->run(
+                    'INSERT INTO settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
+                    ['installed_at', date('Y-m-d H:i:s')]
+                );
+            });
+            $committed = true;
+
+            $this->writeConfig($cfgHandle, $dbCfg, $input);
+            $cfgHandle = null;
+        } catch (\Throwable $e) {
+            if (is_resource($cfgHandle)) {
+                fclose($cfgHandle);
+            }
+            if ($cfgHandle !== null || $committed) {
+                @unlink($this->configPath);
+            }
+            if (!$committed) {
+                @unlink($lockPath);
+                throw $e instanceof \RuntimeException ? $e : new \RuntimeException('Falha na instalação: ' . $e->getMessage(), 0, $e);
+            }
+            throw new \RuntimeException(
+                'Os dados foram gravados, mas não foi possível gravar a configuração (' . $e->getMessage() . '). '
+                . 'Para tentar de novo, apague as tabelas do banco de dados e o arquivo ' . $lockPath . '.',
+                0,
+                $e
             );
-        });
-
-        $this->writeConfig($dbCfg, $input);
+        }
     }
 
     private function prepareStorage(): void
@@ -176,7 +212,8 @@ final class Installer
         }
     }
 
-    private function writeConfig(array $dbCfg, array $in): void
+    /** @param resource $fh handle aberto com 'x' */
+    private function writeConfig($fh, array $dbCfg, array $in): void
     {
         $baseUrl = rtrim(trim((string) $in['base_url']), '/');
         $config = [
@@ -188,7 +225,9 @@ final class Installer
             'session' => ['staff_idle_minutes' => 30, 'family_idle_minutes' => 120],
         ];
         $php = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n";
-        if (file_put_contents($this->configPath, $php) === false) {
+        $ok = fwrite($fh, $php) === strlen($php);
+        fclose($fh);
+        if (!$ok) {
             throw new \RuntimeException('Não foi possível gravar o arquivo de configuração.');
         }
         @chmod($this->configPath, 0640);

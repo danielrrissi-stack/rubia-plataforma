@@ -43,7 +43,7 @@ final class InstallController
         if ($errors === [] && $global === '') {
             try {
                 $installer->run($r->post);
-                return Response::html(View::render('Install/views/done.php', [
+                $res = Response::html(View::render('Install/views/done.php', [
                     'title' => 'Instalação concluída',
                     'pem' => $installer->privateKeyPem(),
                     'warning' => $installer->storageWarning(),

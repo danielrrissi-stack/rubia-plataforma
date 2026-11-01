@@ -6,6 +6,18 @@ namespace App\Core;
 final class Config
 {
     private static ?array $data = null;
+    private static ?string $lockOverride = null;
+
+    /** Arquivo-trava criado pelo instalador (marca que uma instalacao ocorreu). */
+    public static function lockFile(): string
+    {
+        return self::$lockOverride ?? dirname(__DIR__, 2) . '/config/.install.lock';
+    }
+
+    public static function setLockFile(?string $path): void
+    {
+        self::$lockOverride = $path;
+    }
 
     /** Lê uma chave com notação de ponto (ex.: "db.host"). */
     public static function get(string $key, mixed $default = null): mixed
@@ -24,6 +36,7 @@ final class Config
     public static function reset(): void
     {
         self::$data = null;
+        self::$lockOverride = null;
     }
 
     /** Substitui a configuração em memória (testes; [] simula "não instalado"). */

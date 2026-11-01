@@ -48,4 +48,21 @@ final class InstallRouteTest extends TestCase
         $this->assertStringNotContainsString('segredo-super-1', $res->body);
         $this->assertStringContainsString('Informe um e-mail válido.', $res->body);
     }
+
+    public function test_lock_without_config_is_error_not_installer(): void
+    {
+        $lock = sys_get_temp_dir() . '/rubia_lock_' . bin2hex(random_bytes(4));
+        file_put_contents($lock, '');
+        try {
+            Config::set([]);
+            Config::setLockFile($lock);
+            foreach (['/instalar', '/login'] as $path) {
+                $res = App::create()->handle(new Request('GET', $path));
+                $this->assertSame(500, $res->status);
+                $this->assertStringContainsString('Configuração indisponível', $res->body);
+            }
+        } finally {
+            unlink($lock);
+        }
+    }
 }

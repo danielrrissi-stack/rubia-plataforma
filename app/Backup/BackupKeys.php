@@ -29,7 +29,10 @@ final class BackupKeys
                 . 'Peça à hospedagem para habilitar a extensão OpenSSL.'
             );
         }
-        $exportOpts = isset($opts['config']) ? ['config' => $opts['config']] : [];
+        $exportOpts = ['encrypt_key_cipher' => OPENSSL_CIPHER_AES_256_CBC];
+        if (isset($opts['config'])) {
+            $exportOpts['config'] = $opts['config'];
+        }
         $private = '';
         if (!openssl_pkey_export($key, $private, $passphrase, $exportOpts)) {
             throw new \RuntimeException('Não foi possível exportar a chave privada de backup.');

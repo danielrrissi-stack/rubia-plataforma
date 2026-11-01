@@ -121,4 +121,30 @@ final class InstallerTest extends TestCase
         }
         $this->assertSame([], $this->installer()->validate($this->input()));
     }
+
+    public function test_refuses_when_lock_exists_and_keeps_lock_after_install(): void
+    {
+        file_put_contents($this->tmp . '/.install.lock', '');
+        try {
+            $this->installer()->run($this->input());
+            $this->fail('deveria recusar');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('já realizada ou em andamento', $e->getMessage());
+        }
+        unlink($this->tmp . '/.install.lock');
+
+        $this->installer()->run($this->input());
+        $this->assertFileExists($this->tmp . '/.install.lock');
+        $this->assertFileExists($this->tmp . '/config.php');
+    }
+
+    public function test_failure_before_commit_releases_lock(): void
+    {
+        try {
+            $this->installer()->run($this->input(['db_pass' => 'senha-errada']));
+        } catch (\RuntimeException) {
+        }
+        $this->assertFileDoesNotExist($this->tmp . '/.install.lock');
+        $this->assertFileDoesNotExist($this->tmp . '/config.php');
+    }
 }

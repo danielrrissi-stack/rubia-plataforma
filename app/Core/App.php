@@ -32,6 +32,9 @@ final class App
     {
         try {
             Session::start((array) Config::get('session', []));
+            if (!Config::isInstalled() && is_file(Config::lockFile())) {
+                return $this->errorPage(500, 'Configuração indisponível. Verifique o arquivo config/config.php.');
+            }
             if (!Config::isInstalled() && !str_starts_with($request->path(), '/instalar')
                 && !str_starts_with($request->path(), '/assets/')) {
                 return Response::redirect('/instalar');
@@ -45,14 +48,16 @@ final class App
         }
     }
 
-    private function errorPage(int $status): Response
+    private function errorPage(int $status, ?string $detail = null): Response
     {
         $messages = [
             405 => 'Esta página não aceita esse tipo de acesso.',
             419 => 'Sua sessão expirou. Recarregue a página e tente novamente.',
         ];
         try {
-            if (in_array($status, [403, 404, 500], true)) {
+            if ($detail !== null) {
+                $body = View::render('Layout/views/errors/message.php', ['title' => 'Erro', 'message' => $detail]);
+            } elseif (in_array($status, [403, 404, 500], true)) {
                 $body = View::render("Layout/views/errors/$status.php", ['title' => 'Erro']);
             } else {
                 $body = View::render('Layout/views/errors/message.php', [
