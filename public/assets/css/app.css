@@ -98,3 +98,6 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Telas de autenticação */
+.auth-card { max-width: 24rem; margin: 2rem auto; }

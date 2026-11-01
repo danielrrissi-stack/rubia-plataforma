@@ -27,7 +27,7 @@ $flashErr = \App\Core\Session::flash('erro');
     <?php endforeach; ?>
   </nav>
   <?php if (!empty($userName)): ?>
-  <form class="topbar-user" method="post" action="<?= e(url('/sair')) ?>">
+  <form class="topbar-user" method="post" action="<?= e(url('/logout')) ?>">
     <?= csrf_field() ?>
     <span><?= e($userName) ?></span>
     <button type="submit" class="btn btn-quiet">Sair</button>

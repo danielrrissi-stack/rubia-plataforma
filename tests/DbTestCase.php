@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace Tests;
 
 use App\Core\Config;
+use App\Core\Container;
+use App\Core\Mailer;
+use App\Core\Session;
 use App\Core\Database;
 use PHPUnit\Framework\TestCase;
 
@@ -17,6 +20,10 @@ abstract class DbTestCase extends TestCase
         parent::setUp();
         $this->db = new Database((array) Config::get('db'));
         $this->db->pdo()->beginTransaction();
+        Container::reset();
+        Container::set('db', $this->db);
+        Session::reset();
+        Mailer::resetSent();
     }
 
     protected function tearDown(): void

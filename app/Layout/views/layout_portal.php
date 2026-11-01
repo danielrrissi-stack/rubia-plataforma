@@ -17,7 +17,7 @@ $flashErr = \App\Core\Session::flash('erro');
 <header class="portal-topo">
   <a class="brand" href="<?= e(url('/')) ?>"><span class="brand-mark" aria-hidden="true"></span>Dra. Rubia</a>
   <?php if (!empty($userName)): ?>
-  <form method="post" action="<?= e(url('/sair')) ?>">
+  <form method="post" action="<?= e(url('/logout')) ?>">
     <?= csrf_field() ?>
     <button type="submit" class="btn btn-quiet">Sair</button>
   </form>
