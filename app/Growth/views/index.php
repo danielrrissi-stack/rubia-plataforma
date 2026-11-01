@@ -1,17 +1,17 @@
 <?php
 /**
  * @var array $patient @var string $today @var array $childRows @var array $adultRows @var array $velocity
- * @var array<string,string> $tabs @var bool $adultPatient @var bool $canWrite
+ * @var array<string,string> $tabs @var bool $adultPatient @var bool $canWrite @var bool $isStaff
  */
 use App\Growth\GrowthFormat;
 
 $pid = (int) $patient['id'];
 $dash = '—';
 $num = static fn(mixed $v, int $d = 1): string => $v === null ? $dash : fmt_num((float) $v, $d);
-$indCell = static function (?array $ind) use ($dash): string {
+$indCell = static function (?array $ind, bool $hasValue = true) use ($dash): string {
     $f = GrowthFormat::indicator($ind);
     if ($f === null) {
-        return e($dash);
+        return $hasValue ? '<span class="ajuda">não se aplica</span>' : e($dash);
     }
     return 'Z ' . e($f['z']) . ' · P ' . e($f['p']) . '<br><span class="ajuda">' . e($f['status']) . '</span>';
 };
@@ -20,9 +20,9 @@ $badges = static function (array $row): string {
     $out = $m['source'] === 'familia' ? '<span class="selo selo-familia">família</span> ' : '<span class="selo">equipe</span> ';
     return $out;
 };
-$actions = static function (array $row) use ($canWrite, $pid): string {
+$actions = static function (array $row) use ($canWrite, $isStaff): string {
     $id = (int) $row['m']['id'];
-    $h = '<a href="' . e(url('/medidas/' . $id . '/versoes')) . '">Versões</a>';
+    $h = $isStaff ? '<a href="' . e(url('/medidas/' . $id . '/versoes')) . '">Versões</a>' : '';
     if ($canWrite) {
         $h = '<a href="' . e(url('/medidas/' . $id . '/corrigir')) . '">Corrigir</a> · ' . $h
             . '<details><summary>Remover</summary><form method="post" action="' . e(url('/medidas/' . $id . '/remover')) . '">'
@@ -39,7 +39,14 @@ $flags = static function (array $row): string {
         $out .= ' <span class="selo">retroativo</span>';
     }
     if ($row['implausible']) {
-        $out .= ' <span class="selo selo-alerta">verificar medida</span>';
+        $names = ['bfa' => 'IMC/idade', 'wfa' => 'peso/idade', 'hfa' => 'altura/idade', 'wflh' => 'peso/altura', 'hcfa' => 'PC/idade'];
+        $bad = [];
+        foreach ($row['ind'] as $k => $i) {
+            if ($i !== null && $i['implausible']) {
+                $bad[] = $names[$k];
+            }
+        }
+        $out .= ' <span class="selo selo-alerta">verificar medida (' . e(implode(', ', $bad)) . ')</span>';
     }
     return $out;
 };
@@ -77,7 +84,7 @@ $flags = static function (array $row): string {
   <table>
     <thead><tr>
       <th>Data</th><th>Idade</th><th>Peso (kg)</th><th>Altura (cm)</th><th>IMC (kg/m²)</th><th>IMC/idade</th>
-      <th>Peso/idade</th><th>Altura/idade</th><th>Peso/altura</th><th>PC (cm)</th><th>Cintura (cm)</th><th>PA</th><th>Origem</th><th>Ações</th>
+      <th>Peso/idade</th><th>Altura/idade</th><th>Peso/altura</th><th>PC (cm)</th><th>PC/idade</th><th>Cintura (cm)</th><th>PA</th><th>Origem</th><th>Ações</th>
     </tr></thead>
     <tbody>
     <?php foreach ($childRows as $row): $m = $row['m']; ?>
@@ -87,11 +94,13 @@ $flags = static function (array $row): string {
         <td><?= e($num($m['weight_kg'], 1)) ?></td>
         <td><?= e($num($m['height_cm'], 1)) ?><?= $m['position'] ? ' <span class="ajuda">(' . ($m['position'] === 'deitado' ? 'deitado' : 'em pé') . ')</span>' : '' ?></td>
         <td><?= e($num($row['bmi'], 1)) ?></td>
-        <td><?= $indCell($row['ind']['bfa']) ?></td>
-        <td><?= $indCell($row['ind']['wfa']) ?></td>
-        <td><?= $indCell($row['ind']['hfa']) ?></td>
-        <td><?= $indCell($row['ind']['wflh']) ?></td>
-        <td><?= $m['head_cm'] !== null && \App\Growth\Age::days((string) $patient['birth_date'], (string) $m['measured_on']) < 731 ? e(fmt_num((float) $m['head_cm'], 1)) : e($dash) ?></td>
+        <?php $hasW = $m['weight_kg'] !== null; $hasH = $m['height_cm'] !== null; ?>
+        <td><?= $indCell($row['ind']['bfa'], $hasW && $hasH) ?></td>
+        <td><?= $indCell($row['ind']['wfa'], $hasW) ?></td>
+        <td><?= $indCell($row['ind']['hfa'], $hasH) ?></td>
+        <td><?= $indCell($row['ind']['wflh'], $hasW && $hasH) ?></td>
+        <td><?= e($num($m['head_cm'], 1)) ?></td>
+        <td><?= $indCell($row['ind']['hcfa'], $m['head_cm'] !== null) ?></td>
         <td><?= e($num($m['waist_cm'], 1)) ?></td>
         <td><?= $m['systolic'] !== null ? e($m['systolic'] . '/' . $m['diastolic']) . '<br><span class="ajuda">' . e((string) $row['bp']) . '</span>' : e($dash) ?></td>
         <td><?= $badges($row) ?></td>

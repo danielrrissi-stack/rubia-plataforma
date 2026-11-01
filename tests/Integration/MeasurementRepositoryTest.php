@@ -87,6 +87,18 @@ final class MeasurementRepositoryTest extends DbTestCase
         $this->assertNotNull($this->db->one("SELECT 1 FROM audit_log WHERE entity='measurements' AND action='update' AND entity_id = ?", [$new]));
     }
 
+    public function testCorrectKeepsRetroactiveFlagWhenDateUnchanged(): void
+    {
+        $pid = (int) $this->patient['id'];
+        $on = date('Y-m-d', strtotime('-10 days'));
+        $old = $this->repo()->create($pid, $this->data(['measured_on' => $on]), 'equipe', (int) $this->staff['id']);
+        $this->db->run('UPDATE measurements SET retroactive = 0 WHERE id = ?', [$old]);
+        $new = $this->repo()->correct($old, $this->data(['measured_on' => $on, 'weight_kg' => 33.0]), (int) $this->staff['id']);
+        $this->assertSame(0, (int) $this->db->one('SELECT retroactive FROM measurements WHERE id = ?', [$new])['retroactive']);
+        $new2 = $this->repo()->correct($new, $this->data(['measured_on' => date('Y-m-d', strtotime('-9 days'))]), (int) $this->staff['id']);
+        $this->assertSame(1, (int) $this->db->one('SELECT retroactive FROM measurements WHERE id = ?', [$new2])['retroactive']);
+    }
+
     public function testRemoveRequiresReasonAndIsLogical(): void
     {
         $pid = (int) $this->patient['id'];

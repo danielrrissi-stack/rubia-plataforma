@@ -148,6 +148,27 @@ final class GrowthPagesTest extends DbTestCase
         $this->assertStringContainsString('/crescimento', $show->body);
     }
 
+    public function testHcfaColumnShownForThreeYearOld(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->childPatient(date('Y-m-d', strtotime('-3 years -1 month')));
+        Container::measurements()->create((int) $p['id'], ['measured_on' => date('Y-m-d'), 'weight_kg' => 14.0, 'height_cm' => 95.0, 'head_cm' => 49.5, 'position' => 'em_pe', 'waist_cm' => null, 'hip_cm' => null, 'systolic' => null, 'diastolic' => null], 'equipe', (int) $med['id']);
+        $this->loginAs($med);
+        $body = $this->get('/pacientes/' . $p['id'] . '/crescimento')->body;
+        $this->assertStringContainsString('PC/idade', $body);
+        $this->assertStringContainsString('49,5', $body);
+    }
+
+    public function testVersionsViewIsAudited(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->childPatient('2015-03-10');
+        $mid = Container::measurements()->create((int) $p['id'], ['measured_on' => date('Y-m-d'), 'weight_kg' => 30.0] + $this->blank(), 'equipe', (int) $med['id']);
+        $this->loginAs($med);
+        $this->assertSame(200, $this->get('/medidas/' . $mid . '/versoes')->status);
+        $this->assertNotNull($this->db->one("SELECT 1 FROM audit_log WHERE entity='measurements' AND action='view' AND entity_id = ? AND patient_id = ?", [$mid, $p['id']]));
+    }
+
     public function testCurvasBfaForEightYearOld(): void
     {
         $med = $this->makeUser('medico');

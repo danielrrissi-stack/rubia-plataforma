@@ -102,7 +102,8 @@ final class MeasurementRepository
             $row = $this->normalize($pid, $d);
             $new = $this->db->insert('measurements', $row + [
                 'patient_id' => $pid, 'source' => 'equipe', 'created_by' => $by, 'previous_id' => $id,
-                'retroactive' => $this->isRetroactive($row['measured_on']),
+                'retroactive' => substr((string) $old['measured_on'], 0, 10) === $row['measured_on']
+                    ? (int) $old['retroactive'] : $this->isRetroactive($row['measured_on']),
             ]);
             $this->db->run('UPDATE measurements SET superseded_at = NOW() WHERE id = ?', [$id]);
             $this->audit->record($by, 'update', 'measurements', $new, $pid, self::snapshot($old), $row + ['previous_id' => $id], $r);

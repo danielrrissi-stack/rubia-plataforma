@@ -84,7 +84,7 @@ final class GrowthCalculator
     }
 
     /** < 731 dias medido em pe: +0,7 cm; >= 731 dias medido deitado: -0,7 cm. */
-    private function correctHeight(float $cm, int $days, ?string $position): float
+    public function correctHeight(float $cm, int $days, ?string $position): float
     {
         if ($days <= self::LENGTH_MAX_DAYS && $position === 'em_pe') {
             return $cm + self::POSITION_DELTA;

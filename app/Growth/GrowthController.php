@@ -64,6 +64,7 @@ final class GrowthController
             'tabs' => $this->tabsFor($birth, $today),
             'adultPatient' => $months >= self::ADULT_MONTHS,
             'canWrite' => $this->canWrite($user, $id),
+            'isStaff' => in_array($user['role'], self::AUDIT_VIEW, true),
         ]);
     }
 
@@ -141,6 +142,7 @@ final class GrowthController
         if (!in_array($user['role'], self::AUDIT_VIEW, true)) {
             throw new HttpException(403);
         }
+        Container::audit()->record((int) $user['id'], 'view', 'measurements', (int) $m['id'], $pid, null, ['section' => 'versoes'], $r);
         $names = [];
         $versions = Container::measurements()->versions((int) $m['id']);
         foreach ($versions as $v) {
@@ -278,8 +280,14 @@ final class GrowthController
             if ($ind['wflh'] === null) {
                 continue;
             }
-            $heights[] = (float) $m['height_cm'];
-            $points[] = $this->patientPoint((float) $m['height_cm'], (float) $m['weight_kg'], $m, $ind['wflh']['implausible']);
+            // Apenas medidas da tabela desenhada (wfl: <= 730 dias; wfh: > 730), com a altura corrigida pela posicao.
+            $mDays = Age::days($birth, (string) $m['measured_on']);
+            if (($mDays <= GrowthCalculator::LENGTH_MAX_DAYS ? 'wfl' : 'wfh') !== $table) {
+                continue;
+            }
+            $h = Container::growth()->correctHeight((float) $m['height_cm'], $mDays, $m['position']);
+            $heights[] = $h;
+            $points[] = $this->patientPoint($h, (float) $m['weight_kg'], $m, $ind['wflh']['implausible']);
         }
         $grid = [];
         if ($range !== null) {
