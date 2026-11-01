@@ -46,5 +46,5 @@ Lista registrada pelas revisões por tarefa; triadas na revisão final como 'pod
 - Task 16: minor (deferred): missing IDOR/confidentiality tests on entry routes, extra-key drop, audit payload on update
 - Task 17: minor (deferred): other sessions not invalidated on password change; same-password not rejected; manifest root-absolute paths
 
-## Decisão pendente
-- Nutricionista vê pressão arterial e classificação na tela de medidas (plano: PA em ANTROPOMETRIA; spec: nutricionista sem dados clínicos) — aguardando decisão da Dra. Rubia.
+## Decisões
+- 2026-11-01: a nutricionista PODE ver a pressão arterial e sua classificação (decisão da Dra. Rubia, comunicada pelo usuário). Comportamento atual mantido.
