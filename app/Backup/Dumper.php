@@ -21,15 +21,25 @@ final class Dumper
         if ($fh === false) {
             throw new \RuntimeException('Não foi possível criar o arquivo de dump.');
         }
+        $pdo = $this->db->pdo();
+        // Leitura consistente entre tabelas (InnoDB, REPEATABLE READ). Usa o PDO direto porque
+        // Database::transaction se juntaria a uma transacao aberta. Se ja houver transacao ativa
+        // (ex.: testes com DbTestCase), o snapshot e pulado para nao encerra-la: a leitura usa a existente.
+        $snapshot = !$pdo->inTransaction();
         try {
-            $pdo = $this->db->pdo();
-            fwrite($fh, "-- Dump Dra. Rubia\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
+            if ($snapshot) {
+                $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+            }
+            fwrite($fh,"-- Dump Dra. Rubia\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
             $tables = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(\PDO::FETCH_NUM);
             foreach ($tables as $t) {
                 $this->dumpTable($fh, (string) $t[0]);
             }
             fwrite($fh, "SET FOREIGN_KEY_CHECKS=1;\n");
         } finally {
+            if ($snapshot) {
+                $pdo->exec('COMMIT');
+            }
             fclose($fh);
         }
     }

@@ -132,4 +132,40 @@ final class BackupServiceTest extends DbTestCase
         $this->assertFileDoesNotExist($old);
         $this->assertCount(1, $this->rbkFiles());
     }
+
+    public function testPruneRemovesStaleTmpAndKeepsFreshTmp(): void
+    {
+        mkdir($this->storage . '/backups', 0777, true);
+        $stale = $this->storage . '/backups/dump-aaaa1111.tmp';
+        $fresh = $this->storage . '/backups/zip-bbbb2222.tmp';
+        file_put_contents($stale, 'x');
+        file_put_contents($fresh, 'y');
+        touch($stale, time() - 2 * 3600);
+        $this->service()->runIfDue();
+        $this->assertFileDoesNotExist($stale);
+        $this->assertFileExists($fresh);
+    }
+
+    public function testRunIfDueReturnsNullWhileLockHeld(): void
+    {
+        mkdir($this->storage . '/backups', 0777, true);
+        $fh = fopen($this->storage . '/backups/.lock', 'c');
+        $this->assertTrue(flock($fh, LOCK_EX | LOCK_NB));
+        try {
+            $this->assertNull($this->service()->runIfDue());
+            $this->assertCount(0, $this->rbkFiles());
+        } finally {
+            flock($fh, LOCK_UN);
+            fclose($fh);
+        }
+        $this->assertNotNull($this->service()->runIfDue());
+    }
+
+    public function testDumpInsideOpenTransactionDoesNotCommitIt(): void
+    {
+        // DbTestCase mantem uma transacao aberta; o dump nao pode encerra-la (snapshot e pulado).
+        $this->assertTrue($this->db->pdo()->inTransaction());
+        (new Dumper($this->db))->dump($this->storage . '/d.sql');
+        $this->assertTrue($this->db->pdo()->inTransaction());
+    }
 }

@@ -18,6 +18,7 @@ final class BackupService
     private const CIPHER = 'aes-256-cbc';
     private const MAX_AGE_SECONDS = 86400;
     private const KEEP_SECONDS = 30 * 86400;
+    private const TMP_KEEP_SECONDS = 3600;
 
     /** @var callable():int */
     private $clock;
@@ -43,12 +44,27 @@ final class BackupService
         return $this->storage() . '/backups';
     }
 
-    public function create(): string
+    private function ensureDir(): string
     {
         $dir = $this->backupDir();
         if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
             throw new \RuntimeException('Não foi possível criar a pasta de backups.');
         }
+        return $dir;
+    }
+
+    /** Cria um arquivo vazio legivel so pelo dono (chmod falha em silencio no Windows). */
+    private static function privateFile(string $path): void
+    {
+        if (@touch($path)) {
+            @chmod($path, 0600);
+        }
+    }
+
+    public function create(): string
+    {
+        @set_time_limit(0);
+        $dir = $this->ensureDir();
         $pubPem = @file_get_contents($this->storage() . '/keys/backup_public.pem');
         $pubKey = $pubPem === false ? false : openssl_pkey_get_public($pubPem);
         if ($pubKey === false) {
@@ -61,6 +77,9 @@ final class BackupService
         $dumpFile = $dir . '/dump-' . $suffix . '.tmp';
         $zipFile = $dir . '/zip-' . $suffix . '.tmp';
         $tmpOut = $dir . '/out-' . $suffix . '.tmp';
+        foreach ([$dumpFile, $zipFile, $tmpOut] as $f) {
+            self::privateFile($f);
+        }
         try {
             $this->dumper->dump($dumpFile);
             $this->buildZip($zipFile, $dumpFile);
@@ -101,8 +120,29 @@ final class BackupService
         return $final;
     }
 
-    /** Cria backup se nunca houve ou se o ultimo tem mais de 24 h; depois apaga .rbk com mais de 30 dias. */
+    /**
+     * Cria backup se nunca houve ou se o ultimo tem mais de 24 h; depois apaga .rbk com mais de 30 dias.
+     * Usa flock nao bloqueante em <backups>/.lock: se outra execucao (cron sobreposto) estiver rodando, devolve null.
+     */
     public function runIfDue(): ?string
+    {
+        $lock = @fopen($this->ensureDir() . '/.lock', 'c');
+        if ($lock === false) {
+            throw new \RuntimeException('Não foi possível abrir o arquivo de trava dos backups.');
+        }
+        if (!flock($lock, LOCK_EX | LOCK_NB)) {
+            fclose($lock);
+            return null;
+        }
+        try {
+            return $this->runIfDueLocked();
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    private function runIfDueLocked(): ?string
     {
         $row = $this->db->one("SELECT value FROM settings WHERE `key` = 'last_backup_at'");
         $last = $row === null ? false : strtotime((string) $row['value']);
@@ -119,6 +159,13 @@ final class BackupService
         foreach (glob($this->backupDir() . '/*.rbk') ?: [] as $f) {
             $mtime = @filemtime($f);
             if ($mtime !== false && $this->now() - $mtime > self::KEEP_SECONDS) {
+                @unlink($f);
+            }
+        }
+        // Restos de execucoes interrompidas (timeout, queda): temporarios com mais de 1 hora.
+        foreach (glob($this->backupDir() . '/*.tmp') ?: [] as $f) {
+            $mtime = @filemtime($f);
+            if ($mtime !== false && $this->now() - $mtime > self::TMP_KEEP_SECONDS) {
                 @unlink($f);
             }
         }
