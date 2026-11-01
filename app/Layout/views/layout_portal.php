@@ -32,6 +32,6 @@ $flashErr = \App\Core\Session::flash('erro');
   <?= $content ?>
 </main>
 <footer class="portal-rodape">Em caso de dúvida, fale com a equipe da Dra. Rubia.</footer>
-<script src="<?= e(url('/assets/js/portal-sw.js')) ?>"></script>
+<?php if (!empty($registerSw)): ?><script src="<?= e(url('/assets/js/portal-sw.js')) ?>"></script><?php endif; ?>
 </body>
 </html>

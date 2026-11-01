@@ -160,11 +160,81 @@ final class PortalTest extends DbTestCase
     {
         $sw = (string) file_get_contents(dirname(__DIR__, 2) . '/public/sw.js');
         $this->assertStringNotContainsString('/portal/p/', $sw);
-        $this->assertStringContainsString('/assets/', $sw);
+        $this->assertStringContainsString("'assets/'", $sw);
+        $this->assertStringContainsString('fetch(req).then', $sw);
         $m = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/public/manifest.json'), true);
         $this->assertSame('/portal', $m['start_url']);
         $this->assertSame('standalone', $m['display']);
         $this->assertFileExists(dirname(__DIR__, 2) . '/public/assets/icons/icon-192.png');
         $this->assertFileExists(dirname(__DIR__, 2) . '/public/assets/icons/icon-512.png');
+    }
+
+    public function testEndedGuardianLinkIsForbidden(): void
+    {
+        $g = $this->makeUser('responsavel');
+        $a = $this->child($g, 'Ana Souza');
+        $this->db->run('UPDATE guardian_links SET active = 0 WHERE patient_id = ?', [$a['id']]);
+        $this->loginAs($g);
+        $this->assertSame(403, $this->get('/portal/p/' . $a['id'] . '/crescimento')->status);
+    }
+
+    public function testAdultPatientCannotOpenAnotherPatient(): void
+    {
+        $u = $this->makeUser('paciente');
+        $this->makePatient(['birth_date' => '1985-02-03', 'user_id' => $u['id']]);
+        $other = $this->makePatient(['birth_date' => '1990-01-01']);
+        $this->loginAs($u);
+        $this->assertSame(403, $this->get('/portal/p/' . $other['id'] . '/crescimento')->status);
+    }
+
+    public function testForbiddenPostInsertsNothing(): void
+    {
+        $g = $this->makeUser('responsavel');
+        $other = $this->makePatient(['birth_date' => '2016-01-01']);
+        $this->loginAs($g);
+        $this->post('/portal/p/' . $other['id'] . '/medidas/nova', ['data_medida' => date('d/m/Y'), 'peso' => '30']);
+        $this->assertSame(0, (int) $this->db->one('SELECT COUNT(*) c FROM measurements')['c']);
+    }
+
+    public function testFamilyClinicalGrowthPageRedirectsToPortal(): void
+    {
+        $g = $this->makeUser('responsavel');
+        $a = $this->child($g, 'Ana Souza');
+        $this->loginAs($g);
+        $res = $this->get('/pacientes/' . $a['id'] . '/crescimento');
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/portal/p/' . $a['id'] . '/crescimento', $res->headers['Location']);
+    }
+
+    public function testWrongCurrentPasswordIsAuditedAndLocks(): void
+    {
+        $g = $this->makeUser('responsavel');
+        $this->loginAs($g);
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/portal/conta/senha', ['atual' => 'errada', 'nova' => 'novasenha12345', 'confirmacao' => 'novasenha12345']);
+        }
+        $this->assertTrue(Container::auth()->isLocked((int) $g['id']));
+        $n = (int) $this->db->one("SELECT COUNT(*) c FROM audit_log WHERE action='denied' AND entity='users' AND user_id = ?", [$g['id']])['c'];
+        $this->assertSame(5, $n);
+        $res = $this->post('/portal/conta/senha', ['atual' => 'senha-teste-123', 'nova' => 'novasenha12345', 'confirmacao' => 'novasenha12345']);
+        $this->assertSame(200, $res->status);
+        $this->assertStringContainsString('Muitas tentativas', $res->body);
+    }
+
+    public function testChildRoleSeesUnavailablePageWithoutLoop(): void
+    {
+        $this->loginAs($this->makeUser('crianca'));
+        $res = $this->get('/portal');
+        $this->assertSame(200, $res->status);
+        $this->assertStringContainsString('Acesso ainda não disponível', $res->body);
+    }
+
+    public function testServiceWorkerRegisteredOnlyOnPortalPages(): void
+    {
+        $login = $this->get('/login');
+        $this->assertStringNotContainsString('portal-sw.js', $login->body);
+        $g = $this->makeUser('responsavel');
+        $this->loginAs($g);
+        $this->assertStringContainsString('portal-sw.js', $this->get('/portal/conta')->body);
     }
 }

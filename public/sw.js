@@ -1,6 +1,8 @@
-/* Service worker do portal: guarda em cache SOMENTE arquivos estaticos de /assets/ (cache-first).
-   Paginas HTML, JSON e qualquer rota do portal nunca sao cacheadas. */
-var CACHE = 'rubia-assets-v1';
+/* Service worker do portal: rede primeiro para arquivos estaticos de <escopo>assets/, com cache so como
+   reserva offline. Paginas HTML, JSON e rotas do portal nunca sao cacheadas. */
+var CACHE = 'rubia-assets-v2';
+var SCOPE_PATH = new URL(self.registration.scope).pathname;
+var ASSETS = SCOPE_PATH + 'assets/';
 
 self.addEventListener('install', function () { self.skipWaiting(); });
 
@@ -16,17 +18,16 @@ self.addEventListener('fetch', function (event) {
   var req = event.request;
   if (req.method !== 'GET') { return; }
   var url = new URL(req.url);
-  if (url.origin !== self.location.origin || url.pathname.indexOf('/assets/') === -1) { return; }
+  if (url.origin !== self.location.origin || url.pathname.indexOf(ASSETS) !== 0) { return; }
   event.respondWith(
-    caches.match(req).then(function (hit) {
-      if (hit) { return hit; }
-      return fetch(req).then(function (res) {
-        if (res.ok && res.status === 200) {
-          var copy = res.clone();
-          caches.open(CACHE).then(function (c) { c.put(req, copy); });
-        }
-        return res;
-      });
+    fetch(req).then(function (res) {
+      if (res.ok && res.type === 'basic' && !res.redirected) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(req, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req).then(function (hit) { return hit || Response.error(); });
     })
   );
 });

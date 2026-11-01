@@ -21,6 +21,7 @@ use App\Support\Num;
 final class PortalController
 {
     private const FAMILY = ['paciente', 'responsavel'];
+    private const STAFF = ['medico', 'nutricionista', 'secretaria'];
     private const MIN_PASSWORD = 10;
     private const GENTLE_HIGH = 'Acima da faixa esperada — a equipe vai conversar com vocês sobre isso.';
     private const GENTLE_LOW = 'Abaixo da faixa esperada — a equipe vai acompanhar.';
@@ -67,7 +68,13 @@ final class PortalController
         }
         $pid = (int) $patient['id'];
         $adult = $this->isAdult($patient);
-        $last = Container::measurements()->latest($pid);
+        $last = null;
+        foreach (array_reverse(Container::measurements()->current($pid)) as $m) {
+            if ($m['weight_kg'] !== null || $m['height_cm'] !== null) {
+                $last = $m;
+                break;
+            }
+        }
         return $this->page('Portal/views/growth.php', 'Crescimento', $user, [
             'patient' => $patient,
             'first' => $this->firstName($patient),
@@ -144,8 +151,15 @@ final class PortalController
         $current = (string) $r->input('atual', '');
         $new = (string) $r->input('nova', '');
         $confirm = (string) $r->input('confirmacao', '');
+        $uid = (int) $user['id'];
+        $auth = Container::auth();
+        if ($auth->isLocked($uid)) {
+            return $this->accountPage($user, ['Muitas tentativas incorretas. Aguarde alguns minutos e tente de novo.']);
+        }
         $errors = [];
         if (!is_string($user['password_hash'] ?? null) || !password_verify($current, $user['password_hash'])) {
+            $auth->registerFailure($uid);
+            Container::audit()->record($uid, 'denied', 'users', $uid, null, null, ['campo' => 'senha', 'resultado' => 'falha'], $r);
             $errors[] = 'A senha atual não confere.';
         }
         if (mb_strlen($new) < self::MIN_PASSWORD) {
@@ -168,7 +182,15 @@ final class PortalController
     /** Equipe nao usa o portal. */
     private function guard(Request $r): ?Response
     {
-        return in_array($r->attributes['user']['role'] ?? '', self::FAMILY, true) ? null : Response::redirect('/');
+        $user = $r->attributes['user'];
+        $role = (string) ($user['role'] ?? '');
+        if (in_array($role, self::FAMILY, true)) {
+            return null;
+        }
+        if (in_array($role, self::STAFF, true)) {
+            return Response::redirect('/');
+        }
+        return $this->page('Portal/views/unavailable.php', 'Acesso ainda não disponível', $user, []);
     }
 
     /** @return array{0:array,1:array,2:?Response} usuario, paciente, redirecionamento */
@@ -187,18 +209,19 @@ final class PortalController
         return [$user, $patient, null];
     }
 
-    /** Pacientes visiveis: o proprio cadastro (paciente adulto) e os vinculados como responsavel. */
+    /** Pacientes que o Gate permite (mesma regra de escopo): proprio cadastro e vinculos ativos. */
     private function patientsOf(array $user): array
     {
-        $byId = [];
-        $own = Container::db()->one('SELECT * FROM patients WHERE user_id = ? AND deleted_at IS NULL', [$user['id']]);
-        if ($own !== null) {
-            $byId[(int) $own['id']] = $own;
+        $ids = Container::patientScope()->accessiblePatientIds($user) ?? [];
+        $out = [];
+        foreach ($ids as $id) {
+            $p = Container::patients()->find($id);
+            if ($p !== null && $p['deleted_at'] === null) {
+                $out[] = $p;
+            }
         }
-        foreach (Container::guardians()->patientsForGuardian((int) $user['id']) as $p) {
-            $byId[(int) $p['id']] ??= $p;
-        }
-        return array_values($byId);
+        usort($out, static fn(array $a, array $b): int => strcmp((string) $a['full_name'], (string) $b['full_name']));
+        return $out;
     }
 
     private function firstName(array $p): string
@@ -275,6 +298,6 @@ final class PortalController
 
     private function page(string $template, string $title, array $user, array $data): Response
     {
-        return Response::html(View::render($template, $data + ['title' => $title, 'userName' => $user['name']], 'Layout/views/layout_portal.php'));
+        return Response::html(View::render($template, $data + ['title' => $title, 'userName' => $user['name'], 'registerSw' => true], 'Layout/views/layout_portal.php'));
     }
 }

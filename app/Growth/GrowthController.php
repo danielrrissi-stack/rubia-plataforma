@@ -34,6 +34,9 @@ final class GrowthController
         $user = $r->attributes['user'];
         $id = (int) $r->params['id'];
         Container::gate()->authorize($user, 'view', Policy::ANTROPOMETRIA, $id, $r);
+        if (in_array($user['role'], ['paciente', 'responsavel'], true)) {
+            return Response::redirect('/portal/p/' . $id . '/crescimento');
+        }
         $patient = $this->patient($id);
         if (in_array($user['role'], self::AUDIT_VIEW, true)) {
             Container::audit()->record((int) $user['id'], 'view', 'patients', $id, $id, null, ['section' => 'crescimento'], $r);
