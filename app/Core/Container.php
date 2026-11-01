@@ -11,6 +11,9 @@ use App\Auth\AuthService;
 use App\Auth\TokenService;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
+use App\Patients\ConsentService;
+use App\Patients\GuardianRepository;
+use App\Patients\PatientRepository;
 use App\Users\UserRepository;
 
 /** Servicos compartilhados (singletons preguicosos). Testes usam set()/reset(). */
@@ -86,5 +89,20 @@ final class Container
             new Dumper(self::db()),
             ['storage_path' => (string) Config::get('storage_path')],
         );
+    }
+
+    public static function patients(): PatientRepository
+    {
+        return self::$items['patients'] ??= new PatientRepository(self::db(), self::audit());
+    }
+
+    public static function guardians(): GuardianRepository
+    {
+        return self::$items['guardians'] ??= new GuardianRepository(self::db(), self::audit());
+    }
+
+    public static function consents(): ConsentService
+    {
+        return self::$items['consents'] ??= new ConsentService(self::db(), self::audit());
     }
 }

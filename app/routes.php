@@ -6,6 +6,8 @@ declare(strict_types=1);
 use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
+use App\Patients\GuardianController;
+use App\Patients\PatientController;
 use App\Core\Request;
 use App\Install\InstallController;
 use App\Core\Response;
@@ -40,7 +42,7 @@ $router->get('/', static function (Request $r): Response {
         ['title' => 'Início', 'userName' => $user['name']],
         $layout
     ));
-}, ['auth', 'twofactor']);
+}, ['auth', 'twofactor', 'consent']);
 
 $staffMw = ['auth', 'twofactor'];
 $router->get('/equipe', [UserController::class, 'index'], $staffMw);
@@ -56,3 +58,17 @@ $router->get('/admin/backups', [BackupController::class, 'index'], $staffMw);
 $router->post('/admin/backups/gerar', [BackupController::class, 'generate'], $staffMw);
 $router->get('/admin/backups/chave-privada', [BackupController::class, 'privateKey'], $staffMw);
 $router->get('/admin/backups/{nome}', [BackupController::class, 'download'], $staffMw);
+
+$authMw = ['auth', 'twofactor', 'consent'];
+$router->get('/pacientes', [PatientController::class, 'index'], $authMw);
+$router->get('/pacientes/novo', [PatientController::class, 'create'], $authMw);
+$router->post('/pacientes/novo', [PatientController::class, 'store'], $authMw);
+$router->get('/pacientes/{id:\d+}', [PatientController::class, 'show'], $authMw);
+$router->get('/pacientes/{id:\d+}/editar', [PatientController::class, 'edit'], $authMw);
+$router->post('/pacientes/{id:\d+}/editar', [PatientController::class, 'update'], $authMw);
+$router->post('/pacientes/{id:\d+}/acesso', [PatientController::class, 'grantAccess'], $authMw);
+$router->get('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'index'], $authMw);
+$router->post('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'add'], $authMw);
+$router->post('/responsaveis/{linkId:\d+}/remover', [GuardianController::class, 'remove'], $authMw);
+$router->get('/consentimento', [PatientController::class, 'showConsent'], ['auth', 'twofactor', 'consent']);
+$router->post('/consentimento', [PatientController::class, 'acceptConsent'], ['auth', 'twofactor', 'consent']);

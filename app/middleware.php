@@ -28,3 +28,16 @@ Router::middleware('twofactor', static function (Request $r, callable $next): Re
     }
     return $next($r);
 });
+
+// 'consent': familia (paciente/responsavel) com termo pendente so acessa /consentimento e o logout. Equipe passa.
+Router::middleware('consent', static function (Request $r, callable $next): Response {
+    $user = $r->attributes['user'] ?? null;
+    if (is_array($user)
+        && in_array($user['role'], ['paciente', 'responsavel'], true)
+        && $r->path() !== '/consentimento'
+        && !($r->method() === 'POST' && $r->path() === '/logout')
+        && Container::consents()->pendingFor($user) !== []) {
+        return Response::redirect('/consentimento');
+    }
+    return $next($r);
+});
