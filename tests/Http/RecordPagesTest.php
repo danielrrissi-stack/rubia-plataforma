@@ -146,6 +146,59 @@ final class RecordPagesTest extends DbTestCase
         $this->assertSame(['condicao' => 'obesidade', 'parentesco' => 'pai'], $pl['condicoes'][0]);
     }
 
+    public function testInvalidEncounterDateKeepsTypedNote(): void
+    {
+        $m = $this->makeUser('medico');
+        $p = $this->makePatient();
+        $this->loginAs($m);
+        foreach (['31/02/2026', 'ontem'] as $bad) {
+            $res = $this->post('/pacientes/' . $p['id'] . '/prontuario/evolucao',
+                $this->evo(['encounter_date' => $bad, 'anamnese' => 'Nota longa da doutora']));
+            $this->assertSame(200, $res->status, $bad);
+            $this->assertStringContainsString('Data do atendimento inválida.', $res->body);
+            $this->assertStringContainsString('Nota longa da doutora', $res->body);
+            $this->assertStringContainsString('value="' . $bad . '"', $res->body);
+        }
+        $this->assertSame(0, (int) $this->db->one('SELECT COUNT(*) c FROM clinical_entries')['c']);
+    }
+
+    public function testInvalidEncounterDateOnReviseRerendersForm(): void
+    {
+        $m = $this->makeUser('medico');
+        $p = $this->makePatient();
+        $this->loginAs($m);
+        $this->post('/pacientes/' . $p['id'] . '/prontuario/evolucao', $this->evo(['encounter_date' => '10/01/2026']));
+        $e = $this->db->one("SELECT * FROM clinical_entries WHERE kind='evolucao'");
+        $res = $this->post('/prontuario/' . $e['id'] . '/revisar', $this->evo(['encounter_date' => '31/02/2026', 'conduta' => 'Conduta revisada']));
+        $this->assertSame(200, $res->status);
+        $this->assertStringContainsString('Data do atendimento inválida.', $res->body);
+        $this->assertStringContainsString('Conduta revisada', $res->body);
+        $this->assertSame(1, (int) $this->db->one('SELECT COUNT(*) c FROM clinical_entries')['c']);
+    }
+
+    public function testBlankEncounterDateOnReviseKeepsExistingDate(): void
+    {
+        $m = $this->makeUser('medico');
+        $p = $this->makePatient();
+        $this->loginAs($m);
+        $this->post('/pacientes/' . $p['id'] . '/prontuario/evolucao', $this->evo(['encounter_date' => '10/01/2026']));
+        $e = $this->db->one("SELECT * FROM clinical_entries WHERE kind='evolucao'");
+        $this->assertSame('2026-01-10', $e['encounter_date']);
+        $res = $this->post('/prontuario/' . $e['id'] . '/revisar', $this->evo(['encounter_date' => '', 'conduta' => 'Nova conduta']));
+        $this->assertSame(302, $res->status);
+        $cur = $this->db->one("SELECT * FROM clinical_entries WHERE kind='evolucao' AND superseded_at IS NULL");
+        $this->assertSame('2026-01-10', $cur['encounter_date']);
+    }
+
+    public function testBlankEncounterDateOnCreateIsToday(): void
+    {
+        $m = $this->makeUser('medico');
+        $p = $this->makePatient();
+        $this->loginAs($m);
+        $this->assertSame(302, $this->post('/pacientes/' . $p['id'] . '/prontuario/evolucao', $this->evo(['encounter_date' => '']))->status);
+        $this->assertSame(date('Y-m-d'), $this->db->one("SELECT encounter_date FROM clinical_entries WHERE kind='evolucao'")['encounter_date']);
+    }
+
     public function testSummaryCardForDoctor(): void
     {
         $m = $this->makeUser('medico');

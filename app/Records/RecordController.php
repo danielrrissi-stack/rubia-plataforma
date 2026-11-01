@@ -110,7 +110,7 @@ final class RecordController
         $pid = (int) $entry['patient_id'];
         Container::gate()->authorize($user, 'edit', $this->section($entry['kind']), $pid, $r);
         $values = $this->valuesFromPost($entry['kind'], $r->post);
-        [$payload, $cid, $date, $errors] = $this->build($entry['kind'], $values);
+        [$payload, $cid, $date, $errors] = $this->build($entry['kind'], $values, $entry['encounter_date'] ?? null);
         if ($errors !== []) {
             return $this->renderForm($r, $this->patient($pid), $entry['kind'], $values, $errors, $entry);
         }
@@ -225,8 +225,11 @@ final class RecordController
         return $this->valuesFromPost($kind, ['texto' => $p['texto'] ?? '']);
     }
 
-    /** @return array{0:array,1:?string,2:?string,3:string[]} payload, cid10, encounter_date (Y-m-d), erros */
-    private function build(string $kind, array $v): array
+    /**
+     * @param ?string $blankDate data (Y-m-d) usada quando encounter_date vem em branco (revisao); null = hoje
+     * @return array{0:array,1:?string,2:?string,3:string[]} payload, cid10, encounter_date (Y-m-d), erros
+     */
+    private function build(string $kind, array $v, ?string $blankDate = null): array
     {
         $errors = [];
         $cid = null;
@@ -273,9 +276,14 @@ final class RecordController
                 $errors[] = 'CID-10 inválido (ex.: E66.0)';
             }
             if ($v['encounter_date'] === '') {
-                $date = date('Y-m-d');
+                // Na correcao, data em branco mantem a data original do atendimento; na criacao, hoje.
+                $date = $blankDate ?? date('Y-m-d');
             } else {
-                $date = Dates::parseBr($v['encounter_date']);
+                try {
+                    $date = Dates::parseBr($v['encounter_date']);
+                } catch (\InvalidArgumentException) {
+                    $date = null;
+                }
                 if ($date === null || $date > date('Y-m-d')) {
                     $errors[] = 'Data do atendimento inválida.';
                     $date = null;
