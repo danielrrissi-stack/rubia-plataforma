@@ -15,3 +15,16 @@ Router::middleware('auth', static function (Request $r, callable $next): Respons
     $r->attributes['user'] = $user;
     return $next($r);
 });
+
+// 'twofactor': equipe clinica sem 2FA ativo so acessa a configuracao do 2FA (e o logout). Familia passa.
+Router::middleware('twofactor', static function (Request $r, callable $next): Response {
+    $user = $r->attributes['user'] ?? null;
+    if (is_array($user)
+        && in_array($user['role'], ['medico', 'nutricionista', 'secretaria'], true)
+        && (int) $user['totp_enabled'] !== 1
+        && !str_starts_with($r->path(), '/2fa/configurar')
+        && !($r->method() === 'POST' && $r->path() === '/logout')) {
+        return Response::redirect('/2fa/configurar');
+    }
+    return $next($r);
+});

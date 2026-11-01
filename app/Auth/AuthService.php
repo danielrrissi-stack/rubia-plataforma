@@ -74,6 +74,9 @@ final class AuthService
 
         if ((int) $user['totp_enabled'] === 1) {
             Session::regenerate();
+            // Nunca manter login completo de A junto com pendencia de B.
+            Session::forget('uid');
+            Session::forget('last_activity');
             Session::set('pending_2fa_user', $id);
             return new LoginResult(true, true);
         }
@@ -87,6 +90,7 @@ final class AuthService
     {
         Session::regenerate();
         Session::forget('pending_2fa_user');
+        Session::forget('_csrf'); // rotaciona o token CSRF (novo e gerado sob demanda)
         Session::set('uid', $userId);
         Session::set('last_activity', $this->now());
         $this->db->run('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$userId]);

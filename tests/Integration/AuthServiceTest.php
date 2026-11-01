@@ -92,6 +92,26 @@ final class AuthServiceTest extends DbTestCase
         $this->assertSame((int) $u['id'], Session::get('pending_2fa_user'));
     }
 
+    public function testPendingTotpClearsPreviousFullLogin(): void
+    {
+        $a = $this->makeUser('medico');
+        $b = $this->makeUser('medico', ['totp_enabled' => 1]);
+        $this->auth->attempt($a['email'], 'senha-teste-123', $this->req());
+        $this->assertNotNull($this->auth->user());
+        $this->auth->attempt($b['email'], 'senha-teste-123', $this->req());
+        $this->assertNull(Session::get('uid'));
+        $this->assertNull(Session::get('last_activity'));
+        $this->assertSame((int) $b['id'], Session::get('pending_2fa_user'));
+    }
+
+    public function testCompleteLoginRotatesCsrfToken(): void
+    {
+        $u = $this->makeUser('medico');
+        $before = \App\Core\Csrf::token();
+        $this->auth->completeLogin((int) $u['id'], $this->req());
+        $this->assertNotSame($before, \App\Core\Csrf::token());
+    }
+
     public function testStaffIdleTimeoutAfter30Minutes(): void
     {
         $u = $this->makeUser('medico');

@@ -42,6 +42,8 @@ final class LoginFlowTest extends DbTestCase
         $res = $this->post('/login', ['email' => $u['email'], 'senha' => 'senha-teste-123']);
         $this->assertSame(302, $res->status);
         $this->assertSame('/', $res->headers['Location']);
+        // Equipe precisa ter 2FA ativo para ver qualquer pagina (Task 5).
+        $this->db->run('UPDATE users SET totp_enabled = 1 WHERE id = ?', [$u['id']]);
         $home = $this->get('/');
         $this->assertSame(200, $home->status);
         $this->assertStringContainsString('Bem-vindo, Rubia Teste', $home->body);

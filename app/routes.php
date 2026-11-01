@@ -4,6 +4,7 @@ declare(strict_types=1);
 /** @var \App\Core\Router $router */
 
 use App\Auth\AuthController;
+use App\Auth\TwoFactorController;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
@@ -18,6 +19,11 @@ $router->post('/senha/esqueci', [AuthController::class, 'forgot']);
 $router->get('/senha/definir/{token}', [AuthController::class, 'showReset']);
 $router->post('/senha/definir/{token}', [AuthController::class, 'reset']);
 
+$router->get('/2fa', [TwoFactorController::class, 'showVerify']);
+$router->post('/2fa', [TwoFactorController::class, 'verify']);
+$router->get('/2fa/configurar', [TwoFactorController::class, 'showSetup'], ['auth', 'twofactor']);
+$router->post('/2fa/configurar', [TwoFactorController::class, 'setup'], ['auth', 'twofactor']);
+
 // Provisoria: sera substituida pelo Dashboard (Task 11).
 $router->get('/', static function (Request $r): Response {
     $user = $r->attributes['user'];
@@ -28,4 +34,4 @@ $router->get('/', static function (Request $r): Response {
         ['title' => 'Início', 'userName' => $user['name']],
         $layout
     ));
-}, ['auth']);
+}, ['auth', 'twofactor']);
