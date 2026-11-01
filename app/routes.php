@@ -7,6 +7,7 @@ use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
 use App\Dashboard\DashboardController;
+use App\Growth\GrowthController;
 use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
 use App\Patients\PatientController;
@@ -66,3 +67,12 @@ $router->post('/pacientes/{id:\d+}/acesso-profissionais', [AccessGrantController
 $router->post('/acesso-profissionais/{grantId:\d+}/revogar', [AccessGrantController::class, 'revoke'], $authMw);
 $router->get('/maioridade', [AccessGrantController::class, 'majorityIndex'], $authMw);
 $router->post('/pacientes/{id:\d+}/maioridade', [AccessGrantController::class, 'decide'], $authMw);
+
+$router->get('/pacientes/{id:\d+}/crescimento', [GrowthController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/curvas.json', [GrowthController::class, 'curves'], $authMw);
+$router->get('/pacientes/{id:\d+}/medidas/nova', [GrowthController::class, 'create'], $authMw);
+$router->post('/pacientes/{id:\d+}/medidas/nova', [GrowthController::class, 'store'], $authMw);
+$router->get('/medidas/{id:\d+}/corrigir', [GrowthController::class, 'edit'], $authMw);
+$router->post('/medidas/{id:\d+}/corrigir', [GrowthController::class, 'update'], $authMw);
+$router->post('/medidas/{id:\d+}/remover', [GrowthController::class, 'remove'], $authMw);
+$router->get('/medidas/{id:\d+}/versoes', [GrowthController::class, 'versions'], $authMw);

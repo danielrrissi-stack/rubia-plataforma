@@ -14,6 +14,7 @@ use App\Backup\Dumper;
 use App\Growth\BloodPressure;
 use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
+use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
 use App\Patients\AccessGrantRepository;
 use App\Patients\ConsentService;
@@ -135,6 +136,11 @@ final class Container
     public static function bpRef(): BpReferenceRepository
     {
         return self::$items['bpRef'] ??= new BpReferenceRepository(self::db());
+    }
+
+    public static function measurements(): MeasurementRepository
+    {
+        return self::$items['measurements'] ??= new MeasurementRepository(self::db(), self::audit());
     }
 
     public static function bp(): BloodPressure

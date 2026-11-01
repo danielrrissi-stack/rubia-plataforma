@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var bool $canCadastro @var bool $canEdit @var bool $canCrescimento
- * @var bool $canProntuario @var bool $canEnergia @var bool $canAcessoProf @var bool $adult @var ?array $professional @var array $guardians
+ * @var bool $canProntuario @var bool $canEnergia @var bool $canAcessoProf @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
  */
 $pid = (int) $patient['id'];
 ?>
@@ -53,7 +53,11 @@ $pid = (int) $patient['id'];
 
 <?php /* Area de cartoes: tarefas futuras (Crescimento, Prontuario, Energia) adicionam seus cartoes aqui, cada um sob Gate::check. */ ?>
 <div class="cartoes" id="cartoes-paciente">
-  <?php if ($canCrescimento): ?><section class="cartao" id="cartao-crescimento"><h2>Crescimento</h2><p class="ajuda">Em breve.</p></section><?php endif; ?>
+  <?php if ($canCrescimento): ?><section class="cartao" id="cartao-crescimento"><h2>Crescimento</h2>
+    <?php if ($growth === null): ?><p class="ajuda">Nenhuma medida registrada.</p><?php else: ?>
+      <p>Última medida: <?= e(fmt_date($growth['date'])) ?><?php if ($growth['bmi'] !== null): ?> · IMC <?= e(fmt_num($growth['bmi'], 1)) ?><?= $growth['status'] ? ' — ' . e($growth['status']) : '' ?><?php endif; ?></p>
+    <?php endif; ?>
+    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/crescimento')) ?>">Ver crescimento</a></p></section><?php endif; ?>
   <?php if ($canProntuario): ?><section class="cartao" id="cartao-prontuario"><h2>Prontuário</h2><p class="ajuda">Em breve.</p></section><?php endif; ?>
   <?php if ($canEnergia): ?><section class="cartao" id="cartao-energia"><h2>Energia</h2><p class="ajuda">Em breve.</p></section><?php endif; ?>
 </div>
