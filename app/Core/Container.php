@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Access\Gate;
+use App\Access\PatientScope;
+use App\Access\Policy;
 use App\Audit\AuditLog;
 use App\Auth\AuthService;
 use App\Auth\TokenService;
@@ -57,5 +60,20 @@ final class Container
             self::audit(),
             new Session(),
         );
+    }
+
+    public static function policy(): Policy
+    {
+        return self::$items['policy'] ??= new Policy();
+    }
+
+    public static function patientScope(): PatientScope
+    {
+        return self::$items['patientScope'] ??= new PatientScope(self::db());
+    }
+
+    public static function gate(): Gate
+    {
+        return self::$items['gate'] ??= new Gate(self::policy(), self::patientScope(), self::audit());
     }
 }
