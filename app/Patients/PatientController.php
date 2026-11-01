@@ -26,7 +26,7 @@ final class PatientController
         $ids = Container::patientScope()->accessiblePatientIds($user);
         $today = date('Y-m-d');
         return $this->page('Patients/views/index.php', 'Pacientes', $r, [
-            'patients' => Container::patients()->search($q, $ids),
+            'patients' => Container::patients()->search($q, $ids, 50, Container::gate()->check($user, 'view', Policy::CADASTRO, null)),
             'q' => $q,
             'today' => $today,
             'canCreate' => Container::gate()->check($user, 'edit', Policy::CADASTRO, null),

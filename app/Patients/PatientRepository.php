@@ -46,7 +46,7 @@ final class PatientRepository
     }
 
     /** @param int[]|null $onlyIds null = sem restricao; [] = nenhum */
-    public function search(string $q, ?array $onlyIds, int $limit = 50): array
+    public function search(string $q, ?array $onlyIds, int $limit = 50, bool $byCpf = true): array
     {
         if ($onlyIds === []) {
             return [];
@@ -60,7 +60,7 @@ final class PatientRepository
             $cond = 'p.full_name LIKE ? OR p.social_name LIKE ?';
             $params[] = $like;
             $params[] = $like;
-            if ($digits !== '') {
+            if ($byCpf && $digits !== '') {
                 $cond .= " OR REPLACE(REPLACE(p.cpf, '.', ''), '-', '') LIKE ?";
                 $params[] = '%' . $digits . '%';
             }

@@ -44,6 +44,8 @@ final class GuardianController
             $existing = Container::users()->findByEmail($email);
             if ($existing !== null && $existing['role'] !== 'responsavel') {
                 $errors[] = 'Este e-mail já pertence a outro tipo de conta.';
+            } elseif ($existing !== null && (int) $existing['active'] !== 1) {
+                $errors[] = 'Esta conta está desativada. Reative-a antes de vincular.';
             } elseif ($existing !== null && Container::guardians()->activeLink($id, (int) $existing['id']) !== null) {
                 $errors[] = 'Este responsável já está vinculado ao paciente.';
             }
@@ -73,7 +75,9 @@ final class GuardianController
                 FamilyInvites::send($user);
             }
         });
-        Session::flash('ok', 'Responsável vinculado.');
+        Session::flash('ok', $existing !== null
+            ? 'Conta existente vinculada ao paciente (o nome digitado não foi aplicado).'
+            : 'Responsável vinculado.');
         return Response::redirect('/pacientes/' . $id . '/responsaveis');
     }
 

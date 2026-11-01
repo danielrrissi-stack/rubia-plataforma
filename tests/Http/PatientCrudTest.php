@@ -195,4 +195,28 @@ final class PatientCrudTest extends DbTestCase
         $this->assertSame((int) $u['id'], (int) $this->db->one('SELECT user_id FROM patients WHERE id = ?', [$adult['id']])['user_id']);
         $this->assertCount(1, $this->db->all('SELECT * FROM mail_queue'));
     }
+
+    public function testCpfSearchOnlyForRolesWithCadastro(): void
+    {
+        $nutri = $this->makeUser('nutricionista');
+        $p = $this->makePatient(['full_name' => 'Zulmira Cpf', 'cpf' => '529.982.247-25']);
+        $this->db->insert('professional_access', [
+            'patient_id' => $p['id'], 'professional_id' => $nutri['id'], 'granted_by' => $p['created_by'],
+        ]);
+        $this->loginAs($nutri);
+        $this->assertStringNotContainsString('Zulmira', $this->get('/pacientes', ['q' => '52998224725'])->body);
+        \App\Core\Session::reset();
+        $this->loginAs($this->makeUser('secretaria'));
+        $this->assertStringContainsString('Zulmira', $this->get('/pacientes', ['q' => '52998224725'])->body);
+    }
+
+    public function testInactiveGuardianAccountRejected(): void
+    {
+        $this->loginAs($this->makeUser('secretaria'));
+        $p = $this->makePatient();
+        $this->makeUser('responsavel', ['email' => 'off@example.test', 'active' => 0]);
+        $res = $this->post('/pacientes/' . $p['id'] . '/responsaveis', ['nome' => 'X', 'email' => 'off@example.test', 'parentesco' => 'mãe']);
+        $this->assertStringContainsString('Esta conta está desativada', $res->body);
+        $this->assertSame(0, (int) $this->db->one('SELECT COUNT(*) c FROM guardian_links WHERE patient_id = ?', [$p['id']])['c']);
+    }
 }

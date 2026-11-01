@@ -10,8 +10,8 @@ final class Age
 
     public static function days(string $birthYmd, string $onYmd): int
     {
-        $b = new \DateTimeImmutable(substr($birthYmd, 0, 10));
-        $o = new \DateTimeImmutable(substr($onYmd, 0, 10));
+        $b = self::d($birthYmd);
+        $o = self::d($onYmd);
         return (int) $b->diff($o)->format('%r%a');
     }
 
@@ -27,16 +27,22 @@ final class Age
         if ($years >= 2) {
             return $years . ' anos';
         }
-        $b = new \DateTimeImmutable(substr($birth, 0, 10));
-        $m = (int) $b->diff(new \DateTimeImmutable(substr($on, 0, 10)))->format('%m') + 12 * $years;
+        $b = self::d($birth);
+        $m = (int) $b->diff(self::d($on))->format('%m') + 12 * $years;
         return $m . ($m === 1 ? ' mês' : ' meses');
     }
 
     /** Anos completos pelo calendario (29/02 completa ano em 01/03 nos anos nao bissextos). */
     public static function years(string $birth, string $on): int
     {
-        $b = new \DateTimeImmutable(substr($birth, 0, 10));
-        $o = new \DateTimeImmutable(substr($on, 0, 10));
+        $b = self::d($birth);
+        $o = self::d($on);
         return (int) $b->diff($o)->format('%r%y');
+    }
+
+    /** Data Y-m-d em UTC (evita meia-noite inexistente em inicio de horario de verao). */
+    private static function d(string $ymd): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable(substr($ymd, 0, 10), new \DateTimeZone('UTC'));
     }
 }

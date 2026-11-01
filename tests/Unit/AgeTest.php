@@ -22,4 +22,11 @@ final class AgeTest extends TestCase
         $this->assertSame(18, Age::years('2008-02-29', '2026-03-01'));
         $this->assertSame(17, Age::years('2008-02-29', '2026-02-28'));
     }
+
+    public function testDstStartDatesAreCalendarCorrect(): void
+    {
+        $this->assertSame(1, Age::days('2018-11-04', '2018-11-05'));
+        $this->assertSame(1, Age::years('2018-11-04', '2019-11-04'));
+        $this->assertSame(365, Age::days('2018-11-04', '2019-11-04'));
+    }
 }
