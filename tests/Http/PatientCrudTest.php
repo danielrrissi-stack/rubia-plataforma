@@ -123,7 +123,9 @@ final class PatientCrudTest extends DbTestCase
         $this->assertStringContainsString('Termo LGPD', $page->body);
         $res = $this->post('/consentimento', ['term_version' => '1.0', 'patient_id' => (string) $p['id'], 'aceito' => '1']);
         $this->assertSame('/', $res->headers['Location'] ?? null);
-        $this->assertSame(200, $this->get('/')->status);
+        $home = $this->get('/');
+        $this->assertSame(302, $home->status);
+        $this->assertSame('/portal', $home->headers['Location'] ?? null);
     }
 
     public function testConsentRejectsUnrelatedPatient(): void

@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var bool $canCadastro @var bool $canEdit @var bool $canCrescimento
- * @var bool $canProntuario @var bool $canEnergia @var bool $adult @var ?array $professional @var array $guardians
+ * @var bool $canProntuario @var bool $canEnergia @var bool $canAcessoProf @var bool $adult @var ?array $professional @var array $guardians
  */
 $pid = (int) $patient['id'];
 ?>
@@ -11,9 +11,10 @@ $pid = (int) $patient['id'];
   <?= e(\App\Growth\Age::label($patient['birth_date'], $today)) ?> (nascimento <?= e(fmt_date($patient['birth_date'])) ?>) ·
   <?= $patient['sex'] === 'F' ? 'Feminino' : 'Masculino' ?>
 </p>
-<?php if ($canEdit): ?>
-  <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/editar')) ?>">Editar cadastro</a>
-     <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/responsaveis')) ?>">Responsáveis</a></p>
+<?php if ($canEdit || $canAcessoProf): ?>
+  <p><?php if ($canEdit): ?><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/editar')) ?>">Editar cadastro</a>
+     <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/responsaveis')) ?>">Responsáveis</a><?php endif; ?>
+     <?php if ($canAcessoProf): ?><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/acesso-profissionais')) ?>">Acesso de profissionais</a><?php endif; ?></p>
 <?php endif; ?>
 
 <?php if ($canCadastro): ?>

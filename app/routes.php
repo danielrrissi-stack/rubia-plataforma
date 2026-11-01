@@ -6,12 +6,11 @@ declare(strict_types=1);
 use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
+use App\Dashboard\DashboardController;
+use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
 use App\Patients\PatientController;
-use App\Core\Request;
 use App\Install\InstallController;
-use App\Core\Response;
-use App\Core\View;
 use App\Users\UserController;
 
 require_once __DIR__ . '/middleware.php';
@@ -32,17 +31,7 @@ $router->post('/2fa', [TwoFactorController::class, 'verify']);
 $router->get('/2fa/configurar', [TwoFactorController::class, 'showSetup'], ['auth', 'twofactor']);
 $router->post('/2fa/configurar', [TwoFactorController::class, 'setup'], ['auth', 'twofactor']);
 
-// Provisoria: sera substituida pelo Dashboard (Task 11).
-$router->get('/', static function (Request $r): Response {
-    $user = $r->attributes['user'];
-    $family = in_array($user['role'], ['paciente', 'responsavel', 'crianca'], true);
-    $layout = $family ? 'Layout/views/layout_portal.php' : 'Layout/views/layout.php';
-    return Response::html(View::render(
-        'Auth/views/home.php',
-        ['title' => 'Início', 'userName' => $user['name']],
-        $layout
-    ));
-}, ['auth', 'twofactor', 'consent']);
+$router->get('/', [DashboardController::class, 'index'], ['auth', 'twofactor', 'consent']);
 
 $staffMw = ['auth', 'twofactor'];
 $router->get('/equipe', [UserController::class, 'index'], $staffMw);
@@ -72,3 +61,8 @@ $router->post('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'a
 $router->post('/responsaveis/{linkId:\d+}/remover', [GuardianController::class, 'remove'], $authMw);
 $router->get('/consentimento', [PatientController::class, 'showConsent'], ['auth', 'twofactor', 'consent']);
 $router->post('/consentimento', [PatientController::class, 'acceptConsent'], ['auth', 'twofactor', 'consent']);
+$router->get('/pacientes/{id:\d+}/acesso-profissionais', [AccessGrantController::class, 'index'], $authMw);
+$router->post('/pacientes/{id:\d+}/acesso-profissionais', [AccessGrantController::class, 'grant'], $authMw);
+$router->post('/acesso-profissionais/{grantId:\d+}/revogar', [AccessGrantController::class, 'revoke'], $authMw);
+$router->get('/maioridade', [AccessGrantController::class, 'majorityIndex'], $authMw);
+$router->post('/pacientes/{id:\d+}/maioridade', [AccessGrantController::class, 'decide'], $authMw);

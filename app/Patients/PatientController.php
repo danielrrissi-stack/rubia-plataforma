@@ -69,6 +69,7 @@ final class PatientController
             'canEdit' => $gate->check($user, 'edit', Policy::CADASTRO, $id),
             'canCrescimento' => $gate->check($user, 'view', Policy::ANTROPOMETRIA, $id),
             'canProntuario' => $gate->check($user, 'view', Policy::CLINICO, $id),
+            'canAcessoProf' => $gate->check($user, 'edit', Policy::CLINICO, $id),
             'canEnergia' => $gate->check($user, 'view', Policy::ENERGIA, $id),
             'adult' => Age::years((string) $patient['birth_date'], $today) >= 18,
             'professional' => Container::users()->find((int) $patient['responsible_professional_id']),

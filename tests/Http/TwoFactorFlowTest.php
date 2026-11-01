@@ -46,7 +46,8 @@ final class TwoFactorFlowTest extends DbTestCase
     {
         $this->login($this->makeUser('responsavel'));
         $res = $this->get('/');
-        $this->assertSame(200, $res->status);
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/portal', $res->headers['Location']);
     }
 
     public function testSetupPageReachableAndLogoutExempt(): void

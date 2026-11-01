@@ -11,8 +11,10 @@ use App\Auth\AuthService;
 use App\Auth\TokenService;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
+use App\Patients\AccessGrantRepository;
 use App\Patients\ConsentService;
 use App\Patients\GuardianRepository;
+use App\Patients\MajorityService;
 use App\Patients\PatientRepository;
 use App\Users\UserRepository;
 
@@ -104,5 +106,15 @@ final class Container
     public static function consents(): ConsentService
     {
         return self::$items['consents'] ??= new ConsentService(self::db(), self::audit());
+    }
+
+    public static function accessGrants(): AccessGrantRepository
+    {
+        return self::$items['accessGrants'] ??= new AccessGrantRepository(self::db(), self::audit());
+    }
+
+    public static function majority(): MajorityService
+    {
+        return self::$items['majority'] ??= new MajorityService(self::db(), self::audit(), self::guardians(), self::users());
     }
 }
