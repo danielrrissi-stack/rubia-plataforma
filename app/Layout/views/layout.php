@@ -4,7 +4,14 @@ declare(strict_types=1);
  * Painel clínico. Variáveis: $content, $title (opcional), $nav (opcional: [[rótulo, caminho], ...]),
  * $userName (opcional), $active (caminho ativo, opcional).
  */
-$nav = $nav ?? [['Pacientes', '/pacientes']];
+if (!isset($nav)) {
+    $nav = [['Pacientes', '/pacientes']];
+    $uid = \App\Core\Session::get('uid');
+    $navUser = is_int($uid) ? \App\Core\Container::users()->find($uid) : null;
+    if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'view', \App\Access\Policy::USUARIOS, null)) {
+        $nav[] = ['Equipe', '/equipe'];
+    }
+}
 $active = $active ?? '';
 $flashOk = \App\Core\Session::flash('ok');
 $flashErr = \App\Core\Session::flash('erro');

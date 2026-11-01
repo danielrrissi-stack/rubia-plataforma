@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Install\InstallController;
 use App\Core\Response;
 use App\Core\View;
+use App\Users\UserController;
 
 require_once __DIR__ . '/middleware.php';
 
@@ -39,3 +40,13 @@ $router->get('/', static function (Request $r): Response {
         $layout
     ));
 }, ['auth', 'twofactor']);
+
+$staffMw = ['auth', 'twofactor'];
+$router->get('/equipe', [UserController::class, 'index'], $staffMw);
+$router->get('/equipe/novo', [UserController::class, 'create'], $staffMw);
+$router->post('/equipe/novo', [UserController::class, 'store'], $staffMw);
+$router->get('/equipe/{id:\d+}/editar', [UserController::class, 'edit'], $staffMw);
+$router->post('/equipe/{id:\d+}/editar', [UserController::class, 'update'], $staffMw);
+$router->post('/equipe/{id:\d+}/desativar', [UserController::class, 'deactivate'], $staffMw);
+$router->post('/equipe/{id:\d+}/reativar', [UserController::class, 'reactivate'], $staffMw);
+$router->post('/equipe/{id:\d+}/convite', [UserController::class, 'resendInvite'], $staffMw);
