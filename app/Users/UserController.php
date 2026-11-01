@@ -104,6 +104,24 @@ final class UserController
         return Response::redirect('/equipe');
     }
 
+    /**
+     * Celular perdido: desativa o 2FA do usuario de equipe; no proximo login ele e obrigado
+     * a cadastrar um novo aplicativo. Nao vale para o proprio admin (ver README "Perdi o celular").
+     */
+    public function resetTwoFactor(Request $r): Response
+    {
+        $actor = $this->authorize($r, 'edit');
+        $user = $this->staff($r);
+        if ((int) $user['id'] === (int) $actor['id']) {
+            Session::flash('erro', 'Você não pode redefinir a sua própria verificação em duas etapas por aqui.');
+            return Response::redirect('/equipe');
+        }
+        Container::users()->update((int) $user['id'], ['totp_enabled' => 0, 'totp_secret' => null]);
+        Container::audit()->record((int) $actor['id'], 'update', 'users', (int) $user['id'], null, null, ['totp_enabled' => 0], $r);
+        Session::flash('ok', '2FA redefinido. O usuário deverá configurar um novo aplicativo no próximo acesso.');
+        return Response::redirect('/equipe');
+    }
+
     private function setActive(Request $r, array $actor, array $user, int $active, string $msg): Response
     {
         Container::users()->update((int) $user['id'], ['active' => $active]);

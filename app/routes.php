@@ -46,6 +46,7 @@ $router->post('/equipe/{id:\d+}/editar', [UserController::class, 'update'], $sta
 $router->post('/equipe/{id:\d+}/desativar', [UserController::class, 'deactivate'], $staffMw);
 $router->post('/equipe/{id:\d+}/reativar', [UserController::class, 'reactivate'], $staffMw);
 $router->post('/equipe/{id:\d+}/convite', [UserController::class, 'resendInvite'], $staffMw);
+$router->post('/equipe/{id:\d+}/redefinir-2fa', [UserController::class, 'resetTwoFactor'], $staffMw);
 
 $router->get('/admin/backups', [BackupController::class, 'index'], $staffMw);
 $router->post('/admin/backups/gerar', [BackupController::class, 'generate'], $staffMw);

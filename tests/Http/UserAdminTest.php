@@ -144,6 +144,42 @@ final class UserAdminTest extends DbTestCase
         $this->assertStringNotContainsString('password_hash', (string) $audit['before_json'] . $audit['after_json']);
     }
 
+    public function testAdminResetsTwoFactorOfOtherStaff(): void
+    {
+        $this->asAdmin();
+        $o = $this->makeUser('nutricionista', ['totp_enabled' => 1, 'totp_secret' => 'JBSWY3DPEHPK3PXP']);
+        $this->assertStringContainsString('/equipe/' . $o['id'] . '/redefinir-2fa', $this->get('/equipe')->body);
+
+        $res = $this->post('/equipe/' . $o['id'] . '/redefinir-2fa');
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/equipe', $res->headers['Location']);
+        $r = $this->row((int) $o['id']);
+        $this->assertSame(0, (int) $r['totp_enabled']);
+        $this->assertNull($r['totp_secret']);
+        $audit = $this->db->one("SELECT * FROM audit_log WHERE action='update' AND entity='users' AND entity_id = ?", [$o['id']]);
+        $this->assertNotNull($audit);
+        $this->assertSame(['totp_enabled' => 0], json_decode((string) $audit['after_json'], true));
+
+        // Proprio usuario: recusado (ver README "Perdi o celular").
+        $this->post('/equipe/' . $this->admin['id'] . '/redefinir-2fa');
+        $this->assertSame(1, (int) $this->row((int) $this->admin['id'])['totp_enabled']);
+        $this->assertNotNull(\App\Core\Session::flash('erro'));
+
+        // Conta de familia: 404.
+        $f = $this->makeUser('responsavel', ['totp_enabled' => 1, 'totp_secret' => 'JBSWY3DPEHPK3PXP']);
+        $this->assertSame(404, $this->post('/equipe/' . $f['id'] . '/redefinir-2fa')->status);
+        $this->assertSame(1, (int) $this->row((int) $f['id'])['totp_enabled']);
+    }
+
+    public function testNonAdminCannotResetTwoFactor(): void
+    {
+        $d = $this->makeUser('medico');
+        $this->loginAs($d);
+        $o = $this->makeUser('secretaria', ['totp_enabled' => 1, 'totp_secret' => 'JBSWY3DPEHPK3PXP']);
+        $this->assertSame(403, $this->post('/equipe/' . $o['id'] . '/redefinir-2fa')->status);
+        $this->assertSame(1, (int) $this->row((int) $o['id'])['totp_enabled']);
+    }
+
     public function testEditingFamilyAccountIs404(): void
     {
         $this->asAdmin();

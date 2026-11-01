@@ -65,6 +65,9 @@ final class TwoFactorController
     public function showSetup(Request $r): Response
     {
         $user = $r->attributes['user'];
+        if ($this->needsReauth($user)) {
+            return $this->reauthPage($user, null);
+        }
         $secret = $this->setupSecret((int) $user['id']);
         if ($secret === null) {
             $secret = Totp::generateSecret();
@@ -76,6 +79,9 @@ final class TwoFactorController
     public function setup(Request $r): Response
     {
         $user = $r->attributes['user'];
+        if ($this->needsReauth($user)) {
+            return $this->confirmCurrent($r, $user);
+        }
         $secret = $this->setupSecret((int) $user['id']);
         if ($secret === null) {
             return Response::redirect('/2fa/configurar');
@@ -87,8 +93,45 @@ final class TwoFactorController
         Container::users()->update($id, ['totp_secret' => $secret, 'totp_enabled' => 1]);
         Container::audit()->record($id, 'config', 'users', $id, null, null, ['totp_enabled' => 1], $r);
         Session::forget('totp_setup_secret');
+        Session::forget('totp_reauth');
         Session::flash('ok', 'Verificação em duas etapas ativada.');
         return Response::redirect('/');
+    }
+
+    /** Com 2FA ja ativo, trocar o aplicativo exige antes o codigo atual (sessao roubada nao troca o segredo). */
+    private function needsReauth(array $user): bool
+    {
+        return (int) $user['totp_enabled'] === 1 && Session::get('totp_reauth') !== (int) $user['id'];
+    }
+
+    private function confirmCurrent(Request $r, array $user): Response
+    {
+        $id = (int) $user['id'];
+        $auth = Container::auth();
+        if (!$auth->isLocked($id) && is_string($user['totp_secret'])
+            && Totp::verify($user['totp_secret'], (string) $r->input('codigo_atual', ''), time())) {
+            Session::set('totp_reauth', $id);
+            Session::forget('totp_setup_secret');
+            return Response::redirect('/2fa/configurar');
+        }
+        Container::audit()->record($id, 'login_failed', 'users', $id, null, null, ['motivo' => 'totp_reconfigurar'], $r);
+        $auth->registerFailure($id);
+        if ($auth->isLocked($id)) {
+            $auth->logout($r);
+            Session::flash('erro', AuthService::LOCKED_ERROR);
+            return Response::redirect('/login');
+        }
+        return $this->reauthPage($user, 'Código atual inválido. Confira o aplicativo e tente novamente.');
+    }
+
+    private function reauthPage(array $user, ?string $error): Response
+    {
+        $staff = in_array($user['role'], self::STAFF, true);
+        return Response::html(View::render(
+            'Auth/views/totp_reauth.php',
+            ['title' => 'Verificação em duas etapas', 'userName' => $user['name'], 'error' => $error],
+            $staff ? 'Layout/views/layout.php' : 'Layout/views/layout_portal.php'
+        ));
     }
 
     /** Segredo de configuracao pendente, somente se pertence ao usuario atual. */

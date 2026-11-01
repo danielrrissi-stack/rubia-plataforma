@@ -166,6 +166,57 @@ final class TwoFactorFlowTest extends DbTestCase
         $this->assertSame('/login', $this->get('/')->headers['Location']);
     }
 
+    public function testReconfigureRequiresCurrentCode(): void
+    {
+        $old = Totp::generateSecret();
+        $u = $this->makeUser('medico', ['totp_enabled' => 1, 'totp_secret' => $old]);
+        \App\Core\Container::auth()->completeLogin((int) $u['id'], new Request('POST', '/login'));
+
+        $page = $this->get('/2fa/configurar');
+        $this->assertSame(200, $page->status);
+        $this->assertStringContainsString('name="codigo_atual"', $page->body);
+        $this->assertStringNotContainsString('data-otpauth', $page->body);
+        $this->assertNull(Session::get('totp_setup_secret'));
+
+        // Sem o codigo atual, um "codigo" novo nao troca o segredo (e conta como falha).
+        $this->post('/2fa/configurar', ['codigo' => '123456']);
+        $this->assertSame($old, $this->row((int) $u['id'])['totp_secret']);
+        $this->assertSame(1, (int) $this->row((int) $u['id'])['failed_logins']);
+
+        $bad = $this->post('/2fa/configurar', ['codigo_atual' => '000000']);
+        $this->assertSame(200, $bad->status);
+        $this->assertStringContainsString('Código atual inválido', $bad->body);
+        $this->assertSame(2, (int) $this->row((int) $u['id'])['failed_logins']);
+        $this->assertStringNotContainsString('data-otpauth', $bad->body);
+
+        $ok = $this->post('/2fa/configurar', ['codigo_atual' => Totp::code($old, time())]);
+        $this->assertSame(302, $ok->status);
+        $this->assertSame('/2fa/configurar', $ok->headers['Location']);
+        $setup = $this->get('/2fa/configurar');
+        $this->assertStringContainsString('data-otpauth', $setup->body);
+        $new = Session::get('totp_setup_secret')['secret'];
+        $this->assertNotSame($old, $new);
+
+        $done = $this->post('/2fa/configurar', ['codigo' => Totp::code($new, time())]);
+        $this->assertSame('/', $done->headers['Location']);
+        $this->assertSame($new, $this->row((int) $u['id'])['totp_secret']);
+    }
+
+    public function testReconfigureWrongCurrentCodesLockAccount(): void
+    {
+        $old = Totp::generateSecret();
+        $u = $this->makeUser('medico', ['totp_enabled' => 1, 'totp_secret' => $old]);
+        \App\Core\Container::auth()->completeLogin((int) $u['id'], new Request('POST', '/login'));
+        $res = null;
+        for ($i = 0; $i < 5; $i++) {
+            $res = $this->post('/2fa/configurar', ['codigo_atual' => '000000']);
+        }
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/login', $res->headers['Location']);
+        $this->assertNull(Session::get('uid'));
+        $this->assertNotNull($this->row((int) $u['id'])['locked_until']);
+    }
+
     public function testSetupSecretIsBoundToUserAndClearedOnLogout(): void
     {
         $a = $this->makeUser('medico');

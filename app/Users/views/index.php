@@ -35,6 +35,11 @@ $fmtDt = static function (?string $dt): string {
             <?= csrf_field() ?><button type="submit" class="btn btn-quiet">Reenviar convite</button>
           </form>
         <?php endif; ?>
+        <?php if ((int) $u['totp_enabled'] === 1 && (int) $u['id'] !== $me): ?>
+          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/redefinir-2fa')) ?>" style="display:inline">
+            <?= csrf_field() ?><button type="submit" class="btn btn-quiet" title="Use quando o usuário perder o celular com o aplicativo autenticador">Redefinir 2FA</button>
+          </form>
+        <?php endif; ?>
         <?php if ((int) $u['active'] === 1 && (int) $u['id'] !== $me): ?>
           <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/desativar')) ?>" style="display:inline">
             <?= csrf_field() ?><button type="submit" class="btn btn-quiet">Desativar</button>

@@ -72,6 +72,7 @@ final class AuthService
             Session::forget('uid');
             Session::forget('last_activity');
             Session::forget('totp_setup_secret');
+            Session::forget('totp_reauth');
             Session::forget('totp_attempts');
             Session::set('pending_2fa_user', $id);
             return new LoginResult(true, true);
@@ -104,6 +105,7 @@ final class AuthService
         Session::forget('pending_2fa_user');
         Session::forget('_csrf'); // rotaciona o token CSRF (novo e gerado sob demanda)
         Session::forget('totp_setup_secret');
+        Session::forget('totp_reauth');
         Session::forget('totp_attempts');
         $this->db->run('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = ?', [$userId]);
         Session::set('uid', $userId);
@@ -147,6 +149,7 @@ final class AuthService
         Session::forget('last_activity');
         Session::forget('pending_2fa_user');
         Session::forget('totp_setup_secret');
+        Session::forget('totp_reauth');
         Session::forget('totp_attempts');
         Session::regenerate();
     }

@@ -37,7 +37,8 @@ Troque `USUARIO` pelo nome de usuário da sua conta no cPanel.
    ```
 
 5. **Ativar o SSL.** No cPanel, em "SSL/TLS Status", rode o AutoSSL para o domínio e espere o certificado ficar ativo.
-   O sistema só deve ser usado por `https://`.
+   O sistema só deve ser usado por `https://`: o `.htaccess` sempre redireciona `http://` para `https://`
+   (exceto em `localhost`, para desenvolvimento) e envia o cabeçalho HSTS. Não há opção para desligar isso.
 6. **Instalar, logo em seguida.** Abra `https://rubia.med.br/instalar` **imediatamente** depois de enviar os arquivos:
    a página de instalação não pede senha, então quem chegar primeiro configura o sistema. Preencha banco, endereço do site,
    e-mail de envio, os dados e a senha da médica administradora e a **senha de backup** (mínimo de 12 caracteres).
@@ -52,8 +53,11 @@ Troque `USUARIO` pelo nome de usuário da sua conta no cPanel.
 8. **Configurar o Cron.** No cPanel, em "Tarefas Cron", adicione uma tarefa a cada 5 minutos:
 
    ```
-   */5 * * * * php /home/USUARIO/rubia_app/cron/run.php
+   */5 * * * * /usr/local/bin/php /home/USUARIO/rubia_app/cron/run.php
    ```
+
+   Use o caminho completo do PHP: na maioria dos cPanel é `/usr/local/bin/php` — confirme com a hospedagem
+   (ex.: `/opt/cpanel/ea-php83/root/usr/bin/php` quando a conta usa uma versão específica do PHP).
 
    Ela envia os e-mails pendentes (convites, redefinição de senha) e gera o backup diário automaticamente.
 9. **Conferir.** Acesse `https://rubia.med.br`, entre com o e-mail e a senha da médica e configure o 2FA (veja a seção 3).
@@ -65,11 +69,26 @@ Se o instalador avisar que as tabelas de referência não foram carregadas, impo
 ## 3. Primeiro acesso
 
 - **2FA obrigatório para a equipe** (médica, nutricionistas e secretárias). No primeiro login o sistema mostra um QR Code:
-  leia com o aplicativo autenticador e digite o código de 6 dígitos. Guarde também os códigos de recuperação, se exibidos.
+  leia com o aplicativo autenticador e digite o código de 6 dígitos.
 - A médica cria os demais usuários em **Equipe**; cada pessoa recebe um e-mail com link para definir a senha (válido por 3 dias).
 - Pacientes e responsáveis recebem o convite por e-mail, definem a senha e, no primeiro acesso, leem e aceitam o termo de
   consentimento (LGPD). Não precisam de 2FA.
 - Sessões inativas são encerradas automaticamente (30 minutos para a equipe, 2 horas para as famílias).
+- Para trocar o aplicativo autenticador (celular novo, com o antigo ainda em mãos), abra `/2fa/configurar`:
+  o sistema pede primeiro o código atual e só então mostra o novo QR Code.
+
+### Perdi o celular (2FA)
+
+- **Usuário da equipe:** peça à médica administradora para abrir **Equipe** e clicar em **Redefinir 2FA** na linha do
+  usuário. No próximo login a pessoa entra com e-mail e senha e cadastra o aplicativo de novo.
+- **Única administradora (a própria médica):** a redefinição pela tela Equipe não vale para o próprio usuário. No cPanel,
+  abra o phpMyAdmin, escolha o banco, aba "SQL", e execute (trocando o e-mail):
+
+  ```sql
+  UPDATE users SET totp_enabled=0, totp_secret=NULL WHERE email='email-da-medica@exemplo.com';
+  ```
+
+  Depois entre normalmente com e-mail e senha: o sistema mostra um novo QR Code para cadastrar o aplicativo.
 
 ## 4. Backups
 
@@ -86,6 +105,8 @@ Se o instalador avisar que as tabelas de referência não foram carregadas, impo
   O programa pede a senha de backup e gera `saida.zip`. Extraia o zip: dentro estão `database.sql` e, se houver arquivos enviados, a pasta `storage/uploads/`.
   No cPanel, abra o phpMyAdmin, escolha o banco, aba "Importar", envie `database.sql`; depois, se existir, copie a pasta `uploads/`
   para a pasta de dados do sistema.
+  Se `database.sql` for maior que o limite de upload do phpMyAdmin (aparece na aba "Importar"), use a importação do
+  cPanel ("Backup" → restaurar banco MySQL, ou a ferramenta "MySQL" da hospedagem) ou peça à hospedagem para importar o arquivo.
 
 ## 5. Perfis e permissões
 
