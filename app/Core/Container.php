@@ -11,6 +11,8 @@ use App\Auth\AuthService;
 use App\Auth\TokenService;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
+use App\Growth\GrowthCalculator;
+use App\Growth\WhoReferenceRepository;
 use App\Patients\AccessGrantRepository;
 use App\Patients\ConsentService;
 use App\Patients\GuardianRepository;
@@ -116,5 +118,15 @@ final class Container
     public static function majority(): MajorityService
     {
         return self::$items['majority'] ??= new MajorityService(self::db(), self::audit(), self::guardians(), self::users());
+    }
+
+    public static function whoRef(): WhoReferenceRepository
+    {
+        return self::$items['whoRef'] ??= new WhoReferenceRepository(self::db());
+    }
+
+    public static function growth(): GrowthCalculator
+    {
+        return self::$items['growth'] ??= new GrowthCalculator(self::whoRef());
     }
 }

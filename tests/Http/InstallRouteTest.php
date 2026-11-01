@@ -95,8 +95,7 @@ final class InstallRouteTest extends TestCase
             $this->assertSame('no-cache', $res->headers['Pragma']);
         } finally {
             \App\Install\InstallController::$installerFactory = null;
-            $drop();
-            (new \App\Core\Migrator($db, APP_ROOT . '/database/migrations'))->migrate();
+            \Tests\TestSchema::rebuild($db);
             foreach ([$tmp . '/storage/keys', $tmp . '/storage/uploads', $tmp . '/storage/backups', $tmp . '/storage/logs', $tmp . '/storage', $tmp] as $d) {
                 foreach (glob($d . '/{,.}*', GLOB_BRACE) ?: [] as $f) {
                     is_file($f) && @unlink($f);

@@ -5,7 +5,6 @@ namespace Tests\Integration;
 
 use App\Core\Config;
 use App\Core\Database;
-use App\Core\Migrator;
 use App\Install\Installer;
 use PHPUnit\Framework\TestCase;
 
@@ -25,8 +24,7 @@ final class InstallerTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->dropAll();
-        (new Migrator($this->db, APP_ROOT . '/database/migrations'))->migrate();
+        \Tests\TestSchema::rebuild($this->db);
         $this->rrmdir($this->tmp);
     }
 

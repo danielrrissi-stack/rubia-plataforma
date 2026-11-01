@@ -43,8 +43,8 @@ final class PatientRepositoryTest extends DbTestCase
     {
         $p = $this->makePatient(['birth_date' => '2008-11-01']);
         $repo = Container::patients();
-        $this->assertTrue($repo->isPediatric($p, '2027-10-31'));
-        $this->assertFalse($repo->isPediatric($p, '2027-11-02'));
+        $this->assertTrue($repo->isPediatric($p, '2027-12-02'));
+        $this->assertFalse($repo->isPediatric($p, '2027-12-04'));
         $this->assertSame(366, $repo->ageInDays(['birth_date' => '2020-01-01'], '2021-01-01'));
     }
 }

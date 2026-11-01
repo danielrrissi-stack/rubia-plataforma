@@ -83,6 +83,6 @@ final class PatientRepository
 
     public function isPediatric(array $p, string $onDate): bool
     {
-        return Age::months((string) $p['birth_date'], $onDate) < 228;
+        return Age::months((string) $p['birth_date'], $onDate) < 229; // mesmo limite do anthroplus (OMS 2007: meses < 229)
     }
 }

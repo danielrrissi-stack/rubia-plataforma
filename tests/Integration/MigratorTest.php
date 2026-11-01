@@ -10,6 +10,12 @@ use PHPUnit\Framework\TestCase;
 
 final class MigratorTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        // recoloca as referencias OMS (o teste derruba o schema) para os demais testes
+        \Tests\TestSchema::restore(new Database((array) Config::get('db')));
+    }
+
     public function test_migrates_all_and_is_idempotent(): void
     {
         $db = new Database((array) Config::get('db'));
