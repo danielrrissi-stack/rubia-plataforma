@@ -7,7 +7,7 @@ final class Router
 {
     /** @var array<string,callable> */
     private static array $middleware = [];
-    /** @var list<array{method:string,regex:string,handler:array|callable,mw:array}> */
+    /** @var list<array{method:string,pattern:string,regex:string,handler:array|callable,mw:array}> */
     private array $routes = [];
 
     /** Registra middleware nomeado: fn(Request, callable $next): Response. */
@@ -33,10 +33,17 @@ final class Router
         }, $pattern);
         $this->routes[] = [
             'method' => $method,
+            'pattern' => $pattern,
             'regex' => '#^' . str_replace('#', '\#', (string) $regex) . '$#',
             'handler' => $handler,
             'mw' => $mw,
         ];
+    }
+
+    /** Metodo e padrao de cada rota registrada (usado pelo teste de fumaca). @return list<array{method:string,pattern:string}> */
+    public function routes(): array
+    {
+        return array_map(static fn (array $r): array => ['method' => $r['method'], 'pattern' => $r['pattern']], $this->routes);
     }
 
     public function dispatch(Request $request): Response

@@ -6,3 +6,4 @@ storage/*
 .superpowers/
 .phpunit.cache/
 config/.install.lock
+dist/

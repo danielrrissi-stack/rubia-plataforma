@@ -69,7 +69,8 @@ final class Mailer
             'MIME-Version: 1.0',
             'Content-Type: text/html; charset=UTF-8',
         ]);
-        return mail($to, mb_encode_mimeheader($subject, 'UTF-8'), $html, $headers);
+        // @: a falha ja e registrada em mail_queue.last_error; evita avisos no e-mail do Cron.
+        return @mail($to, mb_encode_mimeheader($subject, 'UTF-8'), $html, $headers);
     }
 
     private function isTest(): bool
