@@ -124,20 +124,6 @@ final class WhoLmsImporter
         }
     }
 
-    /** Executa um arquivo gerado por seedSql() (comandos separados por ";\n"). */
-    public static function loadSeed(Database $db, string $path): void
-    {
-        $chunks = explode(";\n", str_replace("\r\n", "\n", (string) file_get_contents($path)));
-        $statements = [];
-        foreach ($chunks as $c) {
-            $c = trim(preg_replace('/^--.*$/m', '', $c));
-            if ($c !== '') {
-                $statements[] = $c;
-            }
-        }
-        self::execute($db, $statements);
-    }
-
     /** @param list<string> $statements */
     public static function seedSql(array $statements, int $rowCount): string
     {

@@ -96,6 +96,9 @@ final class InstallerTest extends TestCase
         $this->assertSame(1, (int) $t['active']);
         $this->assertStringContainsString('LGPD', $t['body_html']);
         $this->assertNotNull($this->db->one("SELECT value FROM settings WHERE `key` = 'installed_at'"));
+        // Dados de referencia carregados de database/seeds/*.sql.
+        $this->assertSame(17824, (int) $this->db->one('SELECT COUNT(*) AS n FROM who_lms')['n']);
+        $this->assertSame(714, (int) $this->db->one('SELECT COUNT(*) AS n FROM bp_reference')['n']);
 
         $cfg = require $this->tmp . '/config.php';
         $this->assertSame($this->tmp . '/storage', $cfg['storage_path']);

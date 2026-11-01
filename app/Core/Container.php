@@ -11,6 +11,8 @@ use App\Auth\AuthService;
 use App\Auth\TokenService;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
+use App\Growth\BloodPressure;
+use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
 use App\Growth\WhoReferenceRepository;
 use App\Patients\AccessGrantRepository;
@@ -128,5 +130,15 @@ final class Container
     public static function growth(): GrowthCalculator
     {
         return self::$items['growth'] ??= new GrowthCalculator(self::whoRef());
+    }
+
+    public static function bpRef(): BpReferenceRepository
+    {
+        return self::$items['bpRef'] ??= new BpReferenceRepository(self::db());
+    }
+
+    public static function bp(): BloodPressure
+    {
+        return self::$items['bp'] ??= new BloodPressure();
     }
 }

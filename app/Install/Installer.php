@@ -144,6 +144,7 @@ final class Installer
             if ((int) ($db->one('SELECT COUNT(*) AS n FROM users')['n'] ?? 0) > 0) {
                 throw new \RuntimeException('O banco de dados já contém usuários; sistema já instalado.');
             }
+            SeedLoader::loadDir($db, $this->appRoot . '/database/seeds');
 
             $this->prepareStorage();
             $keys = BackupKeys::generate((string) $input['backup_pass'], $this->storagePath . '/keys');

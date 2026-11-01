@@ -9,5 +9,5 @@ require __DIR__ . '/DbTestCase.php';
 require __DIR__ . '/TestSchema.php';
 
 // Recria o schema de rubia_test uma vez por execucao (derruba tudo, migra e carrega as
-// referencias OMS). Feito antes de qualquer transacao de teste: os dados nao sao revertidos.
+// dados de referencia de database/seeds: OMS e PA). Feito antes de qualquer transacao de teste: os dados nao sao revertidos.
 Tests\TestSchema::rebuild(new App\Core\Database((array) App\Core\Config::get('db')));
