@@ -6,10 +6,14 @@ declare(strict_types=1);
 use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
 use App\Core\Request;
+use App\Install\InstallController;
 use App\Core\Response;
 use App\Core\View;
 
 require_once __DIR__ . '/middleware.php';
+
+$router->get('/instalar', [InstallController::class, 'show']);
+$router->post('/instalar', [InstallController::class, 'install']);
 
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);

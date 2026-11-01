@@ -32,6 +32,10 @@ final class App
     {
         try {
             Session::start((array) Config::get('session', []));
+            if (!Config::isInstalled() && !str_starts_with($request->path(), '/instalar')
+                && !str_starts_with($request->path(), '/assets/')) {
+                return Response::redirect('/instalar');
+            }
             return $this->router->dispatch($request);
         } catch (HttpException $e) {
             return $this->errorPage($e->status());

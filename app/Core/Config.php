@@ -26,6 +26,18 @@ final class Config
         self::$data = null;
     }
 
+    /** Substitui a configuração em memória (testes; [] simula "não instalado"). */
+    public static function set(array $data): void
+    {
+        self::$data = $data;
+    }
+
+    /** Há configuração carregada? Sem config/config.php o sistema ainda não foi instalado. */
+    public static function isInstalled(): bool
+    {
+        return self::load() !== [];
+    }
+
     private static function load(): array
     {
         if (self::$data === null) {
