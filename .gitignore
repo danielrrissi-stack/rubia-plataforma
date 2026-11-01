@@ -5,3 +5,4 @@ storage/*
 !storage/.gitkeep
 .superpowers/
 .phpunit.cache/
+config/.install.lock

@@ -11,6 +11,9 @@ use App\Core\View;
 
 final class InstallController
 {
+    /** Fabrica alternativa do Installer (testes). @var ?callable */
+    public static $installerFactory = null;
+
     private const TEXT_FIELDS = [
         'db_host', 'db_name', 'db_user', 'base_url', 'mail_from', 'admin_name', 'admin_email', 'admin_crm',
     ];
@@ -48,7 +51,10 @@ final class InstallController
                     'pem' => $installer->privateKeyPem(),
                     'warning' => $installer->storageWarning(),
                     'loginUrl' => rtrim($values['base_url'], '/') . '/login',
-                ], 'Layout/views/layout.php') );
+                ], 'Layout/views/layout.php'));
+                $res->headers['Cache-Control'] = 'no-store';
+                $res->headers['Pragma'] = 'no-cache';
+                return $res;
             } catch (\RuntimeException $e) {
                 $global = $e->getMessage();
             }
@@ -73,6 +79,9 @@ final class InstallController
 
     private function installer(): Installer
     {
+        if (self::$installerFactory !== null) {
+            return (self::$installerFactory)();
+        }
         return new Installer(APP_ROOT . '/config/config.php', APP_ROOT);
     }
 

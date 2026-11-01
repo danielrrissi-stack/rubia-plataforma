@@ -187,7 +187,11 @@ final class Installer
             }
             if (!$committed) {
                 @unlink($lockPath);
-                throw $e instanceof \RuntimeException ? $e : new \RuntimeException('Falha na instalação: ' . $e->getMessage(), 0, $e);
+                if ($e instanceof \RuntimeException) {
+                    throw $e;
+                }
+                $this->logError($e);
+                throw new \RuntimeException('Falha inesperada na instalação. Verifique os dados informados e tente novamente.');
             }
             throw new \RuntimeException(
                 'Os dados foram gravados, mas não foi possível gravar a configuração (' . $e->getMessage() . '). '
@@ -196,6 +200,20 @@ final class Installer
                 $e
             );
         }
+    }
+
+    private function logError(\Throwable $e): void
+    {
+        $dir = ($this->storagePath !== '' ? $this->storagePath : $this->appRoot . '/storage') . '/logs';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0750, true);
+        }
+        @file_put_contents(
+            $dir . '/app.log',
+            sprintf("[%s] install %s: %s in %s:%d
+", date('Y-m-d H:i:s'), get_class($e), $e->getMessage(), $e->getFile(), $e->getLine()),
+            FILE_APPEND | LOCK_EX
+        );
     }
 
     private function prepareStorage(): void
