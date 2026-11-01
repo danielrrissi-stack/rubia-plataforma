@@ -22,6 +22,7 @@ use App\Patients\ConsentService;
 use App\Patients\GuardianRepository;
 use App\Patients\MajorityService;
 use App\Patients\PatientRepository;
+use App\Records\ClinicalEntryRepository;
 use App\Users\UserRepository;
 
 /** Servicos compartilhados (singletons preguicosos). Testes usam set()/reset(). */
@@ -147,6 +148,11 @@ final class Container
     public static function energyGoals(): EnergyGoalRepository
     {
         return self::$items['energyGoals'] ??= new EnergyGoalRepository(self::db(), self::audit());
+    }
+
+    public static function clinicalEntries(): ClinicalEntryRepository
+    {
+        return self::$items['clinicalEntries'] ??= new ClinicalEntryRepository(self::db(), self::audit());
     }
 
     public static function bp(): BloodPressure

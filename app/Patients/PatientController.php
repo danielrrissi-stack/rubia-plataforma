@@ -70,6 +70,7 @@ final class PatientController
             'canCrescimento' => $gate->check($user, 'view', Policy::ANTROPOMETRIA, $id),
             'growth' => $gate->check($user, 'view', Policy::ANTROPOMETRIA, $id) ? \App\Growth\GrowthController::summary($patient, $today) : null,
             'canProntuario' => $gate->check($user, 'view', Policy::CLINICO, $id),
+            'evolutions' => $gate->check($user, 'view', Policy::CLINICO, $id) ? Container::clinicalEntries()->evolutions($id) : [],
             'canAcessoProf' => $gate->check($user, 'edit', Policy::CLINICO, $id),
             'canEnergia' => $gate->check($user, 'view', Policy::ENERGIA, $id),
             'energy' => $gate->check($user, 'view', Policy::ENERGIA, $id) ? Container::energyGoals()->current($id) : null,

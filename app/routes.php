@@ -13,6 +13,7 @@ use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
 use App\Patients\PatientController;
 use App\Install\InstallController;
+use App\Records\RecordController;
 use App\Users\UserController;
 
 require_once __DIR__ . '/middleware.php';
@@ -80,3 +81,11 @@ $router->get('/medidas/{id:\d+}/versoes', [GrowthController::class, 'versions'],
 
 $router->get('/pacientes/{id:\d+}/energia', [EnergyController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/energia', [EnergyController::class, 'store'], $authMw);
+
+$router->get('/pacientes/{id:\d+}/prontuario', [RecordController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/prontuario/{kind}', [RecordController::class, 'form'], $authMw);
+$router->post('/pacientes/{id:\d+}/prontuario/{kind}', [RecordController::class, 'save'], $authMw);
+$router->get('/prontuario/{entryId:\d+}/revisar', [RecordController::class, 'reviseForm'], $authMw);
+$router->post('/prontuario/{entryId:\d+}/revisar', [RecordController::class, 'revise'], $authMw);
+$router->post('/prontuario/{entryId:\d+}/remover', [RecordController::class, 'remove'], $authMw);
+$router->get('/prontuario/{entryId:\d+}/versoes', [RecordController::class, 'versions'], $authMw);
