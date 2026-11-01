@@ -11,7 +11,6 @@ return [
     ],
     'base_url'     => 'https://exemplo.com.br',
     'storage_path' => __DIR__ . '/../storage',
-    'force_https'  => true,
     'mail' => [
         'from'      => 'nao-responda@exemplo.com.br',
         'from_name' => 'Rubia Nutrição',

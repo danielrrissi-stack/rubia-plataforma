@@ -239,7 +239,6 @@ final class Installer
             'db' => $dbCfg,
             'base_url' => $baseUrl,
             'storage_path' => $this->storagePath,
-            'force_https' => stripos($baseUrl, 'https://') === 0,
             'mail' => ['from' => trim((string) $in['mail_from']), 'from_name' => 'Dra. Rubia'],
             'session' => ['staff_idle_minutes' => 30, 'family_idle_minutes' => 120],
         ];

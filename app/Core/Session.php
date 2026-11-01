@@ -14,7 +14,7 @@ final class Session
 
     private static function inMemory(): bool
     {
-        return PHP_SAPI === 'cli' || getenv('APP_ENV') === 'test';
+        return PHP_SAPI === 'cli';
     }
 
     public static function start(array $cfg = []): void
@@ -35,6 +35,8 @@ final class Session
         ]);
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
+        // O GC do PHP nao pode apagar a sessao antes do maior tempo de inatividade (familia: 120 min).
+        ini_set('session.gc_maxlifetime', '7200');
         session_start();
         self::$started = true;
     }

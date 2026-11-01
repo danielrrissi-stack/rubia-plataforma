@@ -102,7 +102,7 @@ final class InstallerTest extends TestCase
 
         $cfg = require $this->tmp . '/config.php';
         $this->assertSame($this->tmp . '/storage', $cfg['storage_path']);
-        $this->assertTrue($cfg['force_https']);
+        $this->assertArrayNotHasKey('force_https', $cfg); // HTTPS e sempre imposto pelo .htaccess
         $this->assertSame('Dra. Rubia', $cfg['mail']['from_name']);
         $this->assertSame(30, $cfg['session']['staff_idle_minutes']);
         $this->assertSame((require APP_ROOT . '/config/config.example.php') ? array_keys(require APP_ROOT . '/config/config.example.php') : [], array_keys($cfg));
