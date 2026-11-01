@@ -10,7 +10,8 @@
   var indTabs = root.querySelectorAll('[data-indicador]');
   var tipoTabs = root.querySelectorAll('[data-tipo]');
   var indicador = indTabs.length ? indTabs[0].getAttribute('data-indicador') : 'bfa';
-  var tipo = 'z';
+  var simple = root.getAttribute('data-simple') === '1';
+  var tipo = simple ? 'percentil' : 'z';
   var chart = null;
   var YLABEL = { bfa: 'IMC (kg/m²)', wfa: 'Peso (kg)', hfa: 'Altura (cm)', wflh: 'Peso (kg)', hcfa: 'Perímetro cefálico (cm)', peso: 'Peso (kg)', imc: 'IMC (kg/m²)' };
   var ALERT = '#b3261e';
@@ -41,16 +42,23 @@
   function drawChild(j) {
     destroy();
     var lines = j.reference.lines;
+    var FRIENDLY = { P85: 'Faixa esperada para a idade', P50: 'Meio da faixa', P3: 'limite', P15: 'limite', P97: 'limite' };
+    var p15 = -1;
+    lines.forEach(function (l, i) { if (l.label === 'P15') { p15 = i; } });
     var datasets = lines.map(function (l) {
       var median = l.label === '0' || l.label === 'P50';
+      var band = simple && l.label === 'P85' && p15 >= 0;
       return {
-        label: l.label, data: l.points.map(function (p) { return { x: p[0], y: p[1] }; }),
+        label: simple ? (FRIENDLY[l.label] || l.label) : l.label,
+        fill: band ? p15 : false,
+        bandColor: band, data: l.points.map(function (p) { return { x: p[0], y: p[1] }; }),
         showLine: true, pointRadius: 0, borderWidth: median ? 2 : 1, borderColor: median ? '#4a5a52' : '#9aa59e',
-        backgroundColor: '#9aa59e', fill: false, tension: 0.2, order: 2
+        backgroundColor: band ? 'rgba(47,107,95,0.16)' : '#9aa59e', tension: 0.2, order: 2
       };
     });
     datasets.push({
-      label: 'Paciente',
+      label: simple ? 'Medidas' : 'Paciente',
+      isPatient: true,
       data: j.patient.map(function (p) { return { x: p[0], y: p[1], date: p[2], bad: p[3] === true }; }),
       showLine: true, borderColor: '#1c3a31', backgroundColor: '#1c3a31', borderWidth: 2, order: 1,
       pointRadius: function (c) { return c.raw && c.raw.bad ? 8 : 5; },
@@ -68,9 +76,9 @@
           y: { title: { display: true, text: YLABEL[indicador] } }
         },
         plugins: {
-          legend: { labels: { filter: function (i) { return true; } } },
+          legend: { labels: { filter: function (i) { return !simple || i.text !== 'limite'; } } },
           tooltip: {
-            filter: function (item) { return item.dataset.label === 'Paciente'; },
+            filter: function (item) { return item.dataset.isPatient === true; },
             callbacks: {
               label: function (c) {
                 var r = c.raw;

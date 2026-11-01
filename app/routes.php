@@ -13,6 +13,7 @@ use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
 use App\Patients\PatientController;
 use App\Install\InstallController;
+use App\Portal\PortalController;
 use App\Records\RecordController;
 use App\Users\UserController;
 
@@ -89,3 +90,11 @@ $router->get('/prontuario/{entryId:\d+}/revisar', [RecordController::class, 'rev
 $router->post('/prontuario/{entryId:\d+}/revisar', [RecordController::class, 'revise'], $authMw);
 $router->post('/prontuario/{entryId:\d+}/remover', [RecordController::class, 'remove'], $authMw);
 $router->get('/prontuario/{entryId:\d+}/versoes', [RecordController::class, 'versions'], $authMw);
+
+$router->get('/portal', [PortalController::class, 'index'], $authMw);
+$router->get('/portal/p/{id:\d+}', [PortalController::class, 'home'], $authMw);
+$router->get('/portal/p/{id:\d+}/crescimento', [PortalController::class, 'growth'], $authMw);
+$router->get('/portal/p/{id:\d+}/medidas/nova', [PortalController::class, 'measureForm'], $authMw);
+$router->post('/portal/p/{id:\d+}/medidas/nova', [PortalController::class, 'measureStore'], $authMw);
+$router->get('/portal/conta', [PortalController::class, 'account'], $authMw);
+$router->post('/portal/conta/senha', [PortalController::class, 'changePassword'], $authMw);

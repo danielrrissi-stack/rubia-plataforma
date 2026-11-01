@@ -111,3 +111,21 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .aba { font: inherit; padding: .3rem .8rem; border: 1px solid var(--linha); border-radius: 999px; background: var(--papel); color: var(--tinta); cursor: pointer; }
 .aba[aria-pressed=true] { background: var(--salvia-escura); color: #fff; border-color: var(--salvia-escura); }
 .grafico { position: relative; height: 24rem; }
+
+/* Portal: cartões e resumo */
+.portal-lead { font-size: 1.25rem; color: var(--tinta-suave); margin-top: 0; }
+.portal-lista { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: .9rem; }
+.portal-cartao { display: block; min-height: 4.5rem; padding: 1.1rem 1.25rem; background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: 14px; color: inherit; text-decoration: none; }
+.portal-cartao:hover, .portal-cartao:focus-visible { background: var(--salvia-clara); }
+.portal-cartao-titulo { display: block; font-family: var(--serif); font-size: 1.4rem; font-weight: 600; }
+.portal-cartao-texto { display: block; color: var(--tinta-suave); }
+.portal-resumo { background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 1rem 1.25rem; margin: 1rem 0; }
+.portal-valores { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: .25rem 0; }
+.portal-nota { padding: .7rem 1rem; border-radius: 10px; margin: .75rem 0 0; background: var(--ok-fundo); color: var(--salvia-escura); }
+.portal-nota-atencao { background: #f4ecd9; color: #5b4510; }
+.portal-links { font-size: 1rem; }
+.portal-links a { display: inline-block; padding: .6rem 0; }
+.portal-dicas { background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; padding: .5rem 1rem; margin-bottom: 1.25rem; }
+.portal-dicas summary { cursor: pointer; font-weight: 600; min-height: 2.75rem; display: flex; align-items: center; }
+.portal .grafico { height: 20rem; }
+.portal .aba { min-height: 2.75rem; padding: .4rem 1.1rem; }

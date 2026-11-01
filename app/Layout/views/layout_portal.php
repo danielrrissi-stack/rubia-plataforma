@@ -4,12 +4,15 @@ declare(strict_types=1);
 $flashOk = \App\Core\Session::flash('ok');
 $flashErr = \App\Core\Session::flash('erro');
 ?><!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-base="<?= e(rtrim(url('/'), '/')) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e(isset($title) ? $title . ' · Dra. Rubia' : 'Dra. Rubia') ?></title>
+<link rel="manifest" href="<?= e(url('/manifest.json')) ?>">
+<meta name="theme-color" content="#2f6b5f">
+<link rel="apple-touch-icon" href="<?= e(url('/assets/icons/icon-192.png')) ?>">
 <link rel="stylesheet" href="<?= e(url('/assets/css/app.css')) ?>">
 </head>
 <body class="portal">
@@ -29,5 +32,6 @@ $flashErr = \App\Core\Session::flash('erro');
   <?= $content ?>
 </main>
 <footer class="portal-rodape">Em caso de dúvida, fale com a equipe da Dra. Rubia.</footer>
+<script src="<?= e(url('/assets/js/portal-sw.js')) ?>"></script>
 </body>
 </html>
