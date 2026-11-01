@@ -22,6 +22,9 @@ final class PatientController
     {
         $user = $r->attributes['user'];
         Container::gate()->authorize($user, 'view', Policy::CADASTRO_BASICO, null, $r);
+        if (!in_array($user['role'], self::STAFF, true)) {
+            return Response::redirect('/portal');
+        }
         $q = trim((string) $r->input('q', ''));
         $ids = Container::patientScope()->accessiblePatientIds($user);
         $today = date('Y-m-d');
@@ -56,10 +59,11 @@ final class PatientController
         $user = $r->attributes['user'];
         $id = (int) $r->params['id'];
         Container::gate()->authorize($user, 'view', Policy::CADASTRO_BASICO, $id, $r);
-        $patient = $this->patient($id);
-        if (in_array($user['role'], self::STAFF, true)) {
-            Container::audit()->record((int) $user['id'], 'view', 'patients', $id, $id, null, null, $r);
+        if (!in_array($user['role'], self::STAFF, true)) {
+            return Response::redirect('/portal/p/' . $id);
         }
+        $patient = $this->patient($id);
+        Container::audit()->record((int) $user['id'], 'view', 'patients', $id, $id, null, null, $r);
         $today = date('Y-m-d');
         $gate = Container::gate();
         return $this->page('Patients/views/show.php', 'Paciente', $r, [

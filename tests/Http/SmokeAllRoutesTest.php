@@ -36,9 +36,9 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/admin/backups'                           => [200, 403, 403, 403, 403],
         '/admin/backups/chave-privada'             => [404, 403, 403, 403, 403], // sem chaves no ambiente de teste
         '/admin/backups/{nome}'                    => [404, 403, 403, 403, 403], // arquivo inexistente
-        '/pacientes'                               => [200, 200, 200, 200, 200],
+        '/pacientes'                               => [200, 200, 200, 302, 302], // familia vai a /portal
         '/pacientes/novo'                          => [200, 403, 200, 403, 403],
-        '/pacientes/{id}'                          => [200, 200, 200, 200, 200],
+        '/pacientes/{id}'                          => [200, 200, 200, 302, 302], // familia vai a /portal/p/{id}
         '/pacientes/{id}/editar'                   => [200, 403, 200, 403, 403],
         '/pacientes/{id}/responsaveis'             => [200, 403, 200, 403, 403],
         '/consentimento'                           => [302, 302, 302, 302, 302], // sem pendencia

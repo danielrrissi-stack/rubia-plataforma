@@ -128,6 +128,26 @@ final class PatientCrudTest extends DbTestCase
         $this->assertSame('/portal', $home->headers['Location'] ?? null);
     }
 
+    public function testFamilyIsSentToPortalFromClinicalPatientPages(): void
+    {
+        $this->term();
+        $g = $this->makeUser('responsavel');
+        $p = $this->makePatient();
+        $other = $this->makePatient();
+        Container::guardians()->link((int) $p['id'], (int) $g['id'], 'mãe', (int) $p['created_by']);
+        $this->loginAs($g);
+        $this->post('/consentimento', ['term_version' => '1.0', 'patient_id' => (string) $p['id'], 'aceito' => '1']);
+
+        $list = $this->get('/pacientes');
+        $this->assertSame(302, $list->status);
+        $this->assertSame('/portal', $list->headers['Location'] ?? null);
+        $show = $this->get('/pacientes/' . $p['id']);
+        $this->assertSame(302, $show->status);
+        $this->assertSame('/portal/p/' . $p['id'], $show->headers['Location'] ?? null);
+        // Paciente nao vinculado: o Gate nega antes do redirecionamento.
+        $this->assertSame(403, $this->get('/pacientes/' . $other['id'])->status);
+    }
+
     public function testConsentRejectsUnrelatedPatient(): void
     {
         $this->term();
