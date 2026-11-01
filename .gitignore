@@ -1,0 +1,9 @@
+config/config.php
+config/config.test.php
+storage/*
+!storage/.htaccess
+!storage/.gitkeep
+.superpowers/
+.phpunit.cache/
+config/.install.lock
+dist/

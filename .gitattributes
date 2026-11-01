@@ -1,0 +1,2 @@
+data/who/*.txt -text
+data/bp/*.dat -text
