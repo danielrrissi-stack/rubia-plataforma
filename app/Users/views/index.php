@@ -31,21 +31,21 @@ $fmtDt = static function (?string $dt): string {
       <td>
         <a href="<?= e(url('/equipe/' . $u['id'] . '/editar')) ?>">Editar</a>
         <?php if ((int) $u['active'] === 1 && $u['password_hash'] === null): ?>
-          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/convite')) ?>" style="display:inline">
+          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/convite')) ?>" class="form-inline">
             <?= csrf_field() ?><button type="submit" class="btn btn-quiet">Reenviar convite</button>
           </form>
         <?php endif; ?>
         <?php if ((int) $u['totp_enabled'] === 1 && (int) $u['id'] !== $me): ?>
-          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/redefinir-2fa')) ?>" style="display:inline">
+          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/redefinir-2fa')) ?>" class="form-inline">
             <?= csrf_field() ?><button type="submit" class="btn btn-quiet" title="Use quando o usuário perder o celular com o aplicativo autenticador">Redefinir 2FA</button>
           </form>
         <?php endif; ?>
         <?php if ((int) $u['active'] === 1 && (int) $u['id'] !== $me): ?>
-          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/desativar')) ?>" style="display:inline">
+          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/desativar')) ?>" class="form-inline">
             <?= csrf_field() ?><button type="submit" class="btn btn-quiet">Desativar</button>
           </form>
         <?php elseif ((int) $u['active'] !== 1): ?>
-          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/reativar')) ?>" style="display:inline">
+          <form method="post" action="<?= e(url('/equipe/' . $u['id'] . '/reativar')) ?>" class="form-inline">
             <?= csrf_field() ?><button type="submit" class="btn btn-quiet">Reativar</button>
           </form>
         <?php endif; ?>

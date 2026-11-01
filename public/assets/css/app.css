@@ -129,3 +129,9 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .portal-dicas summary { cursor: pointer; font-weight: 600; min-height: 2.75rem; display: flex; align-items: center; }
 .portal .grafico { height: 20rem; }
 .portal .aba { min-height: 2.75rem; padding: .4rem 1.1rem; }
+
+/* Substitutos de estilos inline (a CSP bloqueia style="...") */
+.form-inline { display: inline; }
+.instalador { max-width: 40rem; margin: 1.5rem auto; }
+.chave-pem { width: 100%; font-family: monospace; }
+.termo { max-height: 20rem; overflow: auto; border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }

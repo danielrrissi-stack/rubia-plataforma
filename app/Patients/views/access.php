@@ -18,7 +18,7 @@ $pid = (int) $patient['id'];
       <td><?= e($g['professional_email']) ?></td>
       <td><?= e(fmt_date($g['granted_at'])) ?></td>
       <td>
-        <form method="post" action="<?= e(url('/acesso-profissionais/' . $g['id'] . '/revogar')) ?>" style="display:inline">
+        <form method="post" action="<?= e(url('/acesso-profissionais/' . $g['id'] . '/revogar')) ?>" class="form-inline">
           <?= csrf_field() ?><button type="submit" class="btn btn-quiet">Revogar</button>
         </form>
       </td>

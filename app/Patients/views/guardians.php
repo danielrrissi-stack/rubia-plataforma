@@ -22,7 +22,7 @@ $pid = (int) $patient['id'];
       <td><?= e($g['relationship']) ?></td>
       <td><?= (int) $g['has_password'] === 1 ? 'Ativo' : 'Convite pendente' ?></td>
       <td>
-        <form method="post" action="<?= e(url('/responsaveis/' . $g['id'] . '/remover')) ?>" style="display:inline">
+        <form method="post" action="<?= e(url('/responsaveis/' . $g['id'] . '/remover')) ?>" class="form-inline">
           <?= csrf_field() ?><button type="submit" class="btn btn-quiet">Remover</button>
         </form>
       </td>

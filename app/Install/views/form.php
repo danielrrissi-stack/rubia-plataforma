@@ -21,7 +21,7 @@ $field = static function (string $name, string $label, string $type = 'text', st
     echo '</div>';
 };
 ?>
-<section class="instalador" style="max-width:40rem;margin:1.5rem auto">
+<section class="instalador">
   <h1>Instalação do sistema</h1>
   <?= \App\Core\View::render('Install/views/requirements.php', compact('requirements', 'storageWarning'), null) ?>
 
