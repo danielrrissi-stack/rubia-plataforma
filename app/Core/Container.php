@@ -9,6 +9,8 @@ use App\Access\Policy;
 use App\Audit\AuditLog;
 use App\Auth\AuthService;
 use App\Auth\TokenService;
+use App\Backup\BackupService;
+use App\Backup\Dumper;
 use App\Users\UserRepository;
 
 /** Servicos compartilhados (singletons preguicosos). Testes usam set()/reset(). */
@@ -75,5 +77,14 @@ final class Container
     public static function gate(): Gate
     {
         return self::$items['gate'] ??= new Gate(self::policy(), self::patientScope(), self::audit());
+    }
+
+    public static function backups(): BackupService
+    {
+        return self::$items['backups'] ??= new BackupService(
+            self::db(),
+            new Dumper(self::db()),
+            ['storage_path' => (string) Config::get('storage_path')],
+        );
     }
 }

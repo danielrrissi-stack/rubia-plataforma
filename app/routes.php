@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
+use App\Backup\BackupController;
 use App\Core\Request;
 use App\Install\InstallController;
 use App\Core\Response;
@@ -50,3 +51,8 @@ $router->post('/equipe/{id:\d+}/editar', [UserController::class, 'update'], $sta
 $router->post('/equipe/{id:\d+}/desativar', [UserController::class, 'deactivate'], $staffMw);
 $router->post('/equipe/{id:\d+}/reativar', [UserController::class, 'reactivate'], $staffMw);
 $router->post('/equipe/{id:\d+}/convite', [UserController::class, 'resendInvite'], $staffMw);
+
+$router->get('/admin/backups', [BackupController::class, 'index'], $staffMw);
+$router->post('/admin/backups/gerar', [BackupController::class, 'generate'], $staffMw);
+$router->get('/admin/backups/chave-privada', [BackupController::class, 'privateKey'], $staffMw);
+$router->get('/admin/backups/{nome}', [BackupController::class, 'download'], $staffMw);
