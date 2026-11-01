@@ -66,7 +66,7 @@ final class TwoFactorFlowTest extends DbTestCase
         $u = $this->makeUser('medico');
         $this->login($u);
         $this->get('/2fa/configurar');
-        $secret = Session::get('totp_setup_secret');
+        $secret = Session::get('totp_setup_secret')['secret'] ?? null;
         $this->assertIsString($secret);
 
         $bad = $this->post('/2fa/configurar', ['codigo' => '000000']);
@@ -124,5 +124,60 @@ final class TwoFactorFlowTest extends DbTestCase
         $n = $this->db->one("SELECT COUNT(*) c FROM audit_log WHERE action='login_failed' AND after_json LIKE '%totp%'");
         $this->assertSame(5, (int) $n['c']);
         $this->assertSame('/login', $this->post('/2fa', ['codigo' => '000000'])->headers['Location']);
+    }
+
+    public function testWrongCodesLockAccountAcrossRelogin(): void
+    {
+        $secret = Totp::generateSecret();
+        $u = $this->makeUser('medico', ['totp_enabled' => 1, 'totp_secret' => $secret]);
+        $this->login($u);
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/2fa', ['codigo' => '000000']);
+        }
+        $res = $this->login($u);
+        $this->assertSame(200, $res->status);
+        $this->assertStringContainsString('Conta bloqueada', $res->body);
+        $this->assertNull(Session::get('pending_2fa_user'));
+    }
+
+    public function testCorrectPasswordDoesNotResetTotpFailures(): void
+    {
+        $secret = Totp::generateSecret();
+        $u = $this->makeUser('medico', ['totp_enabled' => 1, 'totp_secret' => $secret]);
+        for ($round = 0; $round < 2; $round++) {
+            $this->login($u);
+            $this->post('/2fa', ['codigo' => '000000']);
+            $this->post('/2fa', ['codigo' => '000000']);
+        }
+        $this->assertSame(4, (int) $this->row((int) $u['id'])['failed_logins']);
+    }
+
+    public function testCorrectCodeRefusedWhileLocked(): void
+    {
+        $secret = Totp::generateSecret();
+        $u = $this->makeUser('medico', ['totp_enabled' => 1, 'totp_secret' => $secret]);
+        $this->login($u);
+        $this->db->run('UPDATE users SET locked_until = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE id = ?', [$u['id']]);
+        $res = $this->post('/2fa', ['codigo' => Totp::code($secret, time())]);
+        $this->assertSame('/login', $res->headers['Location']);
+        $this->assertNull(Session::get('pending_2fa_user'));
+        $this->assertNull(Session::get('uid'));
+        $this->assertSame('/login', $this->get('/')->headers['Location']);
+    }
+
+    public function testSetupSecretIsBoundToUserAndClearedOnLogout(): void
+    {
+        $a = $this->makeUser('medico');
+        $b = $this->makeUser('secretaria');
+        $this->login($a);
+        $this->get('/2fa/configurar');
+        $secretA = Session::get('totp_setup_secret')['secret'];
+        $this->post('/logout');
+        $this->assertNull(Session::get('totp_setup_secret'));
+        $this->login($b);
+        $this->get('/2fa/configurar');
+        $secretB = Session::get('totp_setup_secret')['secret'];
+        $this->assertNotSame($secretA, $secretB);
+        $this->assertStringNotContainsString(implode(' ', str_split($secretA, 4)), $this->get('/2fa/configurar')->body);
     }
 }

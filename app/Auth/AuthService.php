@@ -60,23 +60,19 @@ final class AuthService
 
         $hash = $user['password_hash'];
         if ($hash === null || !password_verify($password, (string) $hash)) {
-            $this->db->run('UPDATE users SET failed_logins = failed_logins + 1 WHERE id = ?', [$id]);
-            $this->db->run(
-                'UPDATE users SET locked_until = DATE_ADD(NOW(), INTERVAL ? MINUTE), failed_logins = 0
-                 WHERE id = ? AND failed_logins >= ?',
-                [self::LOCK_MINUTES, $id, self::MAX_FAILURES]
-            );
+            $this->registerFailure($id);
             $this->audit->record($id, 'login_failed', 'users', $id, null, null, ['motivo' => 'senha'], $r);
             return new LoginResult(false, false, self::GENERIC_ERROR);
         }
 
-        $this->db->run('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = ?', [$id]);
-
         if ((int) $user['totp_enabled'] === 1) {
+            // Contadores so zeram em completeLogin(): senha certa nao apaga tentativas de TOTP erradas.
             Session::regenerate();
             // Nunca manter login completo de A junto com pendencia de B.
             Session::forget('uid');
             Session::forget('last_activity');
+            Session::forget('totp_setup_secret');
+            Session::forget('totp_attempts');
             Session::set('pending_2fa_user', $id);
             return new LoginResult(true, true);
         }
@@ -85,12 +81,31 @@ final class AuthService
         return new LoginResult(true, false);
     }
 
+    /** Conta uma falha (senha ou TOTP); a 5a falha bloqueia a conta por LOCK_MINUTES. */
+    public function registerFailure(int $id): void
+    {
+        $this->db->run('UPDATE users SET failed_logins = failed_logins + 1 WHERE id = ?', [$id]);
+        $this->db->run(
+            'UPDATE users SET locked_until = DATE_ADD(NOW(), INTERVAL ? MINUTE), failed_logins = 0
+             WHERE id = ? AND failed_logins >= ?',
+            [self::LOCK_MINUTES, $id, self::MAX_FAILURES]
+        );
+    }
+
+    public function isLocked(int $id): bool
+    {
+        return $this->db->one('SELECT 1 AS l FROM users WHERE id = ? AND locked_until > NOW()', [$id]) !== null;
+    }
+
     /** Conclui o login (apos senha, ou apos 2FA na Task 5). */
     public function completeLogin(int $userId, Request $r): void
     {
         Session::regenerate();
         Session::forget('pending_2fa_user');
         Session::forget('_csrf'); // rotaciona o token CSRF (novo e gerado sob demanda)
+        Session::forget('totp_setup_secret');
+        Session::forget('totp_attempts');
+        $this->db->run('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = ?', [$userId]);
         Session::set('uid', $userId);
         Session::set('last_activity', $this->now());
         $this->db->run('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$userId]);
@@ -131,6 +146,8 @@ final class AuthService
         Session::forget('uid');
         Session::forget('last_activity');
         Session::forget('pending_2fa_user');
+        Session::forget('totp_setup_secret');
+        Session::forget('totp_attempts');
         Session::regenerate();
     }
 }

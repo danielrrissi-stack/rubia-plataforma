@@ -28,6 +28,10 @@ final class TwoFactorController
         if (!is_int($uid)) {
             return Response::redirect('/login');
         }
+        $auth = Container::auth();
+        if ($auth->isLocked($uid)) {
+            return $this->kickOut(AuthService::LOCKED_ERROR);
+        }
         $user = Container::users()->find($uid);
         $code = (string) $r->input('codigo', '');
         if ($user !== null && (int) $user['active'] === 1 && (int) $user['totp_enabled'] === 1
@@ -38,24 +42,33 @@ final class TwoFactorController
         }
 
         Container::audit()->record($uid, 'login_failed', 'users', $uid, null, null, ['motivo' => 'totp'], $r);
+        $auth->registerFailure($uid);
+        if ($auth->isLocked($uid)) {
+            return $this->kickOut(AuthService::LOCKED_ERROR);
+        }
         $attempts = (int) Session::get('totp_attempts', 0) + 1;
         Session::set('totp_attempts', $attempts);
         if ($attempts >= self::MAX_ATTEMPTS) {
-            Session::forget('pending_2fa_user');
-            Session::forget('totp_attempts');
-            Session::flash('erro', 'Muitas tentativas inválidas. Entre novamente.');
-            return Response::redirect('/login');
+            return $this->kickOut('Muitas tentativas inválidas. Entre novamente.');
         }
         return $this->verifyPage('Código inválido. Tente novamente.');
+    }
+
+    private function kickOut(string $message): Response
+    {
+        Session::forget('pending_2fa_user');
+        Session::forget('totp_attempts');
+        Session::flash('erro', $message);
+        return Response::redirect('/login');
     }
 
     public function showSetup(Request $r): Response
     {
         $user = $r->attributes['user'];
-        $secret = Session::get('totp_setup_secret');
-        if (!is_string($secret) || $secret === '') {
+        $secret = $this->setupSecret((int) $user['id']);
+        if ($secret === null) {
             $secret = Totp::generateSecret();
-            Session::set('totp_setup_secret', $secret);
+            Session::set('totp_setup_secret', ['uid' => (int) $user['id'], 'secret' => $secret]);
         }
         return $this->setupPage($user, $secret, null);
     }
@@ -63,8 +76,8 @@ final class TwoFactorController
     public function setup(Request $r): Response
     {
         $user = $r->attributes['user'];
-        $secret = Session::get('totp_setup_secret');
-        if (!is_string($secret) || $secret === '') {
+        $secret = $this->setupSecret((int) $user['id']);
+        if ($secret === null) {
             return Response::redirect('/2fa/configurar');
         }
         if (!Totp::verify($secret, (string) $r->input('codigo', ''), time())) {
@@ -76,6 +89,16 @@ final class TwoFactorController
         Session::forget('totp_setup_secret');
         Session::flash('ok', 'Verificação em duas etapas ativada.');
         return Response::redirect('/');
+    }
+
+    /** Segredo de configuracao pendente, somente se pertence ao usuario atual. */
+    private function setupSecret(int $uid): ?string
+    {
+        $s = Session::get('totp_setup_secret');
+        if (is_array($s) && ($s['uid'] ?? null) === $uid && is_string($s['secret'] ?? null) && $s['secret'] !== '') {
+            return $s['secret'];
+        }
+        return null;
     }
 
     private function verifyPage(?string $error): Response
