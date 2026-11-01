@@ -7,6 +7,7 @@ use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
 use App\Dashboard\DashboardController;
+use App\Energy\EnergyController;
 use App\Growth\GrowthController;
 use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
@@ -76,3 +77,6 @@ $router->get('/medidas/{id:\d+}/corrigir', [GrowthController::class, 'edit'], $a
 $router->post('/medidas/{id:\d+}/corrigir', [GrowthController::class, 'update'], $authMw);
 $router->post('/medidas/{id:\d+}/remover', [GrowthController::class, 'remove'], $authMw);
 $router->get('/medidas/{id:\d+}/versoes', [GrowthController::class, 'versions'], $authMw);
+
+$router->get('/pacientes/{id:\d+}/energia', [EnergyController::class, 'index'], $authMw);
+$router->post('/pacientes/{id:\d+}/energia', [EnergyController::class, 'store'], $authMw);

@@ -59,5 +59,9 @@ $pid = (int) $patient['id'];
     <?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/crescimento')) ?>">Ver crescimento</a></p></section><?php endif; ?>
   <?php if ($canProntuario): ?><section class="cartao" id="cartao-prontuario"><h2>Prontuário</h2><p class="ajuda">Em breve.</p></section><?php endif; ?>
-  <?php if ($canEnergia): ?><section class="cartao" id="cartao-energia"><h2>Energia</h2><p class="ajuda">Em breve.</p></section><?php endif; ?>
+  <?php if ($canEnergia): ?><section class="cartao" id="cartao-energia"><h2>Energia</h2>
+    <?php if ($energy === null): ?><p class="ajuda">Nenhuma meta energética definida.</p><?php else: ?>
+      <p><strong><?= e($energy['get_kcal']) ?> kcal/dia</strong> — <?= e(\App\Energy\EnergyCalculator::FORMULAS[$energy['formula']]) ?> · <?= e(fmt_date(substr((string) $energy['created_at'], 0, 10))) ?></p>
+    <?php endif; ?>
+    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/energia')) ?>">Ver energia</a></p></section><?php endif; ?>
 </div>

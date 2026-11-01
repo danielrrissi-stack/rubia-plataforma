@@ -11,6 +11,7 @@ use App\Auth\AuthService;
 use App\Auth\TokenService;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
+use App\Energy\EnergyGoalRepository;
 use App\Growth\BloodPressure;
 use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
@@ -141,6 +142,11 @@ final class Container
     public static function measurements(): MeasurementRepository
     {
         return self::$items['measurements'] ??= new MeasurementRepository(self::db(), self::audit());
+    }
+
+    public static function energyGoals(): EnergyGoalRepository
+    {
+        return self::$items['energyGoals'] ??= new EnergyGoalRepository(self::db(), self::audit());
     }
 
     public static function bp(): BloodPressure
