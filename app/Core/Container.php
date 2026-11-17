@@ -18,6 +18,7 @@ use App\Growth\GrowthCalculator;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
 use App\Labs\LabCatalogRepository;
+use App\Labs\LabRepository;
 use App\Nutrition\FoodRepository;
 use App\Nutrition\MealPlanRepository;
 use App\Nutrition\SnippetRepository;
@@ -188,5 +189,10 @@ final class Container
     public static function labCatalog(): LabCatalogRepository
     {
         return self::$items['labCatalog'] ??= new LabCatalogRepository(self::db(), self::audit());
+    }
+
+    public static function labs(): LabRepository
+    {
+        return self::$items['labs'] ??= new LabRepository(self::db(), self::audit(), self::labCatalog(), self::patients());
     }
 }
