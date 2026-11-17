@@ -15,7 +15,11 @@ final class DashboardController
     {
         $user = $r->attributes['user'];
         $role = (string) $user['role'];
-        if (in_array($role, ['paciente', 'responsavel', 'crianca'], true)) {
+        if ($role === 'crianca') {
+            // A guarda 'childarea' ja redireciona antes; aqui so por defesa em profundidade.
+            return Response::redirect(\App\Auth\ChildArea::home(\App\Auth\ChildArea::patientIdFor($user)));
+        }
+        if (in_array($role, ['paciente', 'responsavel'], true)) {
             return Response::redirect('/portal');
         }
         $today = date('Y-m-d');

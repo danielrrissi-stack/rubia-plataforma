@@ -541,7 +541,7 @@ final class GrowthController
     private function page(string $template, string $title, Request $r, array $data): Response
     {
         $user = $r->attributes['user'];
-        $family = in_array($user['role'], ['paciente', 'responsavel', 'crianca'], true);
+        $family = in_array($user['role'], ['paciente', 'responsavel'], true);
         return Response::html(View::render($template, $data + [
             'title' => $title,
             'userName' => $user['name'],

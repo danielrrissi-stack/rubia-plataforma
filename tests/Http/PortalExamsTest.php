@@ -122,11 +122,12 @@ final class PortalExamsTest extends DbTestCase
         [, $p, $med] = $this->family();
         $this->collection((int) $p['id'], [$this->test('ldl') => '140'], (int) $med['id'], true);
         $this->loginAs($this->makeUser('crianca'));
+        // A guarda global prende o papel crianca a propria area (sem paciente vinculado: /portal).
         $food = $this->get('/portal/p/' . $p['id'] . '/alimentacao');
         $res = $this->get('/portal/p/' . $p['id'] . '/exames');
         $this->assertSame($food->status, $res->status);
-        $this->assertSame(200, $res->status);
-        $this->assertStringContainsString('Acesso ainda não disponível', $res->body);
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/portal', $res->headers['Location']);
         $this->assertStringNotContainsString('140', $res->body);
         $this->assertStringNotContainsString('esperado', $res->body);
     }

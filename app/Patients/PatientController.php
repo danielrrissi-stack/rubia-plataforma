@@ -78,12 +78,14 @@ final class PatientController
             'canProntuario' => $gate->check($user, 'view', Policy::CLINICO, $id),
             'evolutions' => $gate->check($user, 'view', Policy::CLINICO, $id) ? Container::clinicalEntries()->evolutions($id) : [],
             'canAcessoProf' => $gate->check($user, 'edit', Policy::CLINICO, $id),
+            'canChildAccount' => \App\Labs\Clinician::is($user) && $gate->check($user, 'edit', Policy::CLINICO, $id),
             'canEnergia' => $gate->check($user, 'view', Policy::ENERGIA, $id),
             'energy' => $gate->check($user, 'view', Policy::ENERGIA, $id) ? Container::energyGoals()->current($id) : null,
             'canPlano' => $canPlano,
             'currentPlan' => $canPlano ? Container::mealPlans()->current($id) : null,
             'canExames' => $canExames,
             'labSummary' => $canExames ? self::labSummary($id) : null,
+            'goalsCard' => \App\Goals\GoalController::card($user, $id, $today),
             'adult' => Age::years((string) $patient['birth_date'], $today) >= 18,
             'professional' => Container::users()->find((int) $patient['responsible_professional_id']),
             'guardians' => $gate->check($user, 'view', Policy::CADASTRO, $id) ? Container::guardians()->forPatient($id) : [],
@@ -371,7 +373,7 @@ final class PatientController
     private function page(string $template, string $title, Request $r, array $data): Response
     {
         $user = $r->attributes['user'];
-        $family = in_array($user['role'], ['paciente', 'responsavel', 'crianca'], true);
+        $family = in_array($user['role'], ['paciente', 'responsavel'], true);
         return Response::html(View::render($template, $data + [
             'title' => $title,
             'userName' => $user['name'],

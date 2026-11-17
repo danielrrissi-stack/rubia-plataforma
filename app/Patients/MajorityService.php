@@ -22,13 +22,15 @@ final class MajorityService
     ) {
     }
 
-    /** Pacientes com 18+ anos completos em $today, com vinculo ativo e sem decisao registrada. */
+    /** Pacientes com 18+ anos completos em $today, com vinculo ativo ou conta de crianca, e sem decisao registrada. */
     public function pending(string $today): array
     {
         $rows = $this->db->all(
-            'SELECT p.* FROM patients p
+            'SELECT p.*, cu.username AS child_username FROM patients p
+             LEFT JOIN users cu ON cu.id = p.child_user_id
              WHERE p.deleted_at IS NULL
-               AND EXISTS (SELECT 1 FROM guardian_links g WHERE g.patient_id = p.id AND g.active = 1)
+               AND (EXISTS (SELECT 1 FROM guardian_links g WHERE g.patient_id = p.id AND g.active = 1)
+                    OR p.child_user_id IS NOT NULL)
                AND NOT EXISTS (SELECT 1 FROM majority_decisions m WHERE m.patient_id = p.id)
              ORDER BY p.birth_date, p.id'
         );
@@ -56,6 +58,15 @@ final class MajorityService
             throw new \InvalidArgumentException('Já existe uma decisão registrada para este paciente.');
         }
 
+        // Com conta de crianca (e sem conta 'paciente'), transferir converte esse mesmo usuario em 'paciente'.
+        $childId = $decision === 'transferir' && $patient['user_id'] === null && $patient['child_user_id'] !== null
+            ? (int) $patient['child_user_id'] : null;
+        if ($childId !== null) {
+            $child = $this->users->find($childId);
+            if ($child === null || (int) $child['active'] !== 1) {
+                throw new \InvalidArgumentException('A conta da criança está desativada. Reative-a na tela "Conta da criança" antes de transferir o acesso.');
+            }
+        }
         $email = null;
         if ($decision === 'transferir' && $patient['user_id'] === null) {
             $email = UserRepository::normalizeEmail((string) $patientEmail);
@@ -67,14 +78,22 @@ final class MajorityService
             }
         }
 
-        $this->db->transaction(function () use ($patient, $patientId, $decision, $notes, $by, $email, $r): void {
+        $this->db->transaction(function () use ($patient, $patientId, $decision, $notes, $by, $email, $childId, $r): void {
             if ($decision !== 'manter') {
                 foreach ($this->guardians->forPatient($patientId) as $link) {
                     $this->guardians->unlink((int) $link['id'], $by, $r);
                 }
             }
             $invite = null;
-            if ($email !== null) {
+            if ($childId !== null) {
+                // Mesmo usuario (senha, nome de usuario e marcacoes preservados); ganha e-mail e papel 'paciente'.
+                $before = $this->users->find($childId);
+                $this->users->update($childId, ['role' => 'paciente', 'email' => $email]);
+                $this->db->run('UPDATE patients SET user_id = ?, child_user_id = NULL WHERE id = ?', [$childId, $patientId]);
+                $this->audit->record($by, 'update', 'users', $childId, $patientId,
+                    ['role' => $before['role'] ?? null, 'email' => $before['email'] ?? null],
+                    ['role' => 'paciente', 'email' => $email, 'motivo' => 'maioridade'], $r);
+            } elseif ($email !== null) {
                 $uid = $this->users->create([
                     'name' => $patient['social_name'] ?: $patient['full_name'],
                     'email' => $email, 'role' => 'paciente', 'password' => null, 'active' => 1,

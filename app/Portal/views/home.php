@@ -1,10 +1,14 @@
 <?php
-/** @var array $patient @var string $first @var bool $many @var bool $hasExams */
+/** @var array $user @var array $patient @var string $first @var bool $many @var bool $hasExams */
 $pid = (int) $patient['id'];
 ?>
 <h1>Olá! Bem-vindo ao acompanhamento</h1>
 <p class="portal-lead">Acompanhamento de <strong><?= e($first) ?></strong></p>
 <ul class="portal-lista">
+  <li><a class="portal-cartao" href="<?= e(url('/portal/p/' . $pid . '/metas')) ?>">
+    <span class="portal-cartao-titulo"><?= e($user['role'] === 'paciente' ? 'Minhas metas' : 'Metas de ' . $first) ?></span>
+    <span class="portal-cartao-texto">Marque o que foi feito e veja as estrelas.</span>
+  </a></li>
   <li><a class="portal-cartao" href="<?= e(url('/portal/p/' . $pid . '/crescimento')) ?>">
     <span class="portal-cartao-titulo">Crescimento</span>
     <span class="portal-cartao-texto">Veja como <?= e($first) ?> está se desenvolvendo.</span>

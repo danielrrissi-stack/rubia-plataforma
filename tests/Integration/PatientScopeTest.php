@@ -54,8 +54,28 @@ final class PatientScopeTest extends DbTestCase
         $this->assertSame([(int) $own['id']], $this->scope()->accessiblePatientIds($u));
     }
 
-    public function testCriancaNunca(): void
+    public function test_patient_scope_child(): void
     {
+        $u = $this->makeUser('crianca', ['email' => null, 'username' => 'scope.' . bin2hex(random_bytes(3))]);
+        $own = $this->makePatient(['child_user_id' => $u['id']]);
+        $other = $this->makePatient();
+        $this->assertTrue($this->scope()->canAccess($u, (int) $own['id']));
+        $this->assertFalse($this->scope()->canAccess($u, (int) $other['id']));
+        $this->assertSame([(int) $own['id']], $this->scope()->accessiblePatientIds($u));
+
+        // Conta inativa ou paciente excluido: nada.
+        $inactive = $u;
+        $inactive['active'] = 0;
+        $this->assertFalse($this->scope()->canAccess($inactive, (int) $own['id']));
+        $this->assertSame([], $this->scope()->accessiblePatientIds($inactive));
+        $this->db->run('UPDATE patients SET deleted_at = NOW() WHERE id = ?', [$own['id']]);
+        $this->assertFalse($this->scope()->canAccess($u, (int) $own['id']));
+        $this->assertSame([], $this->scope()->accessiblePatientIds($u));
+    }
+
+    public function testCriancaNaoAlcancaPorUserId(): void
+    {
+        // O vinculo da crianca e so child_user_id; user_id (conta 'paciente') nao vale para o papel crianca.
         $u = $this->makeUser('crianca');
         $p = $this->makePatient(['user_id' => $u['id']]);
         $this->assertFalse($this->scope()->canAccess($u, (int) $p['id']));

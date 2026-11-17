@@ -33,6 +33,11 @@ final class PatientScope
                 $sql = 'SELECT 1 FROM patients p WHERE p.id = ? AND p.deleted_at IS NULL AND p.user_id = ?';
                 $params = [$patientId, $uid];
                 break;
+            case 'crianca':
+                // Conta propria da crianca: so o paciente vinculado por child_user_id (nunca por user_id).
+                $sql = 'SELECT 1 FROM patients p WHERE p.id = ? AND p.deleted_at IS NULL AND p.child_user_id = ?';
+                $params = [$patientId, $uid];
+                break;
             case 'responsavel':
                 $sql = 'SELECT 1 FROM patients p JOIN guardian_links g ON g.patient_id = p.id
                         WHERE p.id = ? AND p.deleted_at IS NULL AND g.user_id = ? AND g.active = 1';
@@ -61,6 +66,9 @@ final class PatientScope
                 break;
             case 'paciente':
                 $sql = 'SELECT p.id FROM patients p WHERE p.deleted_at IS NULL AND p.user_id = ? ORDER BY p.id';
+                break;
+            case 'crianca':
+                $sql = 'SELECT p.id FROM patients p WHERE p.deleted_at IS NULL AND p.child_user_id = ? ORDER BY p.id';
                 break;
             case 'responsavel':
                 $sql = 'SELECT DISTINCT p.id FROM patients p JOIN guardian_links g ON g.patient_id = p.id
