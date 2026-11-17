@@ -132,6 +132,7 @@ $router->post('/prontuario/{entryId:\d+}/remover', [RecordController::class, 're
 $router->get('/prontuario/{entryId:\d+}/versoes', [RecordController::class, 'versions'], $authMw);
 
 $router->get('/pacientes/{id:\d+}/exames', [LabController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/exames/serie.json', [LabController::class, 'series'], $authMw);
 $router->get('/pacientes/{id:\d+}/exames/nova', [LabController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/exames/nova', [LabController::class, 'create'], $authMw);
 $router->get('/exames/anexos/{attachmentId:\d+}', [LabController::class, 'download'], $authMw);

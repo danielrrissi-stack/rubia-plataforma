@@ -70,6 +70,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/prontuario/{entryId}/revisar'            => [200, 403, 403, 403, 403],
         '/prontuario/{entryId}/versoes'            => [200, 403, 403, 403, 403],
         '/pacientes/{id}/exames'                   => [200, 403, 403, 403, 403], // so medico (Clinician antes do Gate)
+        '/pacientes/{id}/exames/serie.json'        => [404, 403, 403, 403, 403], // sem ?exame= o exame nao existe: 404 so depois da permissao
         '/pacientes/{id}/exames/nova'              => [200, 403, 403, 403, 403],
         '/exames/{collectionId}'                   => [200, 403, 403, 403, 403],
         '/exames/{collectionId}/editar'            => [200, 403, 403, 403, 403],

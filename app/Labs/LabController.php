@@ -32,6 +32,33 @@ final class LabController
         ]);
     }
 
+    /** GET /pacientes/{id}/exames/serie.json?exame=<testId> — serie historica de um exame (so valores numericos). */
+    public function series(Request $r): Response
+    {
+        $id = $this->authPatient($r, 'view');
+        $testId = (string) ($r->query['exame'] ?? '');
+        if (!ctype_digit($testId) || (int) $testId < 1) {
+            throw new HttpException(404);
+        }
+        try {
+            $s = Container::labs()->series($id, (int) $testId);
+        } catch (\RuntimeException) {
+            throw new HttpException(404);
+        }
+        $points = array_map(static fn(array $p): array => $p + [
+            'label' => $p['class'] === null ? null : LabClassifier::LABEL[$p['class']],
+        ], $s['points']);
+        return Response::json([
+            'test' => [
+                'name' => (string) $s['test']['name'],
+                'unit' => (string) $s['test']['unit'],
+                'decimals' => (int) $s['test']['decimals'],
+            ],
+            'points' => $points,
+            'band' => $s['band'],
+        ]);
+    }
+
     /** GET /pacientes/{id}/exames/nova */
     public function createForm(Request $r): Response
     {

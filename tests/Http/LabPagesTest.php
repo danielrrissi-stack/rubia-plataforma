@@ -325,4 +325,56 @@ final class LabPagesTest extends DbTestCase
         $this->assertSame(1, $this->n('SELECT COUNT(*) n FROM lab_results WHERE collection_id = ? AND test_id = ?', [$cid, $this->ldl]));
         $this->assertStringContainsString('LDL-colesterol', $this->get('/pacientes/' . $p['id'] . '/exames')->body);
     }
+
+    private function eightYearOldWithTwoLdl(): array
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->makePatient(['birth_date' => '2018-01-01', 'sex' => 'M', 'responsible_professional_id' => $med['id'], 'created_by' => $med['id']]);
+        $this->loginAs($med);
+        foreach (['2026-06-01' => '140', '2026-03-01' => '100'] as $date => $v) {
+            $this->idFrom($this->post('/pacientes/' . $p['id'] . '/exames/nova', [
+                'coletado_em' => $date, 'laboratorio' => '', 'observacao' => '', 'valor' => [$this->ldl => $v],
+            ]));
+        }
+        return [$med, $p];
+    }
+
+    public function test_series_json_shape(): void
+    {
+        [, $p] = $this->eightYearOldWithTwoLdl();
+        $res = $this->get('/pacientes/' . $p['id'] . '/exames/serie.json', ['exame' => (string) $this->ldl]);
+        $this->assertSame(200, $res->status);
+        $j = json_decode($res->body, true);
+        $this->assertSame(['2026-03-01', '2026-06-01'], array_column($j['points'], 'date'));
+        $this->assertEquals([100.0, 140.0], array_column($j["points"], "value"));
+        $this->assertSame(110.0, (float) $j['band']['high']);
+        $this->assertArrayHasKey('unit', $j['test']);
+        $this->assertArrayHasKey('decimals', $j['test']);
+        $this->assertArrayHasKey('name', $j['test']);
+    }
+
+    public function test_series_json_403_for_nutritionist(): void
+    {
+        [$med, $p] = $this->eightYearOldWithTwoLdl();
+        $nutri = $this->makeUser('nutricionista');
+        Container::accessGrants()->grant((int) $p['id'], (int) $nutri['id'], (int) $med['id']);
+        $this->loginAs($nutri);
+        $this->assertSame(403, $this->get('/pacientes/' . $p['id'] . '/exames/serie.json', ['exame' => (string) $this->ldl])->status);
+    }
+
+    public function test_series_json_404_unknown_test(): void
+    {
+        [, $p] = $this->eightYearOldWithTwoLdl();
+        $this->assertSame(404, $this->get('/pacientes/' . $p['id'] . '/exames/serie.json', ['exame' => '987654'])->status);
+        $this->assertSame(404, $this->get('/pacientes/' . $p['id'] . '/exames/serie.json')->status);
+    }
+
+    public function test_index_has_chart_container_and_script(): void
+    {
+        [, $p] = $this->eightYearOldWithTwoLdl();
+        $html = $this->get('/pacientes/' . $p['id'] . '/exames')->body;
+        $this->assertStringContainsString('id="lab-chart"', $html);
+        $this->assertStringContainsString('lab-chart.js', $html);
+        $this->assertStringContainsString('data-exame="' . $this->ldl . '"', $html);
+    }
 }

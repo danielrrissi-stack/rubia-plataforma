@@ -26,7 +26,7 @@ $cols = $evolution['collections'];
         <tbody>
           <?php foreach ($evolution['rows'] as $row): ?>
             <tr>
-              <th scope="row"><?= e($row['test']['name']) ?> <span class="ajuda"><?= e($row['test']['unit']) ?></span></th>
+              <th scope="row"><button type="button" class="aba" data-exame="<?= e($row['test']['id']) ?>" aria-controls="lab-chart"><?= e($row['test']['name']) ?></button> <span class="ajuda"><?= e($row['test']['unit']) ?></span></th>
               <?php foreach ($cols as $c): $cell = $row['cells'][$c['id']] ?? null; ?>
                 <?php if ($cell === null): ?><td class="lab-vazio">—</td>
                 <?php else: $cls = $cell['class']; ?>
@@ -53,6 +53,23 @@ $cols = $evolution['collections'];
     <?php endif; ?>
   <?php endif; ?>
 </section>
+
+<?php if ($evolution['rows'] !== []): ?>
+<section class="cartao" aria-labelledby="h-grafico">
+  <h2 id="h-grafico">Gráfico por exame</h2>
+  <div id="lab-chart" data-url="<?= e(url('/pacientes/' . $pid . '/exames/serie.json')) ?>">
+    <p class="ajuda">Clique no nome de um exame na tabela para ver o histórico.</p>
+    <p data-role="msg" role="status" class="ajuda"></p>
+    <div class="grafico"><canvas aria-label="Gráfico da evolução do exame" role="img"></canvas></div>
+    <details data-role="lista" hidden>
+      <summary>Ver os pontos do gráfico em lista</summary>
+      <ul></ul>
+    </details>
+  </div>
+</section>
+<script src="<?= e(url('/assets/vendor/chart.umd.min.js')) ?>"></script>
+<script src="<?= e(url('/assets/js/lab-chart.js')) ?>"></script>
+<?php endif; ?>
 
 <section class="cartao" aria-labelledby="h-coletas">
   <h2 id="h-coletas">Coletas</h2>
