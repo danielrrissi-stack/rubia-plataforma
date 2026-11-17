@@ -12,6 +12,7 @@ use App\Auth\TokenService;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
 use App\Energy\EnergyGoalRepository;
+use App\Goals\GoalRepository;
 use App\Growth\BloodPressure;
 use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
@@ -204,5 +205,10 @@ final class Container
             self::audit(),
             rtrim((string) Config::get('storage_path', APP_ROOT . '/storage'), '/\\') . '/uploads',
         );
+    }
+
+    public static function goals(): GoalRepository
+    {
+        return self::$items['goals'] ??= new GoalRepository(self::db(), self::audit());
     }
 }
