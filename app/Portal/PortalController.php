@@ -55,6 +55,7 @@ final class PortalController
             return $redirect;
         }
         return $this->page('Portal/views/home.php', 'Início', $user, [
+            'user' => $user,
             'patient' => $patient,
             'first' => $this->firstName($patient),
             'many' => count($this->patientsOf($user)) > 1,

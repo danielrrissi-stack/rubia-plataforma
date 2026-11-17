@@ -10,6 +10,7 @@ use App\Dashboard\DashboardController;
 use App\Energy\EnergyController;
 use App\Goals\ChildAccountController;
 use App\Goals\GoalController;
+use App\Goals\PortalGoalController;
 use App\Nutrition\FoodController;
 use App\Nutrition\MealPlanController;
 use App\Nutrition\TemplateController;
@@ -182,5 +183,8 @@ $router->get('/portal/p/{id:\d+}/alimentacao/imprimir', [PortalController::class
 $router->get('/portal/p/{id:\d+}/exames', [PortalController::class, 'exams'], $authMw);
 $router->get('/portal/p/{id:\d+}/medidas/nova', [PortalController::class, 'measureForm'], $authMw);
 $router->post('/portal/p/{id:\d+}/medidas/nova', [PortalController::class, 'measureStore'], $authMw);
+$router->get('/portal/p/{id:\d+}/metas', [PortalGoalController::class, 'show'], $authMw);
+$router->post('/portal/p/{id:\d+}/metas/{goalId:\d+}/marcar', [PortalGoalController::class, 'mark'], $authMw);
+$router->post('/portal/p/{id:\d+}/metas/{goalId:\d+}/desmarcar', [PortalGoalController::class, 'unmark'], $authMw);
 $router->get('/portal/conta', [PortalController::class, 'account'], $authMw);
 $router->post('/portal/conta/senha', [PortalController::class, 'changePassword'], $authMw);
