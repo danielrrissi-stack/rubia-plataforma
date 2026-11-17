@@ -13,7 +13,17 @@ Funciona em hospedagem compartilhada com cPanel, sem Composer e sem acesso por t
 
 ## 2. Instalação no cPanel (passo a passo)
 
-Troque `USUARIO` pelo nome de usuário da sua conta no cPanel.
+Troque `USUARIO` pelo nome de usuário da sua conta no cPanel e `/home/USUARIO` pelo **diretório inicial** da conta,
+exatamente como o cPanel mostra em "Informações gerais" → "Diretório inicial" (coluna da direita da página inicial).
+Algumas hospedagens usam `/home2/`, `/home3/`…: por exemplo, `/home2/abc123` em vez de `/home/abc123`.
+Um caminho errado faz o site dar erro 500 ("Failed opening required …/app/bootstrap.php" no log de erros).
+
+> **Domínio adicional (o site não é o principal da conta).** Se a conta já tem outro site em `public_html/`
+> e `rubia.med.br` foi adicionado como domínio extra, a raiz dele é uma pasta **dentro** de `public_html`,
+> como `public_html/rubia.med.br/`. Nesse caso, **nunca copie nada do sistema direto em `public_html/`**:
+> isso substitui o `index.php` e o `.htaccess` do outro site e ainda deixa `/instalar` aberto no endereço dele
+> (ex.: `https://outrosite.com/instalar`). Se isso acontecer, restaure esses dois arquivos pelo backup do cPanel
+> ("Backup" / "JetBackup") ou peça ao suporte.
 
 1. **Criar o banco de dados.** No cPanel, abra "Bancos de dados MySQL". Crie um banco (ex.: `USUARIO_rubia`),
    crie um usuário com senha forte (ex.: `USUARIO_rubia`) e adicione o usuário ao banco com "Todos os privilégios".
@@ -40,6 +50,11 @@ Troque `USUARIO` pelo nome de usuário da sua conta no cPanel.
    $APP_ROOT = '/home/USUARIO/rubia_app'; // AJUSTE NO DEPLOY
    ```
 
+   Use o diretório inicial real da conta (ex.: `'/home2/abc123/rubia_app'`), entre aspas simples, sem barra no final.
+   A pasta `rubia_app` precisa conter diretamente `app/`, `config/`, `database/`… (não uma subpasta extra criada ao extrair).
+   Para conferir: `https://rubia.med.br/instalar` deve abrir a tela de instalação. Se der erro 500, veja as últimas linhas
+   do arquivo `error_log` na raiz do domínio (ou em cPanel → "Métricas" → "Erros").
+
 5. **Ativar o SSL.** No cPanel, em "SSL/TLS Status", rode o AutoSSL para o domínio e espere o certificado ficar ativo.
    O sistema só deve ser usado por `https://`: o `.htaccess` sempre redireciona `http://` para `https://`
    (exceto em `localhost`, para desenvolvimento) e envia o cabeçalho HSTS. Não há opção para desligar isso.
@@ -60,6 +75,10 @@ Troque `USUARIO` pelo nome de usuário da sua conta no cPanel.
    | *(informativos)* pasta fora da raiz pública, `mysqldump`, HTTPS | Não impedem a instalação, mas leia o aviso |
 
    Se algum item **obrigatório** aparecer como "Falhou", o formulário não é exibido. Corrija o problema e recarregue a página.
+   Confira também o caminho em "Pasta de dados gravável": deve ser `<diretório inicial>/rubia_storage`
+   (ex.: `/home2/abc123/rubia_storage`). Se aparecer um caminho dentro de `public_html`, não instale.
+   Em domínio adicional, confirme ainda que o endereço do outro site (ex.: `https://outrosite.com/instalar`)
+   **não** abre esta tela; se abrir, há arquivos do sistema em `public_html/` (veja o aviso no início desta seção).
 
    **6.2. Preencha o formulário.**
 
