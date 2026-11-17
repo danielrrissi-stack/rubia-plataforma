@@ -217,12 +217,15 @@ o rascunho ou descartá-lo e começar outro. O rascunho só é visto pela equipe
 Cole o plano no campo "Plano". A pré-visualização ao lado mostra como vai ficar. O sistema entende estas convenções
 (os botões "Título de refeição", "Item" e "Negrito" acima do campo inserem os marcadores):
 
-- `TÍTULO:` sozinho numa linha: a linha seguinte vira o título de uma refeição (ex.: `TÍTULO:` e, embaixo, `Café da manhã`).
+- Linha terminada em `:` ou escrita toda em maiúsculas: vira o título de uma refeição (ex.: `CAFÉ DA MANHÃ (7h):` ou `Almoço:`).
+  O botão "Título de refeição" insere `Nome da refeição:` já selecionado; é só digitar o nome por cima.
 - `•` no começo da linha (também `-`, `*` ou `1.`): vira item de lista. Textos copiados do Word ou do PDF costumam funcionar.
 - `**texto**`: negrito.
 - Uma linha em branco separa parágrafos.
 
 Há também o campo **Orientações** (texto livre, que aparece no fim do plano).
+
+No modo texto **não há salvamento automático**: o texto só é guardado ao clicar em **Salvar rascunho** (ou **Salvar e publicar**).
 
 **Atenção:** no modo texto a família vê exatamente as palavras do autor. Se você digitar calorias no texto, a família verá as calorias.
 
@@ -237,6 +240,9 @@ Para cada item:
 
 No alto da tela ficam os **totais do dia** (energia, proteína, carboidrato, gordura, fibra), calculados com a **Opção 1 de cada refeição**.
 Se o paciente tem meta de energia (seção Energia), o total é comparado com a meta. As calorias por opção aparecem só para a equipe; a família não vê números de calorias de planos estruturados.
+Itens cujo alimento não tem algum valor na TACO aparecem para a equipe com o aviso "valor não disponível na TACO" (esse valor conta como zero no total).
+
+O modo estruturado **salva sozinho a cada 30 segundos** quando há mudança (e ao clicar em **Salvar rascunho**). Um item sem alimento escolhido na lista não é salvo: o editor avisa onde ele está.
 
 ### Publicar, editar e encerrar
 
@@ -244,7 +250,7 @@ Se o paciente tem meta de energia (seção Energia), o total é comparado com a 
 - Publicar um plano novo **substitui** o vigente, que fica no **Histórico** como "Substituído". Nada é apagado.
 - Para alterar um plano publicado, use **Editar (novo rascunho a partir deste)**: o plano vigente continua valendo até você publicar o rascunho.
 - **Encerrar plano** exige um motivo; o paciente fica sem plano vigente. O Histórico mostra autor, quem publicou, datas e motivo do encerramento.
-- **Imprimir** (e **Imprimir com totais**, nos planos estruturados) abre uma versão própria para impressão. A família tem a sua em "Versão para imprimir".
+- **Imprimir** (e **Imprimir com totais**, nos planos estruturados) abre uma versão própria para impressão. **Imprimir** (sem totais) não mostra nenhuma caloria e pode ser entregue à família. A família tem a sua em "Versão para imprimir".
 - **Descartar rascunho** apaga apenas rascunhos.
 
 ### Modelos e trechos de texto
@@ -327,3 +333,9 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    Em versões futuras, importe as migrações novas (por número) e **depois** os arquivos de `database/seeds/`.
    Os seeds podem ser importados de novo sem duplicar dados. A atualização do plano alimentar (Fase 2a) traz a migração `008_meal_plans.sql`
    e os dois arquivos `food_*.sql`.
+   **Não misture os dois caminhos.** O `tools/migrate.php` anota cada migração aplicada na tabela `schema_migrations`; se você importou a
+   migração pelo phpMyAdmin, ela não fica anotada e um `migrate.php` rodado depois tentaria criá-la de novo (erro). Quem usou o phpMyAdmin
+   deve, logo depois de importar a `008`, executar na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('008_meal_plans.sql');`
+5. **A atualização do plano alimentar (Fase 2a) muda `public/`** (novos arquivos JavaScript e CSS do editor e do portal): o passo 3 é
+   obrigatório nesta versão — copie de novo o conteúdo de `rubia_app/public/` para a raiz do domínio (ex.: `public_html/rubia.med.br/`).

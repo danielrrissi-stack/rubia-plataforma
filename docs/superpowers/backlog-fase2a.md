@@ -1,37 +1,71 @@
 # Pendências menores da Fase 2a (não bloqueiam produção)
 
-Lista registrada pelas revisões por tarefa durante a Fase 2a (plano alimentar). A revisão final da branch inteira fará a triagem: o que for corrigido sai daqui, o resto fica como 'pode esperar'.
+Lista registrada pelas revisões por tarefa durante a Fase 2a (plano alimentar), já com a triagem da revisão final da branch.
+O que foi corrigido na branch saiu da lista (veja "Corrigido na branch" no fim). Tudo o que está abaixo **pode esperar**.
 
-## Task 2
+## Pode esperar
 
-- minor (deferred): MealPlanResolver int() turns non-numeric measure_id into null → silently grams (carry to T7: controller/resolver must reject non-empty non-integer measure_id with "medida inválida").
-- minor (deferred): >5 options also adds misleading "inclua ao menos uma opção" error.
-- minor (deferred): (string) casts on array input raise "Array to string" warning (carry to T7 with is_scalar guards).
-- minor (deferred): FamilyPhrase qty(0.001) → "0"; resolver allows tiny qty. Resolver $errors instance state non-reentrant. PofMeasureImporter number_format(1) rounds >1 decimal grams.
-- data note: 561 and 551 POF approximations — README (T10) flags for nutritionist review.
+### Task 1 (base de alimentos)
 
-## Task 3
+- Busca exige 2 letras somando todos os termos (`"a b"` já busca); poderia exigir 2 letras em algum termo.
+- Sem teste unitário para a conversão da TACO `Tr` → 0 e `*`/`NA` → nulo.
+- `tools/migrate.php` abre uma segunda conexão `Database` só para os seeds.
 
-- minor (deferred): invalid UTF-8 makes normalizePaste return "" (carry to T5: scrub input with mb_scrub before normalize/save); 2MB single line drops content (bold regex backtrack); lone • → <li>•</li>; test gaps (unbalanced **, ul→ol switch, R5 title exclusion, empty string); item regex matched 3x.
+### Task 2 (resolvedor e frases)
 
-## Task 4
+- Mais de 5 opções também mostra o erro enganoso "inclua ao menos uma opção".
+- `FamilyPhrase` com quantidade minúscula (0,001) mostra "0"; o resolvedor aceita quantidades muito pequenas.
+- `MealPlanResolver` guarda `$errors` na instância (não reentrante).
+- `PofMeasureImporter` usa `number_format(1)`: gramas com mais de 1 casa são arredondadas.
+- Dados: aproximações POF dos alimentos 561 e 551 — a nutricionista deve conferir (o README avisa).
 
-- minor (deferred): draftFrom checks source status outside lock; title length/mode not validated in repo (controller must validate: T5).
-- minor (deferred): publish null FOR UPDATE row theoretical warning.
+### Task 3 (texto do plano)
 
-## Task 5
+- Uma linha única de 2 MB perde o conteúdo (retrocesso da regex de negrito); `•` sozinho vira `<li>•</li>`.
+- Lacunas de teste: `**` sem par, troca `ul`→`ol`, exclusão de título na regra R5, texto vazio. A regex de item roda 3 vezes por linha.
 
-- minor (deferred): create discard+create not atomic; stale revisao after failed publish → false conflict; preview out-of-order responses; setRangeText kills undo; routes.php whitespace/use order; template SQL in controller (T9).
-- minor (deferred): misaligned indentation in discard catch block.
+### Task 4 (repositório)
 
-## Task 6
+- `publish`: aviso teórico quando o `SELECT ... FOR UPDATE` não acha a linha.
 
-- minor (deferred): text plans may contain kcal typed by author (UI hint); currentPlan loads history for publisher name; loose 'ou ' assertion; no crianca test on food routes.
+### Task 5 (editor de texto)
 
-## Task 8
+- "Novo plano" com "Descartar e começar outro": descarte e criação não são uma transação única (a origem já é validada antes do descarte).
+- Pré-visualização: respostas fora de ordem podem mostrar uma prévia antiga por um instante.
+- Os botões "Título de refeição", "Item" e "Negrito" usam `setRangeText`, que zera o Ctrl+Z do navegador.
+- `routes.php`: espaços/ordem dos `use`.
 
-- minor (deferred): UPDATEs lack AND source='proprio'; ativo array guard; audit rows untested for measure/updateOwn/setActive; no Http test for POF measure edit; colspan 4 vs 5.
+### Task 6 (portal)
 
-## Task 9
+- Planos em texto podem conter calorias digitadas pelo autor (o README avisa).
+- `currentPlan` carrega o histórico só para achar o nome de quem publicou.
+- Asserção solta em `'ou '`; sem teste de criança nas rotas de alimentação.
 
-- minor (deferred): template autosave audits every tick (bloat); no fromPlan-structured test, no template audit test; routes.php lost space; TemplateRepository::clean doesn't scrub; structured template editor test only checks 200; "Salvar como modelo" shown on drafts.
+### Task 7 (editor estruturado)
+
+- Resultado da busca substitui a entrada do catálogo no navegador e perde uma medida desativada usada no plano (tela ≠ salvo até recarregar).
+- `/alimentos/busca` exige só equipe, sem checar a permissão NUTRICAO no Gate.
+- Plural das medidas não é usado nos rótulos do seletor; `aria-label` não é atualizado ao renomear refeição.
+- Alimento excluído de verdade do banco (não só desativado) deixa o rascunho preso em 422.
+
+### Task 8 (Minha tabela)
+
+- `UPDATE`s sem `AND source = 'proprio'` (a checagem é feita antes, em PHP); guarda de array no campo `ativo`.
+- Linhas de auditoria sem teste para medida/updateOwn/setActive; sem teste Http de edição de medida POF; `colspan` 4 vs 5.
+
+### Task 9 (modelos e trechos)
+
+- Sem teste de `fromPlan` com plano estruturado; teste do editor de modelo estruturado só verifica 200.
+- `TemplateRepository::clean` não aplica `mb_scrub` (o controller já aplica).
+- "Salvar como modelo" aparece também em rascunhos.
+- `routes.php`: espaço perdido.
+
+## Corrigido na branch
+
+Docblock do `SeedLoader`; `measure_id` não numérico; "Array to string"; UTF-8 inválido no texto; trava do `draftFrom`;
+SQL de modelo no controller; indentação do `catch` do descarte; e, na revisão final: título "TÍTULO" do botão de título de refeição,
+troca de alimento mantendo a quantidade em outra unidade, busca editada mantendo o alimento antigo, linhas sem alimento descartadas
+em silêncio, cliques ignorados durante o salvamento automático e falta de tempo limite, impressão sem totais mostrando kcal,
+aviso "valor não disponível na TACO", revisão antiga após publicação recusada, opção extra vazia publicada, "Opção N" com uma única
+opção, colagem personalizada (Ctrl+Z), origem inválida descartando o rascunho, ordem das medidas, erros sem rolagem até a caixa,
+auditoria a cada salvamento automático de modelo, notas do README (salvamento automático, `public/`, `schema_migrations`).
