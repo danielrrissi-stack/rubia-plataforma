@@ -168,6 +168,28 @@ final class GoalRepositoryTest extends DbTestCase
         $this->assertSame(1, $this->countChecks($id));
     }
 
+    public function test_guardian_cannot_remove_hidden_child_check(): void
+    {
+        $child = $this->child();
+        $this->db->run('UPDATE patients SET guardians_see_child_checks = 0 WHERE id = ?', [$this->patient['id']]);
+        $id = $this->goal();
+        $resp = $this->makeUser('responsavel');
+        Container::goals()->check($id, '2026-11-17', $child, self::TODAY, $this->r());
+        Container::goals()->uncheck($id, '2026-11-17', $resp, self::TODAY, $this->r());
+        Container::goals()->check($id, '2026-11-17', $resp, self::TODAY, $this->r());
+        $this->assertSame(1, $this->countChecks($id));
+        $this->assertSame((int) $child['id'], (int) $this->db->one('SELECT checked_by c FROM goal_checks WHERE goal_id = ?', [$id])['c']);
+    }
+
+    public function test_staff_cannot_check(): void
+    {
+        $id = $this->goal(['category' => 'alimentacao']);
+        $goals = Container::goals();
+        $this->invalid(fn () => $goals->check($id, '2026-11-17', $this->medico, self::TODAY, $this->r()));
+        $this->invalid(fn () => $goals->check($id, '2026-11-17', $this->makeUser('nutricionista'), self::TODAY, $this->r()));
+        $this->assertSame(0, $this->countChecks($id));
+    }
+
     public function test_update_end_and_delete(): void
     {
         $id = $this->goal();

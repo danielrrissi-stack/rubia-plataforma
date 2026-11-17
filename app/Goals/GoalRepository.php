@@ -100,7 +100,10 @@ final class GoalRepository
 
     public function check(int $goalId, string $day, array $user, string $today, Request $r): void
     {
-        $goal = $this->markable($goalId, $day, $user, $today);
+        [$goal, $visible] = $this->markable($goalId, $day, $user, $today);
+        if ($visible !== []) {
+            return; // ja marcado (ou marcacao que este usuario nao enxerga): nada a fazer
+        }
         $stmt = $this->db->run(
             'INSERT IGNORE INTO goal_checks (goal_id, day, checked_by, checked_by_role) VALUES (?, ?, ?, ?)',
             [$goalId, $day, (int) $user['id'], (string) $user['role']],
@@ -114,8 +117,8 @@ final class GoalRepository
 
     public function uncheck(int $goalId, string $day, array $user, string $today, Request $r): void
     {
-        $goal = $this->markable($goalId, $day, $user, $today);
-        $row = $this->db->one('SELECT * FROM goal_checks WHERE goal_id = ? AND day = ?', [$goalId, $day]);
+        [$goal, $visible] = $this->markable($goalId, $day, $user, $today);
+        $row = $visible === [] ? null : $this->db->one('SELECT * FROM goal_checks WHERE goal_id = ? AND day = ?', [$goalId, $day]);
         if ($row === null) {
             return;
         }
@@ -123,20 +126,25 @@ final class GoalRepository
         $this->audit->record((int) $user['id'], 'uncheck', 'goal_checks', (int) $row['id'], (int) $goal['patient_id'], $row, null, $r);
     }
 
+    /** @return array{0:array, 1:list<array>} meta e marcacoes do dia que o usuario enxerga */
     private function markable(int $goalId, string $day, array $user, string $today): array
     {
+        if (!in_array((string) $user['role'], ['responsavel', 'paciente', 'crianca'], true)) {
+            throw new InvalidGoalException(['Só a família pode marcar as metas.']);
+        }
         $goal = $this->find($goalId);
         if ($goal === null || $goal['deleted_at'] !== null || !$this->isDate($day)) {
             throw new InvalidGoalException(['Meta não encontrada.']);
         }
-        $visible = $this->load((int) $goal['patient_id'], $user, $day, $day)['goals'];
-        if (!in_array($goalId, array_map(fn (array $g): int => (int) $g['id'], $visible), true)) {
+        $view = $this->load((int) $goal['patient_id'], $user, $day, $day);
+        if (!in_array($goalId, array_map(fn (array $g): int => (int) $g['id'], $view['goals']), true)) {
             throw new InvalidGoalException(['Meta não encontrada.']);
         }
         if (!GoalCalc::canMark($goal, $day, $today)) {
             throw new InvalidGoalException(['Só é possível marcar os últimos 7 dias, dentro do período da meta.']);
         }
-        return $goal;
+        $checks = array_values(array_filter($view['checks'], fn (array $c): bool => $c['goal_id'] === $goalId));
+        return [$goal, $checks];
     }
 
     private function load(int $patientId, array $viewer, ?string $from, ?string $to): array
@@ -149,7 +157,7 @@ final class GoalRepository
             array_push($params, $to, $from);
         }
         if ($role === 'nutricionista') {
-            $sql .= " AND category IN ('alimentacao','hidratacao')";
+            $sql .= " AND category IN ('" . implode("','", self::NUTRITIONAL) . "')";
         } elseif ($role === 'responsavel') {
             $sql .= ' AND secret = 0';
         } elseif (!in_array($role, ['medico', 'crianca', 'paciente'], true)) {
