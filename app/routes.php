@@ -8,6 +8,7 @@ use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
 use App\Dashboard\DashboardController;
 use App\Energy\EnergyController;
+use App\Nutrition\FoodController;
 use App\Nutrition\MealPlanController;
 use App\Growth\GrowthController;
 use App\Patients\AccessGrantController;
@@ -87,6 +88,7 @@ $router->post('/pacientes/{id:\d+}/energia', [EnergyController::class, 'store'],
 
 $router->get('/pacientes/{id:\d+}/plano', [MealPlanController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/plano/novo', [MealPlanController::class, 'create'], $authMw);
+$router->get('/alimentos/busca', [FoodController::class, 'search'], $authMw);
 $router->post('/planos/previa', [MealPlanController::class, 'preview'], $authMw);
 $router->get('/planos/{planId:\d+}', [MealPlanController::class, 'show'], $authMw);
 $router->get('/planos/{planId:\d+}/imprimir', [MealPlanController::class, 'print'], $authMw);

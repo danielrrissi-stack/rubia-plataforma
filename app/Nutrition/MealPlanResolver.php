@@ -50,16 +50,21 @@ final class MealPlanResolver
 
     private function meal(array $m, int $pos, bool $allowEmpty): array
     {
-        $name = trim((string) ($m['name'] ?? ''));
+        $name = trim($this->str($m['name'] ?? null) ?? '');
         $label = $name === '' ? 'Refeição ' . $pos : $name;
         if ($name === '' || mb_strlen($name, 'UTF-8') > 60) {
             $this->errors[] = $label . ': informe o nome da refeição (até 60 caracteres).';
         }
-        $time = trim((string) ($m['time'] ?? ''));
-        if ($time !== '' && !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time)) {
+        $timeRaw = $this->str($m['time'] ?? null);
+        $time = trim($timeRaw ?? '');
+        if ($timeRaw === null || ($time !== '' && !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time))) {
             $this->errors[] = $label . ': informe o horário no formato HH:MM.';
         }
-        $note = mb_substr(trim((string) ($m['note'] ?? '')), 0, 500, 'UTF-8');
+        $noteRaw = $this->str($m['note'] ?? null);
+        if ($noteRaw === null) {
+            $this->errors[] = $label . ': observação da refeição inválida.';
+        }
+        $note = mb_substr(trim($noteRaw ?? ''), 0, 500, 'UTF-8');
         $options = $m['options'] ?? [];
         $options = is_array($options) ? array_values($options) : [];
         if (count($options) > self::MAX_OPTIONS) {
@@ -92,7 +97,11 @@ final class MealPlanResolver
             $it = is_array($it) ? $it : [];
             $itemLabel = $label . ', item ' . ($k + 1);
             $row = $this->line($it, $itemLabel);
-            $row['note'] = mb_substr(trim((string) ($it['note'] ?? '')), 0, 200, 'UTF-8');
+            $itemNote = $this->str($it['note'] ?? null);
+            if ($itemNote === null) {
+                $this->errors[] = $itemLabel . ': observação do item inválida.';
+            }
+            $row['note'] = mb_substr(trim($itemNote ?? ''), 0, 200, 'UTF-8');
             $subs = $it['subs'] ?? [];
             $subs = is_array($subs) ? array_values($subs) : [];
             if (count($subs) > self::MAX_SUBS) {
@@ -121,9 +130,12 @@ final class MealPlanResolver
         if ($food === null) {
             $this->errors[] = $label . ': alimento não encontrado.';
         }
-        $measureId = $this->int($in['measure_id'] ?? null);
+        $measureRaw = $in['measure_id'] ?? null;
+        $measureId = $this->int($measureRaw);
         $measure = null;
-        if ($measureId !== null && $food !== null) {
+        if ($measureId === null && $measureRaw !== null && $measureRaw !== '' && $measureRaw !== false) {
+            $this->errors[] = $label . ': medida inválida.';
+        } elseif ($measureId !== null && $food !== null) {
             $measure = $this->foods->findMeasure($measureId);
             if ($measure === null) {
                 $this->errors[] = $label . ': medida não encontrada.';
@@ -176,6 +188,15 @@ final class MealPlanResolver
             return null;
         }
         return is_int($raw) || (is_string($raw) && ctype_digit($raw)) ? (int) $raw : null;
+    }
+
+    /** Texto escalar (ausente => ''); lista/objeto => null para virar erro de validacao. */
+    private function str(mixed $raw): ?string
+    {
+        if ($raw === null) {
+            return '';
+        }
+        return is_scalar($raw) ? mb_scrub((string) $raw, 'UTF-8') : null;
     }
 
     private function nutrient(?array $food, string $col): ?float

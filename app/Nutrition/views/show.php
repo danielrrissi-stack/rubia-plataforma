@@ -24,6 +24,9 @@ $family = false;
 </div>
 <?php endif; ?>
 
+<?php if ($plan['mode'] === 'estruturado' && $plan['total_kcal'] !== null): ?>
+  <p class="ajuda">Total do dia: <?= e(fmt_num((float) $plan['total_kcal'], 0)) ?> kcal · proteína <?= e(fmt_num($plan['total_protein_g'] === null ? null : (float) $plan['total_protein_g'])) ?> g · carboidrato <?= e(fmt_num($plan['total_carb_g'] === null ? null : (float) $plan['total_carb_g'])) ?> g · gordura <?= e(fmt_num($plan['total_fat_g'] === null ? null : (float) $plan['total_fat_g'])) ?> g (calculado na publicação)</p>
+<?php endif; ?>
 <section class="cartao plano-leitura"><?php require __DIR__ . '/_plan_body.php'; ?></section>
 
 <?php if ($canEdit && $plan['status'] === 'publicado'): ?>

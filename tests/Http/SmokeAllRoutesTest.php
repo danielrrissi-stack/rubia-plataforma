@@ -51,6 +51,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/medidas/{id}/versoes'                    => [200, 200, 403, 403, 403],
         '/pacientes/{id}/energia'                  => [200, 200, 403, 403, 403],
         '/pacientes/{id}/plano'                    => [200, 200, 403, 403, 403],
+        '/alimentos/busca'                         => [200, 200, 403, 403, 403],
         '/planos/{planId}'                         => [200, 200, 403, 403, 403],
         '/planos/{planId}/imprimir'                => [200, 200, 403, 403, 403],
         '/planos/{planId}/editar'                  => [302, 302, 403, 403, 403], // publicado redireciona para show

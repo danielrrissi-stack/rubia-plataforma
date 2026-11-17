@@ -150,4 +150,26 @@ final class MealPlanResolverTest extends DbTestCase
     {
         $this->assertGreaterThanOrEqual(1, count($this->errors($this->plan(['food_id' => 999999, 'qty' => '0', 'measure_id' => null]))));
     }
+
+    public function test_non_integer_measure_is_an_error(): void
+    {
+        $e = $this->errors($this->plan(['food_id' => 53, 'qty' => '1', 'measure_id' => 'abc']));
+        $this->assertStringContainsString('Café da manhã, opção 1, item 1: medida inválida.', implode(' ', $e));
+        $e = $this->errors($this->plan(['food_id' => 53, 'qty' => '1', 'measure_id' => ['1']]));
+        $this->assertStringContainsString('medida inválida', implode(' ', $e));
+    }
+
+    public function test_array_fields_are_validation_errors_not_warnings(): void
+    {
+        $in = $this->plan(['food_id' => 53, 'qty' => ['1'], 'measure_id' => null, 'note' => ['x']]);
+        $in['meals'][0]['name'] = ['a'];
+        $in['meals'][0]['time'] = ['07:00'];
+        $in['meals'][0]['note'] = ['n'];
+        $e = implode(' ', $this->errors($in));
+        $this->assertStringContainsString('nome da refeição', $e);
+        $this->assertStringContainsString('horário', $e);
+        $this->assertStringContainsString('observação da refeição inválida', $e);
+        $this->assertStringContainsString('maior que zero', $e);
+        $this->assertStringContainsString('observação do item inválida', $e);
+    }
 }

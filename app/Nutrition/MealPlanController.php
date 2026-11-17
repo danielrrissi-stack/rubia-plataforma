@@ -13,7 +13,8 @@ use App\Core\View;
 
 final class MealPlanController
 {
-    private const DEFAULT_STRUCTURE = ['v' => 1, 'meals' => []];
+    /** Refeicoes sugeridas ao criar um plano estruturado em branco (removiveis). */
+    private const SUGGESTED_MEALS = ['Café da manhã', 'Lanche da manhã', 'Almoço', 'Lanche da tarde', 'Jantar', 'Ceia'];
 
     /** GET /pacientes/{id}/plano */
     public function index(Request $r): Response
@@ -76,7 +77,7 @@ final class MealPlanController
                     'title' => 'Plano alimentar - ' . date('d/m/Y'),
                     'body_text' => null,
                     'guidance_text' => null,
-                    'structure' => $mode === 'estruturado' ? self::DEFAULT_STRUCTURE : null,
+                    'structure' => $mode === 'estruturado' ? self::suggestedStructure() : null,
                 ], (int) $user['id'], $r);
             }
         } catch (\PDOException $e) {
@@ -126,16 +127,16 @@ final class MealPlanController
         ], []);
     }
 
-    /** POST /planos/{planId}/editar (modo texto; o estruturado e da Task 7) */
+    /** POST /planos/{planId}/editar (texto: formulario com redirect; estruturado: JSON para o editor) */
     public function save(Request $r): Response
     {
         $plan = $this->authPlan($r, 'edit');
         $user = $r->attributes['user'];
+        if ($plan['mode'] === 'estruturado') {
+            return $this->saveStructured($r, $plan, (int) $user['id']);
+        }
         if ($plan['status'] !== 'rascunho') {
             return Response::redirect('/planos/' . $plan['id']);
-        }
-        if ($plan['mode'] !== 'texto') {
-            return Response::redirect('/planos/' . $plan['id'] . '/editar');
         }
         $post = $r->post;
         $errors = [];
@@ -179,6 +180,144 @@ final class MealPlanController
         return Response::redirect('/planos/' . $plan['id'] . '/editar');
     }
 
+    /**
+     * Salvamento do editor estruturado (botao ou automatico). Valida tudo antes de gravar; 422 nao grava nada.
+     * Rascunho aceita refeicao sem itens; a publicacao e que recusa.
+     */
+    private function saveStructured(Request $r, array $plan, int $by): Response
+    {
+        if ($plan['status'] !== 'rascunho') {
+            return Response::json(['ok' => false, 'errors' => ['Este plano já foi publicado; não é mais um rascunho.']], 409);
+        }
+        $post = $r->post;
+        $errors = [];
+        $titleRaw = $post['titulo'] ?? null;
+        $title = is_string($titleRaw) ? trim(mb_scrub($titleRaw, 'UTF-8')) : '';
+        $len = mb_strlen($title, 'UTF-8');
+        if ($len < 2 || $len > 150) {
+            $errors[] = 'Informe o título do plano (2 a 150 caracteres).';
+        }
+        if (isset($post['orientacoes']) && !is_string($post['orientacoes'])) {
+            $errors[] = 'As orientações são inválidas.';
+        }
+        $guidance = self::clean($post['orientacoes'] ?? '');
+        $raw = $post['estrutura'] ?? null;
+        $input = is_string($raw) ? json_decode($raw, true, 32) : null;
+        $structure = null;
+        if (!is_array($input)) {
+            $errors[] = 'Não foi possível ler as refeições do plano. Recarregue a página e tente de novo.';
+        } else {
+            try {
+                $structure = (new MealPlanResolver(Container::foods()))->resolve($input, true);
+            } catch (InvalidPlanException $e) {
+                $errors = array_merge($errors, $e->errors);
+            }
+        }
+        if ($errors !== [] || $structure === null) {
+            return Response::json(['ok' => false, 'errors' => $errors], 422);
+        }
+        $base = isset($post['revisao']) && is_string($post['revisao']) && ctype_digit($post['revisao']) ? (int) $post['revisao'] : null;
+        $auto = ($post['auto'] ?? '') === '1';
+        try {
+            $res = Container::mealPlans()->saveDraft((int) $plan['id'], [
+                'title' => $title, 'body_text' => null, 'guidance_text' => $guidance, 'structure' => $structure,
+            ], $by, $r, $auto, $base);
+        } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
+        } catch (\RuntimeException $e) {
+            return Response::json(['ok' => false, 'errors' => [$e->getMessage()]], 409);
+        }
+        $options = [];
+        foreach ($structure['meals'] as $mi => $meal) {
+            $options[$mi] = [];
+            foreach ($meal['options'] as $oi => $opt) {
+                $options[$mi][$oi] = MealPlanCalculator::option($opt);
+            }
+        }
+        $day = MealPlanCalculator::day($structure);
+        return Response::json([
+            'ok' => true,
+            'revision' => $res['revision'],
+            'conflict' => $res['conflict'],
+            'totals' => ['day' => $day, 'options' => $options],
+            'percents' => MealPlanCalculator::macroPercents($day),
+        ]);
+    }
+
+    /**
+     * Dados iniciais do editor estruturado (data-plano): refeicoes na forma de entrada do resolvedor + catalogo dos
+     * alimentos usados (valores atuais por 100 g e medidas, para o calculo no navegador bater com o do servidor ao salvar).
+     * Publico para o editor de modelos (Task 9).
+     */
+    public static function editorData(?array $structure): array
+    {
+        $foods = Container::foods();
+        $catalog = [];
+        $line = static function (array $l) use ($foods, &$catalog): array {
+            $fid = (int) ($l['food_id'] ?? 0);
+            $mid = isset($l['measure_id']) ? (int) $l['measure_id'] : null;
+            if ($fid > 0 && !isset($catalog[$fid])) {
+                $f = $foods->find($fid);
+                $catalog[$fid] = $f === null ? null : [
+                    'id' => $fid, 'name' => (string) $f['name'],
+                    'per100' => [
+                        'kcal' => $f['kcal'] === null ? null : (float) $f['kcal'],
+                        'protein' => $f['protein_g'] === null ? null : (float) $f['protein_g'],
+                        'carb' => $f['carb_g'] === null ? null : (float) $f['carb_g'],
+                        'fat' => $f['fat_g'] === null ? null : (float) $f['fat_g'],
+                        'fiber' => $f['fiber_g'] === null ? null : (float) $f['fiber_g'],
+                    ],
+                    'measures' => array_map(static fn(array $m): array => [
+                        'id' => (int) $m['id'], 'name' => (string) $m['name'],
+                        'plural' => $m['name_plural'] === null ? null : (string) $m['name_plural'], 'grams' => (float) $m['grams'],
+                    ], $foods->measures($fid)),
+                ];
+            }
+            if ($mid !== null && isset($catalog[$fid]) && !in_array($mid, array_column($catalog[$fid]['measures'], 'id'), true)) {
+                $m = $foods->findMeasure($mid); // medida desativada depois: continua valendo neste plano
+                if ($m !== null && (int) $m['food_id'] === $fid) {
+                    $catalog[$fid]['measures'][] = [
+                        'id' => $mid, 'name' => (string) $m['name'],
+                        'plural' => $m['name_plural'] === null ? null : (string) $m['name_plural'], 'grams' => (float) $m['grams'],
+                    ];
+                }
+            }
+            return [
+                'food_id' => $fid, 'food_name' => (string) ($l['food_name'] ?? ''), 'qty' => (float) ($l['qty'] ?? 0),
+                'measure_id' => $mid,
+            ];
+        };
+        $meals = [];
+        foreach ((array) ($structure['meals'] ?? []) as $meal) {
+            $opts = [];
+            foreach ((array) ($meal['options'] ?? []) as $opt) {
+                $items = [];
+                foreach ((array) ($opt['items'] ?? []) as $it) {
+                    $items[] = $line((array) $it) + [
+                        'note' => (string) ($it['note'] ?? ''),
+                        'subs' => array_map(static fn($sub): array => $line((array) $sub), (array) ($it['subs'] ?? [])),
+                    ];
+                }
+                $opts[] = ['items' => $items];
+            }
+            $meals[] = [
+                'name' => (string) ($meal['name'] ?? ''), 'time' => (string) ($meal['time'] ?? ''),
+                'note' => (string) ($meal['note'] ?? ''), 'options' => $opts,
+            ];
+        }
+        return ['meals' => $meals, 'foods' => array_values(array_filter($catalog))];
+    }
+
+    /** @return array{v:int,meals:list<array>} */
+    private static function suggestedStructure(): array
+    {
+        $meals = [];
+        foreach (self::SUGGESTED_MEALS as $name) {
+            $meals[] = ['name' => $name, 'time' => '', 'note' => '', 'options' => [['items' => []]]];
+        }
+        return ['v' => 1, 'meals' => $meals];
+    }
+
     /** POST /planos/previa */
     public function preview(Request $r): Response
     {
@@ -194,7 +333,7 @@ final class MealPlanController
             Container::mealPlans()->publish((int) $plan['id'], $by, $r);
             Session::flash('ok', 'Plano publicado.');
             return Response::redirect('/pacientes/' . $plan['patient_id'] . '/plano');
-        }, fn(array $plan): string => '/planos/' . $plan['id']);
+        }, fn(array $plan): string => '/planos/' . $plan['id'] . ($plan['status'] === 'rascunho' ? '/editar' : ''));
     }
 
     public function end(Request $r): Response
@@ -319,7 +458,9 @@ final class MealPlanController
     {
         $pid = (int) $plan['patient_id'];
         $tpl = $plan['mode'] === 'texto' ? 'Nutrition/views/edit_text.php' : 'Nutrition/views/edit_structured.php';
+        $goal = $plan['mode'] === 'texto' ? null : Container::energyGoals()->current($pid);
         return $this->page($tpl, 'Editar plano alimentar', $r, [
+            'metaKcal' => $goal === null ? null : (int) $goal['get_kcal'],
             'plan' => $plan,
             'patient' => $this->patient($pid),
             'values' => $values,
@@ -328,6 +469,8 @@ final class MealPlanController
                 'kind' => 'plan',
                 'saveUrl' => '/planos/' . $plan['id'] . '/editar',
                 'backUrl' => '/pacientes/' . $pid . '/plano',
+                'energyUrl' => '/pacientes/' . $pid . '/energia',
+                'publishUrl' => '/planos/' . $plan['id'] . '/publicar',
             ],
         ]);
     }
