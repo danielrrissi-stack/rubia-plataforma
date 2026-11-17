@@ -83,6 +83,35 @@ final class PortalController
         ]);
     }
 
+    public function food(Request $r): Response
+    {
+        [$user, $patient, $redirect] = $this->open($r, 'view', Policy::NUTRICAO);
+        if ($redirect !== null) {
+            return $redirect;
+        }
+        $plan = $this->currentPlan($patient, $user, $r, false);
+        return $this->page('Portal/views/food.php', 'Alimentação', $user, [
+            'patient' => $patient,
+            'first' => $this->firstName($patient),
+            'plan' => $plan,
+        ]);
+    }
+
+    public function foodPrint(Request $r): Response
+    {
+        [$user, $patient, $redirect] = $this->open($r, 'view', Policy::NUTRICAO);
+        if ($redirect !== null) {
+            return $redirect;
+        }
+        $plan = $this->currentPlan($patient, $user, $r, true);
+        return Response::html(View::render('Portal/views/food_print.php', [
+            'patient' => $patient,
+            'first' => $this->firstName($patient),
+            'plan' => $plan,
+            'title' => 'Plano alimentar',
+        ], null));
+    }
+
     public function measureForm(Request $r): Response
     {
         [$user, $patient, $redirect] = $this->open($r, 'edit');
@@ -194,14 +223,14 @@ final class PortalController
     }
 
     /** @return array{0:array,1:array,2:?Response} usuario, paciente, redirecionamento */
-    private function open(Request $r, string $action): array
+    private function open(Request $r, string $action, string $section = Policy::ANTROPOMETRIA): array
     {
         if (($redirect = $this->guard($r)) !== null) {
             return [[], [], $redirect];
         }
         $user = $r->attributes['user'];
         $id = (int) $r->params['id'];
-        Container::gate()->authorize($user, $action, Policy::ANTROPOMETRIA, $id, $r);
+        Container::gate()->authorize($user, $action, $section, $id, $r);
         $patient = Container::patients()->find($id);
         if ($patient === null) {
             throw new HttpException(404);
@@ -222,6 +251,26 @@ final class PortalController
         }
         usort($out, static fn(array $a, array $b): int => strcmp((string) $a['full_name'], (string) $b['full_name']));
         return $out;
+    }
+
+    /** Plano vigente com o nome de quem publicou; audita a visualizacao. */
+    private function currentPlan(array $patient, array $user, Request $r, bool $print): ?array
+    {
+        $pid = (int) $patient['id'];
+        $plan = Container::mealPlans()->current($pid);
+        if ($plan === null) {
+            return null;
+        }
+        $plan['publisher'] = '';
+        foreach (Container::mealPlans()->history($pid) as $h) {
+            if ((int) $h['id'] === (int) $plan['id']) {
+                $plan['publisher'] = (string) ($h['publisher'] ?? '');
+                break;
+            }
+        }
+        $meta = ['section' => 'nutricao', 'portal' => true] + ($print ? ['print' => true] : []);
+        Container::audit()->record((int) $user['id'], 'view', 'meal_plans', (int) $plan['id'], $pid, null, $meta, $r);
+        return $plan;
     }
 
     private function firstName(array $p): string

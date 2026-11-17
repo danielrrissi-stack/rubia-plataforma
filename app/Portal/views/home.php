@@ -9,6 +9,10 @@ $pid = (int) $patient['id'];
     <span class="portal-cartao-titulo">Crescimento</span>
     <span class="portal-cartao-texto">Veja como <?= e($first) ?> está se desenvolvendo.</span>
   </a></li>
+  <li><a class="portal-cartao" href="<?= e(url('/portal/p/' . $pid . '/alimentacao')) ?>">
+    <span class="portal-cartao-titulo">Alimentação</span>
+    <span class="portal-cartao-texto">Veja o plano alimentar de <?= e($first) ?>.</span>
+  </a></li>
 </ul>
 <p><a class="btn" href="<?= e(url('/portal/p/' . $pid . '/medidas/nova')) ?>">Registrar medida</a></p>
 <p class="portal-links">

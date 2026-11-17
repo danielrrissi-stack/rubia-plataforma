@@ -44,6 +44,8 @@ final class PolicyTest extends TestCase
             $this->assertTrue($p->allows($u, 'view', Policy::ANTROPOMETRIA));
             $this->assertTrue($p->allows($u, 'edit', Policy::ANTROPOMETRIA));
             $this->assertFalse($p->allows($u, 'edit', Policy::CADASTRO_BASICO));
+            $this->assertTrue($p->allows($u, 'view', Policy::NUTRICAO));
+            $this->assertFalse($p->allows($u, 'edit', Policy::NUTRICAO));
         }
         $c = $this->u('crianca');
         $this->assertFalse($p->allows($c, 'view', Policy::CADASTRO_BASICO));

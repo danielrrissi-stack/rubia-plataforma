@@ -108,6 +108,8 @@ $router->get('/prontuario/{entryId:\d+}/versoes', [RecordController::class, 'ver
 $router->get('/portal', [PortalController::class, 'index'], $authMw);
 $router->get('/portal/p/{id:\d+}', [PortalController::class, 'home'], $authMw);
 $router->get('/portal/p/{id:\d+}/crescimento', [PortalController::class, 'growth'], $authMw);
+$router->get('/portal/p/{id:\d+}/alimentacao', [PortalController::class, 'food'], $authMw);
+$router->get('/portal/p/{id:\d+}/alimentacao/imprimir', [PortalController::class, 'foodPrint'], $authMw);
 $router->get('/portal/p/{id:\d+}/medidas/nova', [PortalController::class, 'measureForm'], $authMw);
 $router->post('/portal/p/{id:\d+}/medidas/nova', [PortalController::class, 'measureStore'], $authMw);
 $router->get('/portal/conta', [PortalController::class, 'account'], $authMw);

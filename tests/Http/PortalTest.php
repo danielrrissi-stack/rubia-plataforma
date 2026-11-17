@@ -64,7 +64,7 @@ final class PortalTest extends DbTestCase
         $this->assertSame(200, $home->status);
         $this->assertStringContainsString('Olá! Bem-vindo ao acompanhamento', $home->body);
         $this->assertStringContainsString('Crescimento', $home->body);
-        $this->assertStringNotContainsString('Alimentação', $home->body);
+        $this->assertStringContainsString('Alimentação', $home->body);
     }
 
     public function testOtherChildIsForbiddenAndAudited(): void

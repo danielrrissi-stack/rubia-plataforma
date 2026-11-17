@@ -10,6 +10,7 @@ namespace App\Access;
  * ATENCAO: para paciente/responsavel, edit ANTROPOMETRIA retorna true, mas a
  * restricao "apenas criar medidas com source='familia'" e aplicada pelos
  * controllers (medidas), nao por esta classe.
+ * A familia pode ver NUTRICAO (plano alimentar vigente, via portal), nunca editar.
  */
 final class Policy
 {
@@ -44,11 +45,11 @@ final class Policy
             'edit' => [self::CADASTRO, self::AGENDA],
         ],
         'paciente' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO],
             'edit' => [self::ANTROPOMETRIA],
         ],
         'responsavel' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO],
             'edit' => [self::ANTROPOMETRIA],
         ],
         'crianca' => ['view' => [], 'edit' => []],
