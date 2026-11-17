@@ -63,7 +63,7 @@ final class FoodRepository
     /** Medidas ativas do alimento. */
     public function measures(int $foodId): array
     {
-        return $this->db->all('SELECT * FROM food_measures WHERE food_id = ? AND active = 1 ORDER BY name', [$foodId]);
+        return $this->db->all('SELECT * FROM food_measures WHERE food_id = ? AND active = 1 ORDER BY id', [$foodId]);
     }
 
     public function findMeasure(int $id): ?array

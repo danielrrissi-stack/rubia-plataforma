@@ -39,17 +39,32 @@ final class TemplateRepository
         ], $by, $r);
     }
 
-    public function update(int $id, array $t, array $user, ?Request $r = null): void
+    /**
+     * $auto = salvamento automatico do editor estruturado (a cada 30 s): auditado no maximo a cada 10 minutos por
+     * pessoa e modelo, como os rascunhos de plano. Salvamento explicito e sempre auditado.
+     */
+    public function update(int $id, array $t, array $user, ?Request $r = null, bool $auto = false): void
     {
         $before = $this->mustFind($id);
         $this->assertOwner($before, $user);
         $row = $this->clean($t);
-        $this->db->transaction(function () use ($id, $row, $before, $user, $r): void {
+        $this->db->transaction(function () use ($id, $row, $before, $user, $r, $auto): void {
             $this->db->run(
                 'UPDATE meal_plan_templates SET title = ?, mode = ?, body_text = ?, guidance_text = ?, structure_json = ?, updated_at = NOW() WHERE id = ?',
                 [$row['title'], $row['mode'], $row['body_text'], $row['guidance_text'], $row['structure_json'], $id],
             );
-            $this->audit->record((int) $user['id'], 'update', 'meal_plan_templates', $id, null, $this->auditView($before), $this->auditView($row), $r);
+            if ($auto) {
+                // Indice (user_id, created_at): consulta curta mesmo com auditoria grande.
+                $recent = $this->db->one(
+                    "SELECT id FROM audit_log WHERE user_id = ? AND created_at >= NOW() - INTERVAL 10 MINUTE
+                       AND entity = 'meal_plan_templates' AND entity_id = ? AND action = 'update' LIMIT 1",
+                    [(int) $user['id'], $id],
+                );
+                if ($recent !== null) {
+                    return;
+                }
+            }
+            $this->audit->record((int) $user['id'], 'update', 'meal_plan_templates', $id, null, $this->auditView($before), $this->auditView($row) + ['auto' => $auto], $r);
         });
     }
 

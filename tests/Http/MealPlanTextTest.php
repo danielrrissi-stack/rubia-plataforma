@@ -93,6 +93,18 @@ final class MealPlanTextTest extends DbTestCase
         $this->assertNotNull($this->db->one('SELECT discarded_at FROM meal_plans WHERE id = ?', [$first])['discarded_at']);
     }
 
+    public function testInvalidSourceDoesNotDiscardDraft(): void
+    {
+        [, $p] = $this->setup2();
+        $draft = $this->planIdFrom($this->newDraft((int) $p['id']));
+        foreach ([['origem' => 'modelo', 'modelo_id' => '999999'], ['origem' => 'vigente']] as $src) {
+            $res = $this->newDraft((int) $p['id'], $src + ['descartar_rascunho' => '1']);
+            $this->assertSame(302, $res->status);
+            $this->assertSame('/pacientes/' . $p['id'] . '/plano', $res->headers['Location']);
+            $this->assertNull($this->db->one('SELECT discarded_at FROM meal_plans WHERE id = ?', [$draft])['discarded_at']);
+        }
+    }
+
     public function testPreviewEscapesHtml(): void
     {
         $this->setup2();
@@ -211,6 +223,32 @@ final class MealPlanTextTest extends DbTestCase
         $with = $this->get('/planos/' . $id . '/imprimir', ['totais' => '1']);
         $this->assertSame(200, $with->status);
         $this->assertStringContainsString('Totais do dia', $with->body);
+        $this->assertStringContainsString('kcal', $with->body);
+        // Sem o quadro de totais, a impressao pode ir para a familia: nenhuma caloria (nem por opcao).
+        $without = $this->get('/planos/' . $id . '/imprimir');
+        $this->assertStringContainsString('Arroz', $without->body);
+        $this->assertStringNotContainsString('kcal', $without->body);
+    }
+
+    public function testPublishFailureKeepsSavedRevision(): void
+    {
+        [, $p] = $this->setup2();
+        $planId = $this->planIdFrom($this->newDraft((int) $p['id']));
+        $res = $this->post('/planos/' . $planId . '/editar', [
+            'titulo' => 'Plano', 'corpo' => '', 'orientacoes' => '', 'revisao' => '1', 'acao' => 'publicar',
+        ]);
+        $this->assertSame(200, $res->status);
+        $this->assertStringContainsString('Plano vazio', $res->body);
+        // O salvamento aconteceu (revisao 2): a tela devolvida carrega a revisao nova.
+        $this->assertSame(2, (int) Container::mealPlans()->find($planId)['revision']);
+        $this->assertStringContainsString('name="revisao" value="2"', $res->body);
+        $res = $this->post('/planos/' . $planId . '/editar', [
+            'titulo' => 'Plano', 'corpo' => "ALMOÇO
+• arroz", 'orientacoes' => '', 'revisao' => '2', 'acao' => 'publicar',
+        ]);
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/pacientes/' . $p['id'] . '/plano', $res->headers['Location']);
+        $this->assertSame('publicado', Container::mealPlans()->find($planId)['status']);
     }
 
     public function testNutritionistWithoutGrant403(): void

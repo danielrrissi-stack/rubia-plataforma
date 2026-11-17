@@ -30,6 +30,13 @@ final class PlanTextTest extends TestCase
         $this->assertStringContainsString('&lt;script&gt;', $html);
     }
 
+    public function test_meal_title_with_colon_and_time(): void
+    {
+        $this->assertSame('<h3>Café da manhã (7h)</h3><ul><li>1 pão</li></ul>', PlanText::toHtml("Café da manhã (7h):\n• 1 pão"));
+        // O que o botao "Titulo de refeicao" insere antes de a pessoa digitar o nome.
+        $this->assertSame('<h3>Nome da refeição</h3><ul><li>1 pão</li></ul>', PlanText::toHtml("Nome da refeição:\n• 1 pão"));
+    }
+
     public function test_short_caps_word_is_not_title(): void
     {
         $this->assertSame('<p>OK</p>', PlanText::toHtml('OK'));

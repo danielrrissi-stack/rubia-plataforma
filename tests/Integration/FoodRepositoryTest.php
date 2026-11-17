@@ -36,6 +36,15 @@ final class FoodRepositoryTest extends DbTestCase
         $this->assertSame('fatia', Container::foods()->findMeasure($mid)['name']);
     }
 
+    public function test_measures_keep_insertion_order(): void
+    {
+        // Ordem da POF (a primeira e a mais comum) e o padrao do editor; nao ordenar por nome.
+        $id = $this->db->insert('foods', ['source' => 'proprio', 'name' => 'Bolo da casa', 'name_search' => 'bolo da casa', 'kcal' => 300]);
+        $a = $this->db->insert('food_measures', ['food_id' => $id, 'source' => 'proprio', 'name' => 'pedaço médio', 'grams' => 60]);
+        $b = $this->db->insert('food_measures', ['food_id' => $id, 'source' => 'proprio', 'name' => 'fatia fina', 'grams' => 30]);
+        $this->assertSame([$a, $b], array_map('intval', array_column(Container::foods()->measures($id), 'id')));
+    }
+
     public function test_inactive_hidden_from_search_but_found_by_id(): void
     {
         $this->db->run('UPDATE foods SET active = 0 WHERE id = 53');

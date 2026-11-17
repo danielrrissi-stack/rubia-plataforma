@@ -39,6 +39,27 @@ final class TemplateRepositoryTest extends DbTestCase
         $this->assertSame('mudou', Container::mealPlanTemplates()->find($tid)['body_text']);
     }
 
+    public function test_autosave_audit_is_throttled(): void
+    {
+        $a = $this->makeUser('nutricionista');
+        $repo = Container::mealPlanTemplates();
+        $tid = $repo->create(['title' => 'Modelo A', 'mode' => 'texto', 'body_text' => 'x', 'guidance_text' => null, 'structure' => null], (int) $a['id']);
+        $count = fn(): int => (int) $this->db->one(
+            "SELECT COUNT(*) c FROM audit_log WHERE entity = 'meal_plan_templates' AND entity_id = ? AND action = 'update'",
+            [$tid],
+        )['c'];
+        $upd = ['title' => 'Modelo A', 'mode' => 'texto', 'body_text' => 'y', 'guidance_text' => null, 'structure' => null];
+        $repo->update($tid, $upd, $a, null, true);
+        $repo->update($tid, $upd, $a, null, true);
+        $repo->update($tid, $upd, $a, null, true);
+        $this->assertSame(1, $count());                 // automaticos: no maximo um a cada 10 min
+        $repo->update($tid, $upd, $a);
+        $this->assertSame(2, $count());                 // explicito: sempre
+        $this->db->run("UPDATE audit_log SET created_at = NOW() - INTERVAL 11 MINUTE WHERE entity = 'meal_plan_templates' AND entity_id = ?", [$tid]);
+        $repo->update($tid, $upd, $a, null, true);
+        $this->assertSame(3, $count());
+    }
+
     public function test_authorship_rule_and_delete(): void
     {
         $admin = $this->makeUser('medico', ['is_admin' => 1]);

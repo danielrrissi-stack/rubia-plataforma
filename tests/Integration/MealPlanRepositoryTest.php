@@ -174,6 +174,35 @@ final class MealPlanRepositoryTest extends DbTestCase
         }
     }
 
+    public function test_publish_rejects_empty_extra_option(): void
+    {
+        $st = $this->structure('Almoço', 1);
+        $st['meals'][0]['options'][] = ['items' => []];
+        $id = $this->repo->createDraft($this->pid, 'estruturado', $this->data($st), $this->uid);
+        try {
+            $this->repo->publish($id, $this->uid);
+            $this->fail('esperava exceção');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Refeição Almoço: a opção 2 está vazia.', $e->getMessage());
+        }
+        $this->assertSame('rascunho', $this->repo->find($id)['status']);
+
+        // Mesmo com observacao: refeicao com 2+ opcoes nao publica opcao vazia.
+        $st['meals'][0]['note'] = 'fruta à vontade';
+        $this->repo->saveDraft($id, $this->data($st), $this->uid);
+        try {
+            $this->repo->publish($id, $this->uid);
+            $this->fail('esperava exceção');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Refeição Almoço: a opção 2 está vazia.', $e->getMessage());
+        }
+
+        // Refeicao so com observacao (opcao unica vazia) continua valendo.
+        $this->repo->saveDraft($id, $this->data($this->structure('Almoço', 0, 'fruta à vontade')), $this->uid);
+        $this->repo->publish($id, $this->uid);
+        $this->assertSame('publicado', $this->repo->find($id)['status']);
+    }
+
     public function test_text_plan_publishes_with_null_totals(): void
     {
         $t = $this->repo->createDraft($this->pid, 'texto', $this->data(null, 'Texto', 'Café da manhã: pão'), $this->uid);

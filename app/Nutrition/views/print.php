@@ -2,7 +2,8 @@
 /** @var array $plan @var array $patient @var bool $withTotals */
 use App\Nutrition\MealPlanCalculator;
 
-$family = false;
+// Sem o quadro de totais a impressao pode ser entregue a familia: nenhum numero de calorias (nem por opcao).
+$family = !$withTotals;
 $name = $patient['social_name'] ?: $patient['full_name'];
 ?><!doctype html>
 <html lang="pt-BR">

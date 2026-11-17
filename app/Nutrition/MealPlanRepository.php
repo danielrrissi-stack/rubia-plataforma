@@ -140,10 +140,18 @@ final class MealPlanRepository
                     throw new \RuntimeException('Plano vazio: adicione ao menos uma refeição.');
                 }
                 foreach ($meals as $meal) {
-                    $items = $meal['options'][0]['items'] ?? [];
+                    $options = (array) ($meal['options'] ?? []);
                     $note = trim((string) ($meal['note'] ?? ''));
-                    if ($items === [] && $note === '') {
+                    if (($options[0]['items'] ?? []) === [] && $note === '' && count($options) <= 1) {
                         throw new \RuntimeException('Refeição sem itens: ' . ($meal['name'] ?? '') . '.');
+                    }
+                    // Opcao vazia apareceria para a familia como "Opcao N" sem nada. So e aceita quando e a unica
+                    // opcao da refeicao e a refeicao tem observacao (ex.: "fruta a vontade").
+                    foreach (array_values($options) as $oi => $opt) {
+                        $optItems = (array) (((array) $opt)['items'] ?? []);
+                        if ($optItems === [] && ($note === '' || count($options) > 1)) {
+                            throw new \RuntimeException('Refeição ' . ($meal['name'] ?? '') . ': a opção ' . ($oi + 1) . ' está vazia.');
+                        }
                     }
                 }
                 $d = MealPlanCalculator::day($structure);

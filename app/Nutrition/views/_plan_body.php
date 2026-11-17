@@ -1,7 +1,8 @@
 <?php
 /**
  * Corpo de um plano (texto ou estruturado). Reutilizado pela equipe e pelo portal.
- * @var array $plan @var bool $family  (family = true: linguagem leiga, sem kcal por opcao)
+ * @var array $plan @var bool $family  (family = true: linguagem leiga, sem kcal por opcao nem aviso de valor da TACO)
+ * "Opção N" so aparece quando a refeicao tem 2+ opcoes.
  */
 use App\Nutrition\FamilyPhrase;
 use App\Nutrition\MealPlanCalculator;
@@ -17,11 +18,17 @@ $family = $family ?? false;
     <section class="plano-refeicao">
       <h3><?= e($meal['name']) ?><?= ($meal['time'] ?? '') !== '' ? ' — ' . e($meal['time']) : '' ?></h3>
       <?php if (($meal['note'] ?? '') !== ''): ?><p class="ajuda"><?= e($meal['note']) ?></p><?php endif; ?>
-      <?php foreach ((array) ($meal['options'] ?? []) as $oi => $opt): ?>
-        <h4>Opção <?= e($oi + 1) ?><?php if (!$family): ?> <span class="ajuda">(<?= e(fmt_num(MealPlanCalculator::option($opt)['kcal'], 0)) ?> kcal)</span><?php endif; ?></h4>
+      <?php $opts = (array) ($meal['options'] ?? []); $many = count($opts) > 1; ?>
+      <?php foreach ($opts as $oi => $opt): ?>
+        <?php $kcal = $family ? '' : ' <span class="ajuda">(' . e(fmt_num(MealPlanCalculator::option($opt)['kcal'], 0)) . ' kcal)</span>'; ?>
+        <?php if ($many): ?>
+          <h4>Opção <?= e($oi + 1) ?><?= $kcal ?></h4>
+        <?php elseif ($kcal !== ''): ?>
+          <p class="ajuda"><?= trim($kcal) ?></p>
+        <?php endif; ?>
         <ul>
           <?php foreach ((array) ($opt['items'] ?? []) as $item): ?>
-            <li><?= e(FamilyPhrase::item($item)) ?><?php foreach ((array) ($item['subs'] ?? []) as $sub): ?> ou <?= e(FamilyPhrase::item($sub)) ?><?php endforeach; ?></li>
+            <li><?= e(FamilyPhrase::item($item)) ?><?php if (!$family && MealPlanCalculator::item($item)['missing']): ?> <span class="ajuda">(valor não disponível na TACO)</span><?php endif; ?><?php foreach ((array) ($item['subs'] ?? []) as $sub): ?> ou <?= e(FamilyPhrase::item($sub)) ?><?php if (!$family && MealPlanCalculator::item($sub)['missing']): ?> <span class="ajuda">(valor não disponível na TACO)</span><?php endif; ?><?php endforeach; ?></li>
           <?php endforeach; ?>
         </ul>
       <?php endforeach; ?>

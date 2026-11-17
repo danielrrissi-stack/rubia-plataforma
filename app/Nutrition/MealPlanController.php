@@ -33,6 +33,33 @@ final class MealPlanController
         $origin = is_string($r->post['origem'] ?? null) ? $r->post['origem'] : 'branco';
         $templateId = is_string($r->post['modelo_id'] ?? null) ? (int) $r->post['modelo_id'] : 0;
 
+        // Valida a origem (plano vigente ou modelo) ANTES de descartar o rascunho: origem invalida nao perde o rascunho.
+        $current = null;
+        $tpl = null;
+        $structure = null;
+        if ($origin === 'vigente') {
+            $current = $repo->current($id);
+            if ($current === null) {
+                Session::flash('erro', 'Este paciente não tem plano vigente para copiar.');
+                return Response::redirect('/pacientes/' . $id . '/plano');
+            }
+        } elseif ($origin === 'modelo') {
+            $tpl = Container::mealPlanTemplates()->find($templateId);
+            if ($tpl === null) {
+                Session::flash('erro', 'Escolha um modelo válido.');
+                return Response::redirect('/pacientes/' . $id . '/plano');
+            }
+            if ($tpl['mode'] === 'estruturado') {
+                // Re-resolve com os valores atuais dos alimentos (alimento inativo e aceito; refeicao vazia tambem).
+                try {
+                    $structure = (new MealPlanResolver(Container::foods()))->resolve(is_array($tpl['structure']) ? $tpl['structure'] : [], true);
+                } catch (InvalidPlanException $e) {
+                    Session::flash('erro', 'Não foi possível usar este modelo: ' . implode(' ', $e->errors));
+                    return Response::redirect('/pacientes/' . $id . '/plano');
+                }
+            }
+        }
+
         $draft = $repo->draft($id);
         if ($draft !== null) {
             if (($r->post['descartar_rascunho'] ?? '') !== '1') {
@@ -44,37 +71,17 @@ final class MealPlanController
             try {
                 $repo->discard((int) $draft['id'], (int) $user['id'], $r);
             } catch (\PDOException $e) {
-            throw $e; // erro de banco nunca vai para a tela
-        } catch (\RuntimeException $e) {
+                throw $e; // erro de banco nunca vai para a tela
+            } catch (\RuntimeException $e) {
                 Session::flash('erro', $e->getMessage());
                 return Response::redirect('/pacientes/' . $id . '/plano');
             }
         }
 
         try {
-            if ($origin === 'vigente') {
-                $current = $repo->current($id);
-                if ($current === null) {
-                    Session::flash('erro', 'Este paciente não tem plano vigente para copiar.');
-                    return Response::redirect('/pacientes/' . $id . '/plano');
-                }
+            if ($current !== null) {
                 $planId = $repo->draftFrom((int) $current['id'], (int) $user['id'], $r);
-            } elseif ($origin === 'modelo') {
-                $tpl = Container::mealPlanTemplates()->find($templateId);
-                if ($tpl === null) {
-                    Session::flash('erro', 'Escolha um modelo válido.');
-                    return Response::redirect('/pacientes/' . $id . '/plano');
-                }
-                $structure = null;
-                if ($tpl['mode'] === 'estruturado') {
-                    // Re-resolve com os valores atuais dos alimentos (alimento inativo e aceito; refeicao vazia tambem).
-                    try {
-                        $structure = (new MealPlanResolver(Container::foods()))->resolve(is_array($tpl['structure']) ? $tpl['structure'] : [], true);
-                    } catch (InvalidPlanException $e) {
-                        Session::flash('erro', 'Não foi possível usar este modelo: ' . implode(' ', $e->errors));
-                        return Response::redirect('/pacientes/' . $id . '/plano');
-                    }
-                }
+            } elseif ($tpl !== null) {
                 $planId = $repo->createDraft($id, (string) $tpl['mode'], [
                     'title' => (string) $tpl['title'],
                     'body_text' => $tpl['body_text'],
@@ -167,10 +174,13 @@ final class MealPlanController
         if ($errors !== []) {
             return $this->renderEditor($r, $plan, $values, $errors);
         }
+        $res = null;
         try {
             $res = Container::mealPlans()->saveDraft((int) $plan['id'], [
                 'title' => $title, 'body_text' => $body, 'guidance_text' => $guidance, 'structure' => null,
             ], (int) $user['id'], $r, false, $base);
+            // Ja salvo: se a publicacao falhar, a tela volta com a revisao nova (senao o proximo envio acusaria conflito falso).
+            $values['revisao'] = $res['revision'];
             if (($post['acao'] ?? '') === 'publicar' && !$res['conflict']) {
                 Container::mealPlans()->publish((int) $plan['id'], (int) $user['id'], $r);
                 Session::flash('ok', 'Plano publicado.');

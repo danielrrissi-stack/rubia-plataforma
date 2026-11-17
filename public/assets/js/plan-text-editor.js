@@ -14,23 +14,26 @@
     schedule();
   }
 
+  // Titulo de refeicao: insere "Nome da refeição:" (linha terminada em ":" vira titulo) com o nome ja selecionado,
+  // para a digitacao substituir.
+  function insertTitle() {
+    var placeholder = 'Nome da refeição';
+    var start = area.selectionStart, end = area.selectionEnd;
+    var before = start > 0 && area.value.charAt(start - 1) !== '\n' ? '\n' : '';
+    area.setRangeText(before + placeholder + ':\n', start, end, 'end');
+    var from = start + before.length;
+    area.focus();
+    area.setSelectionRange(from, from + placeholder.length);
+    schedule();
+  }
+
   form.querySelectorAll('[data-insert]').forEach(function (b) {
     b.addEventListener('click', function () {
       var kind = b.getAttribute('data-insert');
-      if (kind === 'titulo') insertAt('\nTÍTULO:\n', false);
+      if (kind === 'titulo') insertTitle();
       else if (kind === 'item') insertAt('\n• ', false);
       else if (kind === 'negrito') insertAt('', true);
     });
-  });
-
-  // Cola sempre como texto puro, sem formatacao do Word/PDF.
-  area.addEventListener('paste', function (ev) {
-    var cd = ev.clipboardData;
-    if (!cd) return;
-    ev.preventDefault();
-    var text = cd.getData('text/plain');
-    area.setRangeText(text, area.selectionStart, area.selectionEnd, 'end');
-    schedule();
   });
 
   function render() {

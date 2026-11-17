@@ -133,6 +133,14 @@
     var s = list.querySelector('[data-opt-total="' + mi + '.' + oi + '"]');
     if (s) s.textContent = optionLabel(t);
   }
+  // Valor nulo na TACO conta zero no total; a equipe ve o aviso (mesma regra do MealPlanCalculator::item 'missing').
+  function missingNote(l) {
+    var f = foods[l.food_id];
+    if (!f) return '';
+    for (var i = 0; i < KEYS.length; i++) if (f.per100[KEYS[i]] == null) return ' · valor não disponível na TACO';
+    return '';
+  }
+  function notChosen(l) { return l.food_name ? 'alimento não escolhido' : ''; }
   function refreshTotals() {
     var day = dayTotals();
     showDay(day, percents(day));
@@ -142,10 +150,10 @@
         o.items.forEach(function (it, ii) {
           var itemKcal = lineTotals(it).kcal;
           var s = list.querySelector('[data-line-kcal="' + mi + '.' + oi + '.' + ii + '"]');
-          if (s) s.textContent = it.food_id ? fmt(itemKcal, 0) + ' kcal' : '';
+          if (s) s.textContent = it.food_id ? fmt(itemKcal, 0) + ' kcal' + missingNote(it) : notChosen(it);
           it.subs.forEach(function (sub, si) {
             var ss = list.querySelector('[data-line-kcal="' + mi + '.' + oi + '.' + ii + '.' + si + '"]');
-            if (ss) ss.textContent = sub.food_id ? fmt(lineTotals(sub).kcal, 0) + ' kcal (item: ' + fmt(itemKcal, 0) + ' kcal)' : '';
+            if (ss) ss.textContent = sub.food_id ? fmt(lineTotals(sub).kcal, 0) + ' kcal (item: ' + fmt(itemKcal, 0) + ' kcal)' + missingNote(sub) : notChosen(sub);
           });
         });
       });
@@ -308,10 +316,17 @@
   function pick(path, foodId) {
     var l = target(path), f = foods[foodId];
     if (!l || !f) return;
+    var prev = l.food_id || l.prev_food_id || null;
     l.food_id = f.id;
     l.food_name = f.name;
-    if (f.measures.length) { l.measure_id = f.measures[0].id; if (!l.qty) l.qty = '1'; }
-    else { l.measure_id = null; if (!l.qty) l.qty = '100'; }
+    l.prev_food_id = null;
+    if (prev !== f.id) {
+      // Trocou o alimento: nunca levar a quantidade para outra unidade (150 g de arroz != 150 conchas de feijao).
+      if (l.measure_id == null && String(l.qty || '').trim() !== '') {
+        // estava em gramas: continua em gramas, mesma quantidade
+      } else if (f.measures.length) { l.measure_id = f.measures[0].id; l.qty = '1'; }
+      else { l.measure_id = null; l.qty = '100'; }
+    }
     changes++;
     rerender('[data-field="qty"][data-path="' + path + '"]');
   }
@@ -321,6 +336,14 @@
     var t = ev.target, field = t.getAttribute('data-field');
     if (!field) return;
     if (field === 'busca') {
+      // Texto mudou: o alimento antigo deixa de valer ate escolher outro na lista (senao a caixa diz "feijao" e salva o arroz).
+      var line0 = target(t.getAttribute('data-path'));
+      if (line0) {
+        if (line0.food_id) line0.prev_food_id = line0.food_id;
+        line0.food_id = null;
+        line0.food_name = t.value;
+        changed();
+      }
       clearTimeout(searchTimer);
       searchTimer = setTimeout(function () { runSearch(t); }, 300);
       return;
@@ -411,7 +434,24 @@
       }) };
     }) };
   }
-  function showErrors(errs) {
+  // Linhas sem alimento escolhido na lista (o payload as deixa de fora): nunca somem em silencio.
+  function incomplete() {
+    var out = [];
+    meals.forEach(function (m, mi) {
+      var label = m.name || ('Refeição ' + (mi + 1));
+      m.options.forEach(function (o, oi) {
+        o.items.forEach(function (it, ii) {
+          var where = label + ', opção ' + (oi + 1) + ', item ' + (ii + 1);
+          if (!it.food_id) out.push(where + ': escolha um alimento da lista (ou remova o item).');
+          it.subs.forEach(function (s, si) {
+            if (!s.food_id) out.push(where + ', substituto ' + (si + 1) + ': escolha um alimento da lista (ou remova o substituto).');
+          });
+        });
+      });
+    });
+    return out;
+  }
+  function showErrors(errs, focus) {
     if (!errorsBox) return;
     var ul = errorsBox.querySelector('ul');
     if (ul) {
@@ -419,13 +459,43 @@
       errs.forEach(function (e) { ul.appendChild(el('li', { text: String(e) })); });
     }
     errorsBox.hidden = errs.length === 0;
+    if (focus && errs.length) {
+      if (!errorsBox.hasAttribute('tabindex')) errorsBox.setAttribute('tabindex', '-1');
+      if (errorsBox.scrollIntoView) errorsBox.scrollIntoView({ block: 'center' });
+      errorsBox.focus({ preventScroll: true });
+    }
   }
   function setStatus(t) { if (statusEl) statusEl.textContent = t; }
 
+  var inflight = null;
+  var SAVE_TIMEOUT_MS = 20000;
   function save(auto) {
-    if (saving) return Promise.resolve(null);
+    if (saving) {
+      // Manual durante um automatico: espera terminar e salva de novo (nunca ignora o clique).
+      if (auto || !inflight) return Promise.resolve(null);
+      return inflight.then(function () { return save(false); });
+    }
+    var missing = incomplete();
+    if (missing.length && !auto) {
+      showErrors(missing, true);
+      setStatus('Não salvo.');
+      return Promise.resolve(null);
+    }
     saving = true;
+    function done(j) { saving = false; inflight = null; return j; }
+    try {
+      inflight = doSave(auto, missing).then(done, function () { return done(null); });
+    } catch (e) {
+      done(null);
+      setStatus('Não foi possível salvar agora. Tente de novo.');
+      return Promise.resolve(null);
+    }
+    return inflight;
+  }
+  function doSave(auto, missing) {
     var at = changes;
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, SAVE_TIMEOUT_MS) : null;
     var body = new FormData();
     body.append('_csrf', csrf);
     body.append('titulo', titleEl ? titleEl.value : '');
@@ -434,21 +504,25 @@
     body.append('revisao', revision);
     body.append('auto', auto ? '1' : '0');
     setStatus(auto ? 'Salvando automaticamente…' : 'Salvando…');
-    return fetch(saveUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json' }, body: body })
+    var opts = { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json' }, body: body };
+    if (ctrl) opts.signal = ctrl.signal;
+    return fetch(saveUrl, opts)
       .then(function (r) {
         return r.json().catch(function () { return null; }).then(function (j) { return { status: r.status, j: j }; });
       })
       .then(function (res) {
-        saving = false;
+        clearTimeout(timer);
         var j = res.j;
+        if (!j && ctrl && ctrl.signal.aborted) throw { name: 'AbortError' }; // tempo esgotado lendo a resposta
         if (!j || !j.ok) {
-          showErrors(j && Array.isArray(j.errors) ? j.errors : ['Não foi possível salvar (erro ' + res.status + '). Tente de novo.']);
+          showErrors(j && Array.isArray(j.errors) ? j.errors : ['Não foi possível salvar (erro ' + res.status + '). Tente de novo.'], !auto);
           setStatus('Não salvo.');
           return null;
         }
         revision = String(j.revision);
         savedChanges = at;
-        showErrors([]);
+        // Automatico com linhas sem alimento: salvou o resto e avisa quais ficaram de fora.
+        showErrors(missing.length ? ['O salvamento automático deixou de fora as linhas sem alimento escolhido:'].concat(missing) : []);
         if (conflictBox && j.conflict) conflictBox.hidden = false;
         if (at === changes && j.totals && j.totals.day) { // servidor e a referencia
           showDay(j.totals.day, j.percents || percents(j.totals.day));
@@ -456,12 +530,18 @@
             (opts || []).forEach(function (t, oi) { showOption(mi, oi, t); });
           });
         }
-        setStatus('Rascunho salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.');
+        setStatus((missing.length ? 'Rascunho salvo em parte às ' : 'Rascunho salvo às ') + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.');
         return j;
       })
-      .catch(function () {
-        saving = false;
-        setStatus('Sem conexão: não foi possível salvar. Tentaremos de novo.');
+      .catch(function (err) {
+        clearTimeout(timer);
+        if (err && err.name === 'AbortError') {
+          setStatus('Não foi possível salvar agora. Tente de novo.');
+          if (!auto) showErrors(['Não foi possível salvar agora. Tente de novo.'], true);
+        } else {
+          setStatus('Sem conexão: não foi possível salvar. Tentaremos de novo.');
+          if (!auto) showErrors(['Sem conexão: não foi possível salvar. Tente de novo.'], true);
+        }
         return null;
       });
   }
@@ -480,7 +560,7 @@
   });
   setInterval(function () { if (changes !== savedChanges && !saving) save(true); }, 30000);
   function guard(ev) {
-    if (changes !== savedChanges) { ev.preventDefault(); ev.returnValue = ''; }
+    if (changes !== savedChanges || incomplete().length) { ev.preventDefault(); ev.returnValue = ''; }
   }
   window.addEventListener('beforeunload', guard);
 

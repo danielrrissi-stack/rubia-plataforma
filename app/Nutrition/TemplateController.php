@@ -80,7 +80,7 @@ final class TemplateController
             try {
                 $repo->update((int) $tpl['id'], [
                     'title' => $title, 'mode' => 'estruturado', 'body_text' => null, 'guidance_text' => $guidance, 'structure' => $structure,
-                ], $user, $r);
+                ], $user, $r, ($r->post['auto'] ?? '') === '1');
             } catch (\PDOException $e) {
                 throw $e; // erro de banco nunca vai para a tela
             } catch (\RuntimeException $e) {

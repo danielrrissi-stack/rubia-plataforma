@@ -69,6 +69,33 @@ final class PortalFoodTest extends DbTestCase
         $this->assertStringContainsString('Alimentação', $home->body);
     }
 
+    public function testOptionHeadingsAndTacoMarker(): void
+    {
+        [$g, $p, $nutri] = $this->family();
+        $noFiber = $this->item('Biscoito');
+        $noFiber['per100']['fiber'] = null;
+        $structure = ['v' => 1, 'meals' => [
+            ['name' => 'Café da manhã', 'time' => '', 'note' => '', 'options' => [['items' => [$this->item('Pão'), $noFiber]]]],
+            ['name' => 'Lanche', 'time' => '', 'note' => '', 'options' => [['items' => [$this->item('Banana')]], ['items' => [$this->item('Maçã')]]]],
+        ]];
+        $repo = Container::mealPlans();
+        $id = $repo->createDraft((int) $p['id'], 'estruturado', ['title' => 'Plano', 'structure' => $structure], (int) $nutri['id']);
+        $repo->publish($id, (int) $nutri['id']);
+
+        $this->loginAs($g);
+        $fam = $this->get('/portal/p/' . $p['id'] . '/alimentacao')->body;
+        $this->assertSame(1, substr_count($fam, 'Opção 1</h4>')); // so o Lanche (2 opcoes) tem "Opcao 1"
+        $this->assertStringContainsString('Opção 2</h4>', $fam);
+        $this->assertStringNotContainsString('TACO', $fam);
+
+        $this->db->insert('professional_access', ['patient_id' => $p['id'], 'professional_id' => $nutri['id'], 'granted_by' => $nutri['id']]);
+        $this->loginAs($nutri);
+        $staff = $this->get('/planos/' . $id)->body;
+        $this->assertSame(1, substr_count($staff, 'valor não disponível na TACO'));
+        $this->assertSame(1, substr_count($staff, 'Opção 1 <span'));
+        $this->assertStringContainsString('Opção 2 <span', $staff);
+    }
+
     public function testDraftAndEndedNotShown(): void
     {
         [$g, $p, $nutri] = $this->family();
