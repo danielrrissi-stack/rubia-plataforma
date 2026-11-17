@@ -11,6 +11,8 @@ namespace App\Access;
  * restricao "apenas criar medidas com source='familia'" e aplicada pelos
  * controllers (medidas), nao por esta classe.
  * A familia pode ver NUTRICAO (plano alimentar vigente, via portal), nunca editar.
+ * A familia pode ver EXAMES so pelo portal (coletas liberadas, valor + frase); as telas da equipe
+ * exigem papel medico via App\Labs\Clinician::assert() antes do Gate.
  */
 final class Policy
 {
@@ -45,11 +47,11 @@ final class Policy
             'edit' => [self::CADASTRO, self::AGENDA],
         ],
         'paciente' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES],
             'edit' => [self::ANTROPOMETRIA],
         ],
         'responsavel' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES],
             'edit' => [self::ANTROPOMETRIA],
         ],
         'crianca' => ['view' => [], 'edit' => []],

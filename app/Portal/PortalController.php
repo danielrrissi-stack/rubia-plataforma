@@ -57,6 +57,8 @@ final class PortalController
             'patient' => $patient,
             'first' => $this->firstName($patient),
             'many' => count($this->patientsOf($user)) > 1,
+            'hasExams' => Container::policy()->allows($user, 'view', Policy::EXAMES)
+                && Container::labs()->familyView((int) $patient['id']) !== [],
         ]);
     }
 
@@ -110,6 +112,23 @@ final class PortalController
             'plan' => $plan,
             'title' => 'Plano alimentar',
         ], null));
+    }
+
+    /** Exames liberados pela medica: so data, valor, unidade e frase simples. */
+    public function exams(Request $r): Response
+    {
+        [$user, $patient, $redirect] = $this->open($r, 'view', Policy::EXAMES);
+        if ($redirect !== null) {
+            return $redirect;
+        }
+        $pid = (int) $patient['id'];
+        $collections = Container::labs()->familyView($pid);
+        Container::audit()->record((int) $user['id'], 'view', 'lab_collections', null, $pid, null, ['section' => 'exames', 'portal' => true], $r);
+        return $this->page('Portal/views/exams.php', 'Exames', $user, [
+            'patient' => $patient,
+            'first' => $this->firstName($patient),
+            'collections' => $collections,
+        ]);
     }
 
     public function measureForm(Request $r): Response

@@ -84,6 +84,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/portal/p/{id}/medidas/nova'              => [302, 302, 302, 200, 200],
         '/portal/p/{id}/alimentacao'               => [302, 302, 302, 200, 200],
         '/portal/p/{id}/alimentacao/imprimir'      => [302, 302, 302, 200, 200],
+        '/portal/p/{id}/exames'                    => [302, 302, 302, 200, 200],
         '/portal/conta'                            => [302, 302, 302, 200, 200],
     ];
 
