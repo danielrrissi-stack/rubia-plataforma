@@ -51,4 +51,35 @@ final class RouterTest extends TestCase
         $r->get('/x', fn () => Response::html('ok'), ['teste']);
         $this->assertSame(401, $r->dispatch(new Request('GET', '/x'))->status);
     }
+
+    public function testIniBytesParsesShorthand(): void
+    {
+        $this->assertSame(8 * 1024 * 1024, Router::iniBytes('8M'));
+        $this->assertSame(512 * 1024, Router::iniBytes('512k'));
+        $this->assertSame(2 * 1024 * 1024 * 1024, Router::iniBytes(' 2G '));
+        $this->assertSame(1000, Router::iniBytes('1000'));
+        $this->assertSame(0, Router::iniBytes(''));
+        $this->assertSame('8', Router::bytesToMb(8 * 1024 * 1024));
+        $this->assertSame('0,5', Router::bytesToMb(512 * 1024));
+    }
+
+    public function testOversizedEmptyPostIs413BeforeCsrf(): void
+    {
+        $r = new Router();
+        $r->post('/x', fn () => Response::html('ok'));
+        $len = (string) (Router::iniBytes((string) ini_get('post_max_size')) + 1);
+        try {
+            $r->dispatch(new Request('POST', '/x', [], [], [], ['CONTENT_LENGTH' => $len]));
+            $this->fail('esperava HttpException');
+        } catch (HttpException $e) {
+            $this->assertSame(413, $e->getCode());
+        }
+        // com corpo recebido (post nao vazio) segue para o CSRF
+        try {
+            $r->dispatch(new Request('POST', '/x', [], ['a' => '1'], [], ['CONTENT_LENGTH' => $len]));
+            $this->fail('esperava HttpException');
+        } catch (HttpException $e) {
+            $this->assertSame(419, $e->getCode());
+        }
+    }
 }

@@ -84,11 +84,51 @@ final class Router
         }
         if ($name === 'csrf') {
             return static function (Request $r, callable $next): Response {
+                if (self::exceedsPostMaxSize($r)) {
+                    throw new HttpException(413, 'Envio maior que post_max_size');
+                }
                 Csrf::check($r);
                 return $next($r);
             };
         }
         throw new \LogicException("Middleware '$name' nao registrado");
+    }
+
+    /**
+     * O PHP descarta $_POST e $_FILES quando o corpo passa de post_max_size; sem isso o
+     * usuario veria "sessao expirada" (CSRF ausente) em vez do motivo real.
+     */
+    private static function exceedsPostMaxSize(Request $r): bool
+    {
+        if ($r->method() !== 'POST' || $r->post !== [] || $r->files !== []) {
+            return false;
+        }
+        $limit = self::iniBytes((string) ini_get('post_max_size'));
+        $length = (int) ($r->server['CONTENT_LENGTH'] ?? 0);
+        return $limit > 0 && $length > $limit;
+    }
+
+    /** Converte valores do php.ini como "8M", "512K", "1G" em bytes (0 = sem limite/vazio). */
+    public static function iniBytes(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '' || !preg_match('/^(\d+)\s*([KMG]?)$/i', $value, $m)) {
+            return 0;
+        }
+        $n = (int) $m[1];
+        return match (strtoupper($m[2])) {
+            'G' => $n * 1024 * 1024 * 1024,
+            'M' => $n * 1024 * 1024,
+            'K' => $n * 1024,
+            default => $n,
+        };
+    }
+
+    /** Bytes em MB para mensagens ("8", "0,5"). */
+    public static function bytesToMb(int $bytes): string
+    {
+        $mb = round($bytes / (1024 * 1024), 1);
+        return str_replace('.', ',', (string) ($mb == floor($mb) ? (int) $mb : $mb));
     }
 
     private function invoke(array|callable $handler, Request $r): Response

@@ -52,6 +52,9 @@ final class App
     {
         $messages = [
             405 => 'Esta página não aceita esse tipo de acesso.',
+            413 => 'O envio é maior que o limite do servidor (máx. '
+                . Router::bytesToMb(Router::iniBytes((string) ini_get('post_max_size')))
+                . ' MB). Envie arquivos menores.',
             419 => 'Sua sessão expirou. Recarregue a página e tente novamente.',
         ];
         try {

@@ -17,6 +17,7 @@ use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
+use App\Labs\AttachmentStore;
 use App\Labs\LabCatalogRepository;
 use App\Labs\LabRepository;
 use App\Nutrition\FoodRepository;
@@ -194,5 +195,14 @@ final class Container
     public static function labs(): LabRepository
     {
         return self::$items['labs'] ??= new LabRepository(self::db(), self::audit(), self::labCatalog(), self::patients());
+    }
+
+    public static function labAttachments(): AttachmentStore
+    {
+        return self::$items['labAttachments'] ??= new AttachmentStore(
+            self::db(),
+            self::audit(),
+            rtrim((string) Config::get('storage_path', APP_ROOT . '/storage'), '/\\') . '/uploads',
+        );
     }
 }

@@ -45,4 +45,24 @@ final class AppTest extends TestCase
         $log = (string) file_get_contents(APP_ROOT . '/storage/logs/app.log');
         $this->assertStringContainsString('segredo-interno', $log);
     }
+
+    public function testPostOverPostMaxSizeShowsFriendly413(): void
+    {
+        $router = new Router();
+        $router->post('/x', fn () => Response::html('ok'));
+        $limit = Router::iniBytes((string) ini_get('post_max_size'));
+        $this->assertGreaterThan(0, $limit);
+        $res = (new App($router))->handle(new Request('POST', '/x', [], [], [], ['CONTENT_LENGTH' => (string) ($limit + 1)]));
+        $this->assertSame(413, $res->status);
+        $this->assertStringContainsString('maior que o limite', $res->body);
+        $this->assertStringContainsString('máx. ' . Router::bytesToMb($limit) . ' MB', $res->body);
+    }
+
+    public function testPostWithinPostMaxSizeStillChecksCsrf(): void
+    {
+        $router = new Router();
+        $router->post('/x', fn () => Response::html('ok'));
+        $res = (new App($router))->handle(new Request('POST', '/x', [], [], [], ['CONTENT_LENGTH' => '10']));
+        $this->assertSame(419, $res->status);
+    }
 }
