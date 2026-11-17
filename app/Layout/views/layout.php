@@ -12,6 +12,9 @@ if (!isset($nav)) {
         $nav[] = ['Alimentos', '/alimentos'];
         $nav[] = ['Modelos', '/modelos-plano'];
     }
+    if ($navUser !== null && in_array($navUser['role'], ['medico', 'nutricionista'], true)) {
+        $nav[] = ['Biblioteca de metas', '/metas-modelo'];
+    }
     if ($navUser !== null && \App\Labs\Clinician::is($navUser)) {
         $nav[] = ['Catálogo de exames', '/catalogo-exames'];
     }

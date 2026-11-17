@@ -90,6 +90,12 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/portal/conta'                            => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
         '/senha/trocar'                            => [302, 302, 302, 302, 302, 302], // sem senha provisoria volta para /
         '/pacientes/{id}/acesso-crianca'           => [200, 403, 403, 403, 403, 302], // so medico; C vai para a area dele
+        '/metas-modelo'                            => [200, 200, 403, 403, 403, 302], // medico e nutricionista; C vai para a area dele
+        '/metas-modelo/novo'                       => [200, 200, 403, 403, 403, 302],
+        '/metas-modelo/{goalTemplateId}/editar'    => [200, 200, 403, 403, 403, 302], // modelo de alimentacao: nutricionista edita
+        '/pacientes/{id}/metas'                    => [200, 200, 403, 403, 403, 302],
+        '/pacientes/{id}/metas/nova'               => [200, 200, 403, 403, 403, 302],
+        '/metas/{goalId}/editar'                   => [200, 200, 403, 403, 403, 302], // meta de alimentacao do paciente liberado
     ];
 
     private array $fx = [];
@@ -169,6 +175,12 @@ final class SmokeAllRoutesTest extends DbTestCase
             'attachment' => $attachmentId,
             'template' => Container::mealPlanTemplates()->fromPlan($planId, 'Modelo fumaca', (int) $admin['id']),
             'snippet' => Container::textSnippets()->create('Trecho fumaca', 'Beber agua', (int) $admin['id']),
+            'goalTemplate' => Container::goals()->saveTemplate(null, [
+                'family_text' => 'Meta pronta fumaca', 'emoji' => '💧', 'category' => 'alimentacao', 'times_per_week' => 7, 'active' => 1,
+            ], (int) $admin['id'], new Request('POST', '/')),
+            'goal' => Container::goals()->create((int) $child['id'], [
+                'family_text' => 'Meta fumaca', 'emoji' => '💧', 'category' => 'alimentacao', 'times_per_week' => 7, 'start_date' => $today,
+            ], (int) $admin['id'], new Request('POST', '/')),
             'secretaria_id' => (int) $sec['id'],
         ];
     }
@@ -187,6 +199,8 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'templateId' => (string) $this->fx['template'],
                 'snippetId' => (string) $this->fx['snippet'],
                 'entryId' => (string) $this->fx['entry'][$role],
+                'goalTemplateId' => (string) $this->fx['goalTemplate'],
+                'goalId' => (string) $this->fx['goal'],
                 'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],
                 'attachmentId' => (string) $this->fx['attachment'],

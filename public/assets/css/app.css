@@ -200,3 +200,8 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
   body, .impressao { background: #fff; color: #000; }
   .plano-refeicao { break-inside: avoid; }
 }
+
+/* Metas (equipe) */
+.grade-metas th, .grade-metas td { padding: .4rem .6rem; text-align: left; vertical-align: top; }
+.grade-metas td { white-space: nowrap; text-align: center; }
+.grade-metas .meta-completa { background: var(--ok-fundo); color: var(--salvia-escura); font-weight: 600; }

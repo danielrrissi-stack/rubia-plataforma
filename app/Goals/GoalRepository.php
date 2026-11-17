@@ -30,6 +30,28 @@ final class GoalRepository
         return $this->db->one('SELECT * FROM goal_templates WHERE id = ?', [$id]);
     }
 
+    /** Cria ($id null) ou altera um modelo da biblioteca; mesma validacao de textos/categoria/frequencia das metas. */
+    public function saveTemplate(?int $id, array $data, int $uid, Request $r): int
+    {
+        $before = null;
+        if ($id !== null) {
+            $before = $this->findTemplate($id);
+            if ($before === null) {
+                throw new InvalidGoalException(['Meta da biblioteca não encontrada.']);
+            }
+        }
+        $row = $this->cleanTemplate($data);
+        if ($id === null) {
+            $newId = $this->db->insert('goal_templates', $row);
+            $this->audit->record($uid, 'create', 'goal_templates', $newId, null, null, $row, $r);
+            return $newId;
+        }
+        $sets = implode(', ', array_map(fn (string $c): string => $c . ' = ?', array_keys($row)));
+        $this->db->run('UPDATE goal_templates SET ' . $sets . ' WHERE id = ?', [...array_values($row), $id]);
+        $this->audit->record($uid, 'update', 'goal_templates', $id, null, $before, $this->findTemplate($id), $r);
+        return $id;
+    }
+
     public function find(int $goalId): ?array
     {
         return $this->db->one('SELECT * FROM patient_goals WHERE id = ?', [$goalId]);
@@ -204,6 +226,50 @@ final class GoalRepository
     {
         $d = is_string($v) ? \DateTimeImmutable::createFromFormat('!Y-m-d', $v) : false;
         return $d !== false && $d->format('Y-m-d') === $v;
+    }
+
+    /** @return array<string,mixed> colunas validadas de goal_templates */
+    private function cleanTemplate(array $data): array
+    {
+        $errors = [];
+        $family = trim((string) ($data['family_text'] ?? ''));
+        if (mb_strlen($family) < 3 || mb_strlen($family) > 160) {
+            $errors[] = 'O texto da meta deve ter de 3 a 160 caracteres.';
+        }
+        $child = trim((string) ($data['child_text'] ?? ''));
+        if (mb_strlen($child) > 160) {
+            $errors[] = 'O texto da criança deve ter até 160 caracteres.';
+        }
+        $emoji = trim((string) ($data['emoji'] ?? ''));
+        if ($emoji === '' || mb_strlen($emoji) > 16) {
+            $errors[] = 'Escolha um emoji para a meta.';
+        }
+        $category = (string) ($data['category'] ?? '');
+        if (!in_array($category, self::CATEGORIES, true)) {
+            $errors[] = 'Escolha uma categoria válida.';
+        }
+        $tpwRaw = $data['times_per_week'] ?? null;
+        $tpw = is_int($tpwRaw) || (is_string($tpwRaw) && ctype_digit($tpwRaw)) ? (int) $tpwRaw : 0;
+        if ($tpw < 1 || $tpw > 7) {
+            $errors[] = 'A frequência deve ser de 1 a 7 dias por semana.';
+        }
+        $orderRaw = $data['sort_order'] ?? 0;
+        $order = filter_var($orderRaw === '' ? 0 : $orderRaw, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 9999]]);
+        if ($order === false) {
+            $errors[] = 'A ordem deve ser um número de 0 a 9999.';
+        }
+        if ($errors !== []) {
+            throw new InvalidGoalException($errors);
+        }
+        return [
+            'family_text' => $family,
+            'child_text' => $child === '' ? null : $child,
+            'emoji' => $emoji,
+            'category' => $category,
+            'times_per_week' => $tpw,
+            'active' => !empty($data['active']) ? 1 : 0,
+            'sort_order' => (int) $order,
+        ];
     }
 
     /** @return array<string,mixed> colunas validadas de patient_goals */

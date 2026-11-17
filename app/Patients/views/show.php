@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var bool $canCadastro @var bool $canEdit @var bool $canCrescimento
- * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canExames @var ?array $labSummary @var bool $canEnergia @var bool $canAcessoProf @var bool $canChildAccount @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
+ * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canExames @var ?array $labSummary @var bool $canEnergia @var bool $canAcessoProf @var bool $canChildAccount @var ?array $goalsCard @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
  */
 $pid = (int) $patient['id'];
 ?>
@@ -80,4 +80,18 @@ $pid = (int) $patient['id'];
       <?php if ($labSummary['no_range'] > 0): ?><p class="ajuda"><?= e($labSummary['no_range']) ?> <?= $labSummary['no_range'] === 1 ? 'valor' : 'valores' ?> sem faixa para esta idade (não classificado<?= $labSummary['no_range'] === 1 ? '' : 's' ?>).</p><?php endif; ?>
     <?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/exames')) ?>">Ver exames</a></p></section><?php endif; ?>
+  <?php if ($goalsCard !== null): $gp = $goalsCard['panel']; $nw = count($gp['weeks']); ?><section class="cartao" id="cartao-metas"><h2>Metas</h2>
+    <?php if ($gp['rows'] === []): ?><p class="ajuda">Nenhuma meta ativa.</p><?php else: ?>
+      <table class="grade-metas">
+        <thead><tr><th scope="col">Meta</th><?php foreach ($gp['weeks'] as $i => $ws): ?><th scope="col"><?= e(substr(fmt_date($ws), 0, 5)) ?><?= $i === $nw - 1 ? ' (atual)' : '' ?></th><?php endforeach; ?></tr></thead>
+        <tbody>
+        <?php foreach ($gp['rows'] as $row): ?>
+          <tr><th scope="row"><?= e($row['goal']['emoji']) ?> <?= e($row['goal']['family_text']) ?><?php if ((int) $row['goal']['secret'] === 1): ?> <span class="selo selo-alerta">sigilosa</span><?php endif; ?></th>
+          <?php foreach ($row['cells'] as $c): ?><td<?= $c['complete'] ? ' class="meta-completa"' : '' ?>><?= $c['applicable'] ? e($c['done']) . '/' . e($c['target']) . ($c['complete'] ? ' ✓' : '') : '—' ?></td><?php endforeach; ?></tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    <?php endif; ?>
+    <?php if ($goalsCard['stars'] !== null): ?><p>Estrelas: <strong><?= e($goalsCard['stars']) ?></strong><?= $goalsCard['lastCheck'] !== null ? ' · último registro da família em ' . e(fmt_date($goalsCard['lastCheck'])) : '' ?></p><?php endif; ?>
+    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/metas')) ?>">Ver metas</a></p></section><?php endif; ?>
 </div>
