@@ -303,20 +303,21 @@ As metas são combinados simples entre a equipe e a família (ex.: "beber água"
 
 ### Criar metas para uma paciente
 
-Na ficha da paciente abra **Metas** (`/pacientes/{id}/metas`) e use **Nova meta**. Informe o título (até 60 caracteres), o texto para a família, o emoji, a frequência, o início e, se quiser, o término.
-Há também o campo **Texto para a criança (opcional)**, mostrado à criança no lugar do texto da família. **Editar**, **Encerrar** e **Excluir** ficam na lista de metas. A tela mostra o painel semanal, com navegação **Semana anterior** e **Semana seguinte**.
+Na ficha da paciente, no cartão **Metas**, use **Ver metas** (`/pacientes/{id}/metas`) e depois **Nova meta**. Informe o **Texto para a família** (3 a 160 caracteres), o emoji, a categoria, a frequência, o início (de até 2 anos atrás a até 1 ano à frente) e, se quiser, o término (a meta dura no máximo 5 anos).
+Há também o campo **Texto para a criança (opcional)**, mostrado à criança no lugar do texto da família. **Editar**, **Encerrar** e **Excluir** ficam na lista de metas (**Excluir** pede confirmação: as estrelas da meta deixam de contar). A tela mostra o painel semanal (dias feitos/combinados em cada semana).
 
 ### Biblioteca de metas
 
-No menu **Biblioteca de metas** (`/metas-modelo`; médica e nutricionistas) ficam as metas prontas. Use **Nova meta pronta** para criar as suas; ao criar uma meta para a paciente, escolha uma pronta para preencher o formulário. Já vêm metas de exemplo carregadas pelo seed `goal_1_templates.sql`.
+No menu **Biblioteca de metas** (`/metas-modelo`; médica e nutricionistas) ficam as metas prontas. Use **Nova meta pronta** para criar as suas; ao criar uma meta para a paciente, escolha uma pronta em **Escolher da biblioteca** para preencher o formulário. Já vêm metas de exemplo carregadas pelo seed `goal_1_templates.sql`.
 
 ### Conta da criança
 
-Em **Acesso da criança** (`/pacientes/{id}/acesso-crianca`) a médica cria uma conta própria para a criança entrar sozinha. Informe o **Nome de usuário** e clique em **Criar conta**: o sistema gera uma **senha provisória, mostrada uma única vez** (anote e entregue à família).
+Em **Conta da criança** (botão na ficha, `/pacientes/{id}/acesso-crianca`) a médica cria uma conta própria para a criança entrar sozinha. Informe o **Nome de usuário** e clique em **Criar conta**: o sistema gera uma **senha provisória, mostrada uma única vez** (anote e entregue à família).
 No primeiro login a criança é **obrigada a trocar a senha**. Na tela de login o campo se chama **E-mail ou usuário**; a criança digita o nome de usuário.
 Na mesma tela dá para **Redefinir senha (gera nova provisória)**, **Desativar conta** e **Reativar conta**.
 A opção **Responsáveis veem as marcações feitas pelo próprio paciente** define se os responsáveis enxergam o que a criança marcou sozinha.
-Quando o paciente completa 18 anos, a conta da criança é convertida pela decisão **transferir** do fluxo de maioridade já existente.
+Quando o paciente completa 18 anos, a conta da criança é convertida pela decisão **transferir** do fluxo de maioridade já existente. Se a conta estiver desativada, o sistema pede para **Reativar conta** na tela **Conta da criança** antes de transferir.
+Se a médica redefinir a senha, a sessão que estiver aberta com a senha antiga é encerrada e a criança entra de novo com a provisória.
 
 ### Meta sigilosa
 
@@ -324,7 +325,7 @@ A meta **sigilosa** (os responsáveis não veem; só o paciente e a equipe) só 
 
 ### Portal e marcação
 
-No portal, a família e a criança veem **Metas** (`/portal/p/{id}/metas`) e marcam os últimos 7 dias; semanas anteriores só podem ser marcadas dentro dessa janela. A equipe **não marca** no lugar da paciente.
+No portal, a família e a criança veem **Metas** (`/portal/p/{id}/metas`) e marcam os últimos 7 dias. Os botões **Semana anterior** e **Semana seguinte** (só no portal) mostram outras semanas; semanas anteriores só podem ser marcadas dentro dessa janela. A equipe **não marca** no lugar da paciente.
 
 ### Cartões educativos
 
@@ -410,7 +411,7 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
 7. **Envio de laudos:** em cPanel → "Select PHP Version" → "Options", ajuste `upload_max_filesize` para **10M ou mais** e `post_max_size` para **pelo menos 32M** (e maior que `upload_max_filesize`, porque vários laudos podem ir juntos)
    (senão o envio de laudos grandes falha). A extensão `fileinfo` do PHP precisa estar ativa (o instalador confere).
 8. **A atualização de metas e área da criança (Fase 3a)** traz a migração `010_goals.sql` e os seeds `database/seeds/goal_1_templates.sql` e `database/seeds/goal_2_edu_cards.sql`.
-   Faça **backup** antes. Com terminal: `php /home/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin, **nesta ordem**:
+   Faça **backup** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin, **nesta ordem**:
    (1) `database/migrations/010_goals.sql`, (2) `database/seeds/goal_1_templates.sql`, (3) `database/seeds/goal_2_edu_cards.sql`, e logo depois, na aba "SQL":
    `INSERT INTO schema_migrations (name) VALUES ('010_goals.sql');`
    Extraia o zip **dentro de `rubia_app`** (ex.: `/home2/USUARIO/rubia_app/`), nunca na pasta do site. Esta versão **muda `public/`** (novo `goal-check.js` e CSS):
