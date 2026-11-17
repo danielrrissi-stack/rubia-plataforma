@@ -20,7 +20,11 @@
   function destroy() { if (chart) { chart.destroy(); chart = null; } }
   function say(text) { msg.textContent = text || ''; }
   function brDate(ymd) { var p = String(ymd).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ymd; }
-  function num(v, dec) { return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+  function num(v, dec) {
+    v = Number(v);
+    while (dec < 4 && Number(v.toFixed(dec)) !== v) { dec++; } // nunca menos casas do que o valor precisa
+    return v.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  }
   function colorOf(cls) {
     if (cls === 'alterado_alto' || cls === 'alterado_baixo') { return ALERT; }
     if (cls === 'limitrofe_alto' || cls === 'limitrofe_baixo') { return BORDER; }
