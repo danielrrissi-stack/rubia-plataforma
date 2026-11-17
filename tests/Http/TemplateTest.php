@@ -133,4 +133,45 @@ final class TemplateTest extends DbTestCase
         $this->assertSame(403, $this->get('/modelos-plano')->status);
         $this->assertSame(403, $this->get('/trechos.json')->status);
     }
+
+    public function testNonAuthorNutritionistCannotModifyTemplateOrSnippet(): void
+    {
+        $author = $this->makeUser('nutricionista');
+        $other = $this->makeUser('nutricionista');
+        $tid = Container::mealPlanTemplates()->create(['title' => 'Modelo A', 'mode' => 'texto', 'body_text' => 'original', 'guidance_text' => null, 'structure' => null], (int) $author['id']);
+        $sid = Container::textSnippets()->create('Trecho A', 'original', (int) $author['id']);
+        $this->loginAs($other);
+        $this->assertSame(403, $this->post('/modelos-plano/' . $tid . '/editar', ['titulo' => 'Hack', 'corpo' => 'alterado'])->status);
+        $this->assertSame(403, $this->post('/modelos-plano/' . $tid . '/excluir', [])->status);
+        $this->assertSame(403, $this->post('/trechos/' . $sid . '/editar', ['titulo' => 'Hack', 'corpo' => 'alterado'])->status);
+        $this->assertSame(403, $this->post('/trechos/' . $sid . '/excluir', [])->status);
+        $t = Container::mealPlanTemplates()->find($tid);
+        $this->assertSame('Modelo A', $t['title']);
+        $this->assertSame('original', $t['body_text']);
+        $s = Container::textSnippets()->find($sid);
+        $this->assertSame('Trecho A', $s['title']);
+        $this->assertSame('original', $s['body']);
+    }
+
+    public function testSaveAsTemplateForbiddenWithoutAccess(): void
+    {
+        $doc = $this->makeUser('medico', ['is_admin' => 1]);
+        $p = $this->makePatient(['birth_date' => '2014-05-10', 'sex' => 'M', 'responsible_professional_id' => $doc['id'], 'created_by' => $doc['id']]);
+        $planId = Container::mealPlans()->createDraft((int) $p['id'], 'texto', ['title' => 'Plano', 'body_text' => 'CAFE', 'guidance_text' => null, 'structure' => null], (int) $doc['id']);
+        Container::mealPlans()->publish($planId, (int) $doc['id']);
+
+        $nutri = $this->makeUser('nutricionista'); // sem liberacao para este paciente
+        $this->loginAs($nutri);
+        $this->assertSame(403, $this->post('/planos/' . $planId . '/salvar-como-modelo', ['titulo' => 'Modelo indevido'])->status);
+
+        $resp = $this->makeUser('responsavel');
+        $this->db->insert('guardian_links', ['patient_id' => $p['id'], 'user_id' => $resp['id'], 'relationship' => 'mãe', 'created_by' => $doc['id']]);
+        Container::reset();
+        Container::set('db', $this->db);
+        \App\Core\Session::reset();
+        $this->loginAs($resp);
+        $this->assertSame(403, $this->post('/planos/' . $planId . '/salvar-como-modelo', ['titulo' => 'Modelo indevido'])->status);
+
+        $this->assertSame(0, (int) $this->db->one('SELECT COUNT(*) c FROM meal_plan_templates')['c']);
+    }
 }

@@ -12,7 +12,7 @@ $patient = $patient ?? null;
 <?php if ($errors !== []): ?>
   <div class="aviso aviso-erro" role="alert"><ul><?php foreach ($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul></div>
 <?php endif; ?>
-<form method="post" action="<?= e(url($context['saveUrl'])) ?>" id="plano-form" data-previa-url="<?= e(url('/planos/previa')) ?>" data-csrf="<?= e(\App\Core\Csrf::token()) ?>" data-snippets-url="<?= e(url('/trechos.json')) ?>">
+<form method="post" action="<?= e(url($context['saveUrl'])) ?>" id="plano-form" data-previa-url="<?= e(url('/planos/previa')) ?>" data-csrf="<?= e(\App\Core\Csrf::token()) ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="revisao" value="<?= e($values['revisao']) ?>">
   <p><label>Título <input name="titulo" value="<?= e($values['title']) ?>" maxlength="150" required></label></p>
@@ -20,15 +20,8 @@ $patient = $patient ?? null;
     <button type="button" class="btn btn-quiet" data-insert="titulo">Título de refeição</button>
     <button type="button" class="btn btn-quiet" data-insert="item">Item</button>
     <button type="button" class="btn btn-quiet" data-insert="negrito">Negrito</button>
-    <button type="button" class="btn btn-quiet" data-insert="trecho" aria-expanded="false" aria-controls="trechos-box">Inserir trecho</button>
   </p>
-  <p id="trechos-box" class="barra-editor" hidden>
-    <label for="trechos-select">Trecho</label>
-    <select id="trechos-select"></select>
-    <button type="button" class="btn btn-quiet" id="trechos-inserir">Inserir no cursor</button>
-    <span id="trechos-msg" class="ajuda" role="status"></span>
-    <a href="<?= e(url('/trechos')) ?>">Gerenciar trechos</a>
-  </p>
+  <?php $snippetTargets = ['corpo' => 'Texto do plano', 'orientacoes' => 'Orientações']; require __DIR__ . '/_snippet_picker.php'; ?>
   <div class="editor-duplo">
     <div>
       <label for="corpo">Plano (cole o texto aqui)</label>
@@ -39,10 +32,11 @@ $patient = $patient ?? null;
       <div id="previa" class="previa-plano" aria-live="polite"></div>
     </div>
   </div>
-  <p><label>Orientações<br><textarea name="orientacoes" rows="6"><?= e($values['orientacoes']) ?></textarea></label></p>
+  <p><label>Orientações<br><textarea id="orientacoes" name="orientacoes" rows="6"><?= e($values['orientacoes']) ?></textarea></label></p>
   <p>
     <button type="submit" class="btn btn-quiet">Salvar rascunho</button>
     <?php if ($isPlan): ?><button type="submit" class="btn" name="acao" value="publicar">Salvar e publicar</button><?php endif; ?>
   </p>
 </form>
+<script src="<?= e(url('/assets/js/snippet-picker.js')) ?>" defer></script>
 <script src="<?= e(url('/assets/js/plan-text-editor.js')) ?>" defer></script>

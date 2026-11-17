@@ -55,6 +55,7 @@ $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
   <div id="pe-refeicoes"></div>
   <p><button type="button" class="btn btn-quiet" id="pe-add-refeicao">Adicionar refeição</button></p>
 
+  <?php $snippetTargets = ['pe-orientacoes' => 'Orientações']; require __DIR__ . '/_snippet_picker.php'; ?>
   <p><label>Orientações<br><textarea id="pe-orientacoes" rows="6"><?= e($values['orientacoes'] ?? ($plan['guidance_text'] ?? '')) ?></textarea></label></p>
   <p class="pe-acoes">
     <button type="button" class="btn btn-quiet" id="pe-salvar">Salvar rascunho</button>
@@ -65,4 +66,5 @@ $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 <?php if ($isPlan && isset($context['publishUrl'])): ?>
   <form id="pe-form-publicar" method="post" action="<?= e(url($context['publishUrl'])) ?>" hidden><?= csrf_field() ?></form>
 <?php endif; ?>
+<script src="<?= e(url('/assets/js/snippet-picker.js')) ?>" defer></script>
 <script src="<?= e(url('/assets/js/meal-plan-editor.js')) ?>" defer></script>

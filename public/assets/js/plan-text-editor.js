@@ -20,57 +20,8 @@
       if (kind === 'titulo') insertAt('\nTÍTULO:\n', false);
       else if (kind === 'item') insertAt('\n• ', false);
       else if (kind === 'negrito') insertAt('', true);
-      else if (kind === 'trecho') toggleSnippets(b);
     });
   });
-
-  // "Inserir trecho": carrega /trechos.json uma vez e insere o texto escolhido na posicao do cursor.
-  var box = document.getElementById('trechos-box');
-  var select = document.getElementById('trechos-select');
-  var msg = document.getElementById('trechos-msg');
-  var insertBtn = document.getElementById('trechos-inserir');
-  var snippets = null;
-
-  function loadSnippets() {
-    var url = form.getAttribute('data-snippets-url');
-    if (!url || !select) return;
-    msg.textContent = 'Carregando...';
-    fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        snippets = j && Array.isArray(j.items) ? j.items : [];
-        select.textContent = '';
-        snippets.forEach(function (s, i) {
-          var o = document.createElement('option');
-          o.value = String(i);
-          o.textContent = s.title;
-          select.appendChild(o);
-        });
-        var has = snippets.length > 0;
-        select.hidden = !has;
-        insertBtn.hidden = !has;
-        msg.textContent = has ? '' : (j ? 'Nenhum trecho cadastrado ainda.' : 'Não foi possível carregar os trechos.');
-        if (!j) snippets = null;
-      })
-      .catch(function () { snippets = null; msg.textContent = 'Não foi possível carregar os trechos.'; });
-  }
-
-  function toggleSnippets(btn) {
-    if (!box) return;
-    box.hidden = !box.hidden;
-    btn.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
-    if (!box.hidden && snippets === null) loadSnippets();
-  }
-
-  if (insertBtn) {
-    insertBtn.addEventListener('click', function () {
-      var s = snippets && snippets[parseInt(select.value, 10)];
-      if (!s) return;
-      var start = area.selectionStart;
-      var lead = start > 0 && area.value.charAt(start - 1) !== '\n' ? '\n' : '';
-      insertAt(lead + s.body + '\n', false);
-    });
-  }
 
   // Cola sempre como texto puro, sem formatacao do Word/PDF.
   area.addEventListener('paste', function (ev) {
