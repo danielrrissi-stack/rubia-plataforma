@@ -97,6 +97,10 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/metas'                    => [200, 200, 403, 403, 403, 302],
         '/pacientes/{id}/metas/nova'               => [200, 200, 403, 403, 403, 302],
         '/metas/{goalId}/editar'                   => [200, 200, 403, 403, 403, 302], // meta de alimentacao do paciente liberado
+        '/cartoes'                                 => [200, 403, 403, 403, 403, 302], // so a medica; C vai para a area dele
+        '/cartoes/novo'                            => [200, 403, 403, 403, 403, 302],
+        '/cartoes/{cardId}/editar'                 => [200, 403, 403, 403, 403, 302],
+        '/portal/p/{id}/cartoes/{cardId}'          => [302, 302, 302, 200, 404, 200], // cartao 7-10 publicado; adulto (P) sem faixa
     ];
 
     private array $fx = [];
@@ -182,8 +186,19 @@ final class SmokeAllRoutesTest extends DbTestCase
             'goal' => Container::goals()->create((int) $child['id'], [
                 'family_text' => 'Meta fumaca', 'emoji' => '💧', 'category' => 'alimentacao', 'times_per_week' => 7, 'start_date' => $today,
             ], (int) $admin['id'], new Request('POST', '/')),
+            'card' => $this->publishedCard((int) $admin['id']),
             'secretaria_id' => (int) $sec['id'],
         ];
+    }
+
+    /** Cartao educativo publicado da faixa 7-10 (crianca de fumaca tem 8 anos). */
+    private function publishedCard(int $uid): int
+    {
+        $id = Container::eduCards()->save(null, [
+            'title' => 'Cartao fumaca', 'body' => 'Texto do cartao fumaca.', 'emoji' => '📘', 'bands' => ['7-10'],
+        ], $uid, new Request('POST', '/'));
+        Container::eduCards()->publish($id, $uid, new Request('POST', '/'));
+        return $id;
     }
 
     /** Substitui os parametros do padrao por valores reais conforme o perfil. */
@@ -202,6 +217,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'entryId' => (string) $this->fx['entry'][$role],
                 'goalTemplateId' => (string) $this->fx['goalTemplate'],
                 'goalId' => (string) $this->fx['goal'],
+                'cardId' => (string) $this->fx['card'],
                 'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],
                 'attachmentId' => (string) $this->fx['attachment'],

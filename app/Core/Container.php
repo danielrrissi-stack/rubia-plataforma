@@ -12,6 +12,7 @@ use App\Auth\TokenService;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
 use App\Energy\EnergyGoalRepository;
+use App\Goals\EduCardRepository;
 use App\Goals\GoalRepository;
 use App\Growth\BloodPressure;
 use App\Growth\BpReferenceRepository;
@@ -210,5 +211,10 @@ final class Container
     public static function goals(): GoalRepository
     {
         return self::$items['goals'] ??= new GoalRepository(self::db(), self::audit());
+    }
+
+    public static function eduCards(): EduCardRepository
+    {
+        return self::$items['eduCards'] ??= new EduCardRepository(self::db(), self::audit());
     }
 }

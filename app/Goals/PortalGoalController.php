@@ -10,6 +10,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
+use App\Growth\Age;
 use DateTimeImmutable;
 
 /** Area de metas do portal: responsavel, paciente adulto e crianca com conta propria. */
@@ -17,6 +18,7 @@ final class PortalGoalController
 {
     private const ROLES = ['responsavel', 'paciente', 'crianca'];
     private const STAFF = ['medico', 'nutricionista', 'secretaria'];
+    private const MAX_CARDS = 6;
     private const DAY_SHORT = [1 => 'Seg', 2 => 'Ter', 3 => 'Qua', 4 => 'Qui', 5 => 'Sex', 6 => 'Sáb', 7 => 'Dom'];
     private const DAY_LONG = [
         1 => 'segunda-feira', 2 => 'terça-feira', 3 => 'quarta-feira', 4 => 'quinta-feira',
@@ -78,8 +80,35 @@ final class PortalGoalController
             'weekLabel' => $weekDate->format('d/m') . ' a ' . $weekDate->modify('+6 days')->format('d/m'),
             'prevWeek' => $week > $earliest ? $weekDate->modify('-7 days')->format('Y-m-d') : null,
             'nextWeek' => $week < $thisWeek ? $weekDate->modify('+7 days')->format('Y-m-d') : null,
-            'cards' => [], // "Para você ler": preenchido na Task 6
+            'cards' => array_slice($this->cardsFor($patient, $today), 0, self::MAX_CARDS),
             'many' => $user['role'] === 'responsavel' && count(Container::patientScope()->accessiblePatientIds($user) ?? []) > 1,
+        ], 'Layout/views/layout_portal.php'));
+    }
+
+    /** GET /portal/p/{id}/cartoes/{cardId}: so cartao publicado da faixa do paciente hoje. */
+    public function card(Request $r): Response
+    {
+        [$user, $patient, $redirect] = $this->open($r);
+        if ($redirect !== null) {
+            return $redirect;
+        }
+        $cardId = (int) $r->params['cardId'];
+        $card = null;
+        foreach ($this->cardsFor($patient, date('Y-m-d')) as $c) {
+            if ((int) $c['id'] === $cardId) {
+                $card = $c;
+            }
+        }
+        if ($card === null) {
+            throw new HttpException(404);
+        }
+        return Response::html(View::render('Goals/views/portal_card.php', [
+            'title' => (string) $card['title'],
+            'userName' => $user['name'],
+            'registerSw' => true,
+            'pid' => (int) $patient['id'],
+            'card' => $card,
+            'isChild' => $user['role'] === 'crianca',
         ], 'Layout/views/layout_portal.php'));
     }
 
@@ -196,6 +225,16 @@ final class PortalGoalController
             throw new HttpException(404);
         }
         return [$user, $patient, null];
+    }
+
+    /** @return list<array> cartoes publicados da faixa do paciente (anos completos em $today) */
+    private function cardsFor(array $patient, string $today): array
+    {
+        $birth = (string) ($patient['birth_date'] ?? '');
+        if ($birth === '') {
+            return [];
+        }
+        return Container::eduCards()->publishedForAge(Age::years($birth, $today));
     }
 
     private function firstName(array $p): string

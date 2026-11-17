@@ -17,6 +17,7 @@ if (!isset($nav)) {
     }
     if ($navUser !== null && \App\Labs\Clinician::is($navUser)) {
         $nav[] = ['Catálogo de exames', '/catalogo-exames'];
+        $nav[] = ['Cartões educativos', '/cartoes'];
     }
     if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'view', \App\Access\Policy::USUARIOS, null)) {
         $nav[] = ['Equipe', '/equipe'];

@@ -62,7 +62,13 @@ $base = '/portal/p/' . $pid . '/metas';
 <?php if ($cards !== []): ?>
 <section class="portal-resumo" id="para-ler">
   <h2>Para você ler</h2>
-  <?php foreach ($cards as $c): ?><p><?= e($c['emoji'] ?? '') ?> <?= e($c['title'] ?? '') ?></p><?php endforeach; ?>
+  <ul class="portal-lista">
+    <?php foreach ($cards as $c): ?>
+    <li><a class="portal-cartao" href="<?= e(url('/portal/p/' . $pid . '/cartoes/' . (int) $c['id'])) ?>">
+      <span class="portal-cartao-titulo"><span aria-hidden="true"><?= e($c['emoji']) ?></span> <?= e($c['title']) ?></span>
+    </a></li>
+    <?php endforeach; ?>
+  </ul>
 </section>
 <?php endif; ?>
 

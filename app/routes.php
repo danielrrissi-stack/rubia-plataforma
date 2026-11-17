@@ -9,6 +9,7 @@ use App\Backup\BackupController;
 use App\Dashboard\DashboardController;
 use App\Energy\EnergyController;
 use App\Goals\ChildAccountController;
+use App\Goals\EduCardController;
 use App\Goals\GoalController;
 use App\Goals\PortalGoalController;
 use App\Nutrition\FoodController;
@@ -82,6 +83,13 @@ $router->get('/metas-modelo/novo', [GoalController::class, 'templateCreateForm']
 $router->post('/metas-modelo/novo', [GoalController::class, 'templateCreate'], $authMw);
 $router->get('/metas-modelo/{goalTemplateId:\d+}/editar', [GoalController::class, 'templateEditForm'], $authMw);
 $router->post('/metas-modelo/{goalTemplateId:\d+}/editar', [GoalController::class, 'templateUpdate'], $authMw);
+$router->get('/cartoes', [EduCardController::class, 'index'], $authMw);
+$router->get('/cartoes/novo', [EduCardController::class, 'createForm'], $authMw);
+$router->post('/cartoes/novo', [EduCardController::class, 'create'], $authMw);
+$router->get('/cartoes/{cardId:\d+}/editar', [EduCardController::class, 'editForm'], $authMw);
+$router->post('/cartoes/{cardId:\d+}/editar', [EduCardController::class, 'update'], $authMw);
+$router->post('/cartoes/{cardId:\d+}/publicar', [EduCardController::class, 'publish'], $authMw);
+$router->post('/cartoes/{cardId:\d+}/despublicar', [EduCardController::class, 'unpublish'], $authMw);
 $router->get('/pacientes/{id:\d+}/metas', [GoalController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/metas/nova', [GoalController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/metas/nova', [GoalController::class, 'create'], $authMw);
@@ -186,5 +194,6 @@ $router->post('/portal/p/{id:\d+}/medidas/nova', [PortalController::class, 'meas
 $router->get('/portal/p/{id:\d+}/metas', [PortalGoalController::class, 'show'], $authMw);
 $router->post('/portal/p/{id:\d+}/metas/{goalId:\d+}/marcar', [PortalGoalController::class, 'mark'], $authMw);
 $router->post('/portal/p/{id:\d+}/metas/{goalId:\d+}/desmarcar', [PortalGoalController::class, 'unmark'], $authMw);
+$router->get('/portal/p/{id:\d+}/cartoes/{cardId:\d+}', [PortalGoalController::class, 'card'], $authMw);
 $router->get('/portal/conta', [PortalController::class, 'account'], $authMw);
 $router->post('/portal/conta/senha', [PortalController::class, 'changePassword'], $authMw);
