@@ -8,7 +8,7 @@ use App\Core\Database;
 /**
  * Carrega os dados de referencia de database/seeds/*.sql (gerados por tools/import_*.php).
  * Comandos separados por ";" no fim da linha (mesmo criterio do Migrator); linhas "--" sao comentarios.
- * Os seeds usam REPLACE, entao recarregar e idempotente.
+ * Os seeds usam REPLACE ou INSERT ... ON DUPLICATE KEY UPDATE (upsert), entao recarregar e idempotente.
  */
 final class SeedLoader
 {

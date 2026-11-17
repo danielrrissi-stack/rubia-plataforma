@@ -189,13 +189,82 @@ Se o instalador avisar que as tabelas de referência não foram carregadas, impo
 | Perfil | O que acessa |
 |---|---|
 | Médica (administradora) | Tudo: cadastro, crescimento, energia, prontuário, equipe, liberações, backups. |
-| Nutricionista | Somente pacientes liberados pela médica: cadastro básico, medidas e curvas, metas de energia e nutrição. Não vê prontuário. |
+| Nutricionista | Somente pacientes liberados pela médica: cadastro básico, medidas e curvas, metas de energia e nutrição (plano alimentar, alimentos, modelos). Não vê prontuário. |
 | Secretária | Cadastro e agenda. Não vê dados clínicos (medidas, prontuário). |
-| Responsável | Somente os filhos vinculados: crescimento e registro de peso/altura no portal da família. |
+| Responsável | Somente os filhos vinculados: crescimento, plano alimentar vigente e registro de peso/altura no portal da família. |
 | Paciente adulto | Somente o próprio cadastro básico e medidas: crescimento e registro de peso no portal. |
 
 Toda consulta e alteração de dados de pacientes fica registrada (quem, quando, o quê).
 Registros clínicos nunca são apagados: correções criam nova versão e a anterior é mantida.
+
+## Plano alimentar
+
+O plano alimentar fica na ficha de cada paciente, no cartão **Plano alimentar** ("Ver plano alimentar"). Quem pode criar e editar:
+a médica e as nutricionistas com o paciente liberado. A secretária não vê. A família vê somente o plano **vigente**, no portal, em "Alimentação".
+
+### Criar um plano
+
+Em **Novo plano** escolha:
+
+- **Modo**: *Texto* (você cola ou digita o plano) ou *Estruturado* (refeições, opções e alimentos da tabela, com totais).
+- **Começar de**: *Em branco*, *Cópia do plano vigente* (usa o mesmo modo do plano copiado) ou um *Modelo* da equipe.
+
+Clique em **Criar rascunho**. Cada paciente tem **um rascunho por vez**; se já houver um, o sistema pergunta se você quer continuar
+o rascunho ou descartá-lo e começar outro. O rascunho só é visto pela equipe até ser publicado.
+
+### Modo texto
+
+Cole o plano no campo "Plano". A pré-visualização ao lado mostra como vai ficar. O sistema entende estas convenções
+(os botões "Título de refeição", "Item" e "Negrito" acima do campo inserem os marcadores):
+
+- `TÍTULO:` sozinho numa linha: a linha seguinte vira o título de uma refeição (ex.: `TÍTULO:` e, embaixo, `Café da manhã`).
+- `•` no começo da linha (também `-`, `*` ou `1.`): vira item de lista. Textos copiados do Word ou do PDF costumam funcionar.
+- `**texto**`: negrito.
+- Uma linha em branco separa parágrafos.
+
+Há também o campo **Orientações** (texto livre, que aparece no fim do plano).
+
+**Atenção:** no modo texto a família vê exatamente as palavras do autor. Se você digitar calorias no texto, a família verá as calorias.
+
+### Modo estruturado
+
+Monte **refeições** (nome, horário opcional, observação). Cada refeição tem **opções** (até 5; a família escolhe uma) e cada opção tem **itens**.
+Para cada item:
+
+- digite o nome na busca para achar o alimento (tabela TACO e "Minha tabela");
+- informe a quantidade em **gramas** ou em **medida caseira** (colher de sopa, concha, unidade...). A família vê a medida caseira, por exemplo "2 colheres de sopa de arroz";
+- adicione **trocas** (substitutos) ao item: na família aparece "... ou ...".
+
+No alto da tela ficam os **totais do dia** (energia, proteína, carboidrato, gordura, fibra), calculados com a **Opção 1 de cada refeição**.
+Se o paciente tem meta de energia (seção Energia), o total é comparado com a meta. As calorias por opção aparecem só para a equipe; a família não vê números de calorias de planos estruturados.
+
+### Publicar, editar e encerrar
+
+- **Salvar rascunho** guarda sem publicar. **Salvar e publicar** (ou **Publicar** na página do plano) torna o plano vigente para a família e para a equipe.
+- Publicar um plano novo **substitui** o vigente, que fica no **Histórico** como "Substituído". Nada é apagado.
+- Para alterar um plano publicado, use **Editar (novo rascunho a partir deste)**: o plano vigente continua valendo até você publicar o rascunho.
+- **Encerrar plano** exige um motivo; o paciente fica sem plano vigente. O Histórico mostra autor, quem publicou, datas e motivo do encerramento.
+- **Imprimir** (e **Imprimir com totais**, nos planos estruturados) abre uma versão própria para impressão. A família tem a sua em "Versão para imprimir".
+- **Descartar rascunho** apaga apenas rascunhos.
+
+### Modelos e trechos de texto
+
+- **Modelos** (menu "Modelos"): planos prontos da equipe, em texto ou estruturados, sem dados de paciente. Use-os em "Começar de → Modelo". Para criar um a partir de um plano existente, use **Salvar como modelo** na página do plano.
+- **Trechos de texto** (menu "Modelos" → botão "Trechos de texto"): frases curtas e nomeadas (por exemplo, orientações de hidratação). No editor, o seletor de trechos insere o texto com um clique no plano ou nas orientações.
+
+### Alimentos e "Minha tabela"
+
+O menu **Alimentos** lista a tabela TACO e os alimentos da casa. Os valores são sempre por 100 g.
+
+- Os dados da **TACO** e as **medidas caseiras da POF** **não podem ser editados**. Só é possível criar alimentos e medidas **próprios** ("Minha tabela"), inclusive receitas da casa (informe os valores por 100 g da receita já preparada).
+- Em qualquer alimento (TACO ou próprio) você pode acrescentar medidas caseiras próprias; as medidas próprias podem ser editadas e desativadas. As da POF aparecem com a origem "POF" e são somente leitura.
+
+**Medidas caseiras: revisar.** As medidas vêm da tabela do IBGE, *Pesquisa de Orçamentos Familiares (POF) 2008-2009*, ligadas aos alimentos da TACO.
+Algumas ligações são **aproximações** e a equipe deve revisá-las e, se preciso, acrescentar as suas em "Alimentos" (Minha tabela):
+
+- feijão carioca usa as linhas do grupo "feijão" da POF;
+- tapioca usa a linha "tapioca com coco";
+- **não há medidas de massa cozida**, porque a TACO não tem macarrão cozido (use gramas ou cadastre uma receita própria).
 
 ## 6. Limites legais
 
@@ -218,6 +287,8 @@ Registros clínicos nunca são apagados: correções criam nova versão e a ante
   Origem e SHA-256 em `data/bp/SOURCES.md`. Para adultos usam-se os limites habituais de pressão arterial.
 - **TACO 4ª edição** (composição de alimentos, por 100 g): NEPA/UNICAMP, 2011, em `data/taco/`.
   Origem, commit e SHA-256 em `data/taco/SOURCES.md`.
+- **POF 2008-2009** (medidas caseiras, em gramas): IBGE, *Tabela de Medidas Referidas para os Alimentos Consumidos no Brasil*, em `data/pof/`.
+  Origem em `data/pof/SOURCES.md`. Algumas ligações com a TACO são aproximações (veja "Plano alimentar").
 - **Gasto energético (TMB)**: Mifflin-St Jeor (1990), Harris-Benedict (1919, revisada em 1984) e FAO/OMS 1985 (Schofield).
   A fórmula usada e as metas ficam registradas para cada paciente.
 - **IMC e circunferências em adultos**: classificação da OMS (IMC) e pontos de corte da OMS para cintura e relação cintura/quadril.
@@ -249,6 +320,10 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    nem o `config/` do servidor.
 3. Se a versão trouxe mudanças em `public/` (visual, JavaScript), copie de novo o conteúdo de `rubia_app/public/` para a raiz do domínio (ex.: `public_html/rubia.med.br/`)
    e refaça o ajuste da linha `// AJUSTE NO DEPLOY` do `index.php`.
-4. Se a versão trouxe novas tabelas, elas estão em `database/migrations/`; rode `php /home/USUARIO/rubia_app/tools/migrate.php`
-   (aplica as tabelas novas e recarrega os dados de referência) se o cPanel tiver terminal; sem terminal, importe no phpMyAdmin
-   os arquivos novos de `database/migrations/` **e depois** os de `database/seeds/`. Faça um backup antes de atualizar.
+4. Se a versão trouxe novas tabelas ou dados de referência, faça um **backup** antes. Com terminal no cPanel, rode
+   `php /home/USUARIO/rubia_app/tools/migrate.php`: aplica as migrações novas e recarrega os dados de referência, tudo na ordem certa.
+   Sem terminal, importe no phpMyAdmin, **nesta ordem**: (1) `database/migrations/008_meal_plans.sql`, (2) `database/seeds/food_1_taco.sql`,
+   (3) `database/seeds/food_2_pof_measures.sql`. A ordem importa: os alimentos precisam existir antes das medidas.
+   Em versões futuras, importe as migrações novas (por número) e **depois** os arquivos de `database/seeds/`.
+   Os seeds podem ser importados de novo sem duplicar dados. A atualização do plano alimentar (Fase 2a) traz a migração `008_meal_plans.sql`
+   e os dois arquivos `food_*.sql`.
