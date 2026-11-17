@@ -304,4 +304,25 @@ final class LabPagesTest extends DbTestCase
         $this->assertStringContainsString('<span class="sr-only">sem faixa para esta idade</span>', $res->body);
         $this->assertStringNotContainsString('class="lab-marca"', $res->body);
     }
+
+    public function test_editing_keeps_result_of_deactivated_test(): void
+    {
+        [, $p] = $this->setupDoctor();
+        $cid = $this->idFrom($this->newCollection((int) $p['id'], [$this->glic => '98', $this->ldl => '140']));
+        $this->db->run('UPDATE lab_tests SET active = 0 WHERE id = ?', [$this->ldl]);
+
+        $form = $this->get('/exames/' . $cid . '/editar');
+        $this->assertSame(200, $form->status);
+        $this->assertMatchesRegularExpression('#name="valor\[' . $this->ldl . '\]"[^>]*value="140"#', $form->body);
+        $this->assertStringContainsString('(exame desativado no catálogo)', $form->body);
+        $this->assertStringNotContainsString('será removido', $form->body);
+
+        // So a data muda; o formulario reenvia o LDL (desativado) e ele continua gravado.
+        $res = $this->post('/exames/' . $cid . '/editar', [
+            'coletado_em' => '2026-05-11', 'laboratorio' => '', 'observacao' => '', 'valor' => [$this->glic => '98', $this->ldl => '140'],
+        ]);
+        $this->assertSame(302, $res->status);
+        $this->assertSame(1, $this->n('SELECT COUNT(*) n FROM lab_results WHERE collection_id = ? AND test_id = ?', [$cid, $this->ldl]));
+        $this->assertStringContainsString('LDL-colesterol', $this->get('/pacientes/' . $p['id'] . '/exames')->body);
+    }
 }

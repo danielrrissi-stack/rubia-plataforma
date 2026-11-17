@@ -52,7 +52,7 @@ final class LabRepository
             if ($patient === null) {
                 throw new \RuntimeException('Paciente não encontrado.');
             }
-            [$row, $results] = $this->clean($patient, $data, $values);
+            [$row, $results] = $this->clean($patient, $data, $values, $before['results']);
             $this->db->run(
                 'UPDATE lab_collections SET collected_on = ?, lab_name = ?, notes = ?, updated_by = ?, updated_at = NOW() WHERE id = ?',
                 [$row['collected_on'], $row['lab_name'], $row['notes'], $uid, $collectionId],
@@ -269,10 +269,17 @@ final class LabRepository
     }
 
     /**
+     * $existing: resultados ja gravados na coleta (so na edicao). Exame desativado no catalogo e aceito apenas se ja
+     * tinha resultado nesta coleta; se o formulario nao o enviar, o resultado gravado e mantido como esta.
+     * @param list<array{test_id:int,value_num:?float,value_text:?string}> $existing
      * @return array{0:array,1:array<int,array{num:?float,text:?string}>}
      */
-    private function clean(array $patient, array $data, array $values): array
+    private function clean(array $patient, array $data, array $values, array $existing = []): array
     {
+        $stored = [];
+        foreach ($existing as $res) {
+            $stored[(int) $res['test_id']] = $res;
+        }
         $errors = [];
         $on = trim((string) ($data['collected_on'] ?? ''));
         $d = \DateTimeImmutable::createFromFormat('!Y-m-d', $on);
@@ -292,7 +299,7 @@ final class LabRepository
                 continue;
             }
             $test = $this->catalog->find($tid);
-            if ($test === null || (int) $test['active'] !== 1) {
+            if ($test === null || ((int) $test['active'] !== 1 && !isset($stored[$tid]))) {
                 $errors[] = 'Exame inválido.';
                 continue;
             }
@@ -309,6 +316,15 @@ final class LabRepository
             }
             if ($parsed !== null) {
                 $results[$tid] = $parsed;
+            }
+        }
+        foreach ($stored as $tid => $res) {
+            if (array_key_exists($tid, $values) || array_key_exists((string) $tid, $values)) {
+                continue; // enviado pelo formulario: vale o que veio (vazio = removido)
+            }
+            $test = $this->catalog->find($tid);
+            if ($test !== null && (int) $test['active'] !== 1) {
+                $results[$tid] = ['num' => $res['value_num'], 'text' => $res['value_text']];
             }
         }
         if ($errors === [] && $results === []) {

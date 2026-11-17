@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var ?array $collection @var array $values @var string[] $errors
- * @var array<string,list<array>> $groups @var ?string $filesAgain @var string[] $dropped
+ * @var array<string,list<array>> $groups @var ?string $filesAgain
  */
 $pid = (int) $patient['id'];
 $isNew = $collection === null;
@@ -16,9 +16,6 @@ $labels = \App\Labs\LabController::GROUPS;
   </div>
 <?php endif; ?>
 <?php if ($filesAgain !== null): ?><p class="aviso aviso-erro" role="alert"><?= e($filesAgain) ?></p><?php endif; ?>
-<?php if ($dropped !== []): ?>
-  <p class="aviso aviso-erro">Esta coleta tem resultado de exame desativado no catálogo (<?= e(implode(', ', $dropped)) ?>); ao salvar, esse resultado será removido.</p>
-<?php endif; ?>
 <form method="post" action="<?= e(url($action)) ?>"<?= $isNew ? ' enctype="multipart/form-data"' : '' ?>>
   <?= csrf_field() ?>
   <div class="campo">
@@ -40,7 +37,7 @@ $labels = \App\Labs\LabController::GROUPS;
       <legend><?= e($labels[$g]) ?></legend>
       <?php foreach ($tests as $t): $tid = (int) $t['id']; $fid = 'valor_' . $tid; ?>
         <div class="campo lab-campo">
-          <label for="<?= e($fid) ?>"><?= e($t['name']) ?></label>
+          <label for="<?= e($fid) ?>"><?= e($t['name']) ?><?php if ((int) $t['active'] !== 1): ?> <span class="ajuda">(exame desativado no catálogo)</span><?php endif; ?></label>
           <input type="text" inputmode="decimal" id="<?= e($fid) ?>" name="valor[<?= e($tid) ?>]" value="<?= e($values['valor'][$tid] ?? '') ?>" maxlength="60">
           <span class="lab-unidade"><?= e($t['unit']) ?></span>
         </div>

@@ -189,4 +189,44 @@ final class LabRepositoryTest extends DbTestCase
         $this->assertSame(80.0, $s['points'][0]['value']);
         $this->assertSame('normal', $s['points'][0]['class']);
     }
+
+    public function test_update_keeps_and_accepts_results_of_deactivated_tests(): void
+    {
+        $p = $this->setUpPatient();
+        $r = new Request('POST', '/');
+        $uid = (int) $this->medico['id'];
+        $labs = Container::labs();
+        $cid = $this->add((int) $p['id'], '2026-05-10', ['glicemia' => '98', 'ldl' => '140', 'tgo' => '30']);
+        $this->db->run('UPDATE lab_tests SET active = 0 WHERE id IN (?, ?)', [$this->tid('ldl'), $this->tid('tgo')]);
+        $byTest = fn(): array => array_column($labs->find($cid)['results'], null, 'test_id');
+
+        // Nao enviado: mantido como estava; enviado: aceito mesmo desativado (ja tinha resultado nesta coleta).
+        $labs->update($cid, ['collected_on' => '2026-05-11'], [$this->tid('glicemia') => '99', $this->tid('tgo') => '35'], $uid, $r);
+        $res = $byTest();
+        $this->assertSame(140.0, $res[$this->tid('ldl')]['value_num']);
+        $this->assertSame(35.0, $res[$this->tid('tgo')]['value_num']);
+        $this->assertSame(99.0, $res[$this->tid('glicemia')]['value_num']);
+
+        // Desativado sem resultado nesta coleta continua recusado (na edicao e na criacao).
+        $hdl = $this->tid('hdl');
+        $this->db->run('UPDATE lab_tests SET active = 0 WHERE id = ?', [$hdl]);
+        $this->assertContains('Exame inválido.', $this->errors(fn() => $labs->update($cid, ['collected_on' => '2026-05-11'], [$hdl => '50'], $uid, $r)));
+        $this->assertContains('Exame inválido.', $this->errors(fn() => $this->add((int) $p['id'], '2026-05-10', ['ldl' => '120'])));
+
+        // Enviado vazio = removido pela medica.
+        $labs->update($cid, ['collected_on' => '2026-05-11'], [$this->tid('glicemia') => '99', $this->tid('tgo') => ''], $uid, $r);
+        $this->assertArrayNotHasKey($this->tid('tgo'), $byTest());
+        $this->assertArrayHasKey($this->tid('ldl'), $byTest());
+    }
+
+    public function test_collection_with_only_deactivated_results_is_still_editable(): void
+    {
+        $p = $this->setUpPatient();
+        $cid = $this->add((int) $p['id'], '2026-05-10', ['ldl' => '140']);
+        $this->db->run('UPDATE lab_tests SET active = 0 WHERE id = ?', [$this->tid('ldl')]);
+        Container::labs()->update($cid, ['collected_on' => '2026-05-12'], [], (int) $this->medico['id'], new Request('POST', '/'));
+        $c = Container::labs()->find($cid);
+        $this->assertSame('2026-05-12', (string) $c['collected_on']);
+        $this->assertSame(140.0, $c['results'][0]['value_num']);
+    }
 }

@@ -287,8 +287,16 @@ final class LabController
 
     private function renderForm(Request $r, array $patient, ?array $collection, array $values, array $errors, bool $filesAgain): Response
     {
+        // Exames ativos + exames desativados que ja tem resultado nesta coleta (editaveis; o resultado nao se perde).
+        $inCollection = [];
+        foreach ($collection['results'] ?? [] as $res) {
+            $inCollection[(int) $res['test_id']] = true;
+        }
         $groups = [];
-        foreach (Container::labCatalog()->tests(true) as $t) {
+        foreach (Container::labCatalog()->tests(false) as $t) {
+            if ((int) $t['active'] !== 1 && !isset($inCollection[(int) $t['id']])) {
+                continue;
+            }
             $g = isset(self::GROUPS[$t['group_name']]) ? (string) $t['group_name'] : 'outros';
             $groups[$g][] = $t;
         }
@@ -298,18 +306,6 @@ final class LabController
                 $ordered[$g] = $groups[$g];
             }
         }
-        $active = [];
-        foreach ($ordered as $list) {
-            foreach ($list as $t) {
-                $active[(int) $t['id']] = true;
-            }
-        }
-        $dropped = [];
-        foreach ($collection['results'] ?? [] as $res) {
-            if (!isset($active[$res['test_id']])) {
-                $dropped[] = (string) (Container::labCatalog()->find($res['test_id'])['name'] ?? '');
-            }
-        }
         return $this->page('Labs/views/form.php', $collection === null ? 'Nova coleta' : 'Editar coleta', $r, [
             'patient' => $patient,
             'collection' => $collection,
@@ -317,7 +313,6 @@ final class LabController
             'errors' => $errors,
             'groups' => $ordered,
             'filesAgain' => $filesAgain ? self::FILES_AGAIN : null,
-            'dropped' => $dropped,
         ]);
     }
 
