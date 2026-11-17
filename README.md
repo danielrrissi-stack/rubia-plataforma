@@ -6,7 +6,7 @@ Funciona em hospedagem compartilhada com cPanel, sem Composer e sem acesso por t
 ## 1. Requisitos
 
 - Hospedagem com cPanel, PHP 8.1 ou superior (recomendado 8.3) e MySQL/MariaDB.
-- Extensões do PHP: `pdo_mysql`, `openssl`, `zip`, `mbstring`, `json` (o instalador confere e avisa).
+- Extensões do PHP: `pdo_mysql`, `openssl`, `zip`, `mbstring`, `json`, `fileinfo` (o instalador confere e avisa).
 - Domínio com HTTPS (SSL gratuito AutoSSL do cPanel). Exemplo usado abaixo: `rubia.med.br`.
 - Um e-mail de envio (por exemplo `nao-responda@rubia.med.br`), criado no cPanel.
 - Um aplicativo autenticador no celular (Google Authenticator, Microsoft Authenticator, Authy...) para o 2FA da equipe.
@@ -272,6 +272,31 @@ Algumas ligações são **aproximações** e a equipe deve revisá-las e, se pre
 - tapioca usa a linha "tapioca com coco";
 - **não há medidas de massa cozida**, porque a TACO não tem macarrão cozido (use gramas ou cadastre uma receita própria).
 
+## Exames laboratoriais
+
+Os exames ficam na ficha de cada paciente, no cartão **Exames**. Só a médica vê e edita. As nutricionistas e a secretária **não veem** exames.
+
+### Registrar uma coleta
+
+Em **Nova coleta** informe a data e digite os valores dos exames. Cada coleta guarda os valores e, se quiser, o **laudo** (PDF, JPG ou PNG, até 10 MB).
+O sistema classifica cada valor como **normal**, **limítrofe** ou **alterado**, de acordo com a idade e o sexo do paciente **na data da coleta**.
+O **HOMA-IR** é calculado a partir da glicemia e da insulina e aparece **somente para a equipe**.
+
+### Evolução e gráfico
+
+Na página do paciente há uma tabela com todas as coletas e, para cada exame, um gráfico da evolução com as faixas de referência.
+
+### Liberar para a família
+
+A liberação é **por coleta**: use **Liberar para a família** na coleta. No portal a família vê o valor e uma frase simples ("dentro do esperado", "um pouco fora do esperado"...), **sem o laudo**.
+Dá para retirar a liberação depois.
+
+### Catálogo de exames (faixas de referência)
+
+No menu **Exames** (`/catalogo-exames`) ficam os exames disponíveis e suas faixas de referência. As faixas já vêm carregadas, mas aparecem como **"a confirmar"**
+até a médica revisar: abra o exame, confira as faixas e clique em **Salvar** (isso confirma). Também é possível editar as faixas e ativar ou desativar exames.
+As fontes das faixas estão em `data/exams/SOURCES.md`. As faixas são apoio à decisão; a interpretação clínica é sempre da médica.
+
 ## 6. Limites legais
 
 - O sistema foi feito **seguindo os requisitos** da Resolução CFM 1.821/2007 e da LGPD: identificação do profissional,
@@ -321,6 +346,10 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
 ## 9. Atualização de versão
 
 1. Gere o novo pacote (`php tools/build_release.php`) e envie o `.zip` para `/home/USUARIO/rubia_app/`.
+   **ATENÇÃO — extraia o zip DENTRO de `rubia_app`, nunca na pasta do site.**
+   - Errado: extrair em `public_html/rubia.med.br/` (o site continua com o código antigo e o código do sistema fica exposto na internet).
+   - Certo: extrair em `/home/USUARIO/rubia_app/` (em hospedagens com `/home2`, `/home2/USUARIO/rubia_app/`).
+   - Conferência rápida: depois de extrair, confira que existe `rubia_app/app/Labs`. Se não existir, a extração foi para o lugar errado.
 2. Extraia **por cima** dos arquivos existentes (opção de sobrescrever). O pacote não contém `config/config.php`, `config/.install.lock`
    nem a pasta de dados (`storage/` ou `rubia_storage/`), então esses itens **não são apagados** — nunca exclua a pasta `rubia_app` inteira
    nem o `config/` do servidor.
@@ -339,3 +368,10 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    `INSERT INTO schema_migrations (name) VALUES ('008_meal_plans.sql');`
 5. **A atualização do plano alimentar (Fase 2a) muda `public/`** (novos arquivos JavaScript e CSS do editor e do portal): o passo 3 é
    obrigatório nesta versão — copie de novo o conteúdo de `rubia_app/public/` para a raiz do domínio (ex.: `public_html/rubia.med.br/`).
+6. **A atualização de exames laboratoriais (Fase 2b)** traz a migração `009_lab_exams.sql` e o seed `database/seeds/lab_catalog.sql` (catálogo e faixas).
+   Faça **backup** antes. Com terminal: `php /home/USUARIO/rubia_app/tools/migrate.php` aplica os dois. Sem terminal, importe no phpMyAdmin,
+   **nesta ordem**: (1) `database/migrations/009_lab_exams.sql`, (2) `database/seeds/lab_catalog.sql`, e logo depois, na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('009_lab_exams.sql');`
+   O seed pode ser importado de novo sem duplicar dados. Esta versão **muda `public/`** (gráfico de exames): o passo 3 é obrigatório.
+7. **Envio de laudos:** em cPanel → "Select PHP Version" → "Options", ajuste `upload_max_filesize` e `post_max_size` para **10M ou mais**
+   (senão o envio de laudos grandes falha). A extensão `fileinfo` do PHP precisa estar ativa (o instalador confere).

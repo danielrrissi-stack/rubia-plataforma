@@ -17,7 +17,7 @@ final class Requirements
         };
 
         $add('PHP 8.1 ou superior', version_compare(PHP_VERSION, '8.1.0', '>='), true, 'Versão atual: ' . PHP_VERSION);
-        foreach (['pdo_mysql', 'openssl', 'zip', 'mbstring', 'json'] as $ext) {
+        foreach (['pdo_mysql', 'openssl', 'zip', 'mbstring', 'json', 'fileinfo'] as $ext) {
             $loaded = extension_loaded($ext);
             $add('Extensão ' . $ext, $loaded, true, $loaded ? 'Disponível' : 'Ausente: peça à hospedagem para habilitar');
         }

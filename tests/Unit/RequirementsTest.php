@@ -32,4 +32,10 @@ final class RequirementsTest extends TestCase
         $this->assertFalse(Requirements::passes($items));
         $this->assertTrue(Requirements::passes([['item' => 'x', 'ok' => false, 'required' => false, 'detail' => '']]));
     }
+
+    public function test_lists_fileinfo_extension(): void
+    {
+        $names = array_column(Requirements::check(sys_get_temp_dir()), 'item');
+        $this->assertContains('Extensão fileinfo', $names);
+    }
 }
