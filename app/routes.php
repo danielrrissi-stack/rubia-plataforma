@@ -89,6 +89,14 @@ $router->post('/pacientes/{id:\d+}/energia', [EnergyController::class, 'store'],
 $router->get('/pacientes/{id:\d+}/plano', [MealPlanController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/plano/novo', [MealPlanController::class, 'create'], $authMw);
 $router->get('/alimentos/busca', [FoodController::class, 'search'], $authMw);
+$router->get('/alimentos', [FoodController::class, 'index'], $authMw);
+$router->get('/alimentos/novo', [FoodController::class, 'createForm'], $authMw);
+$router->post('/alimentos/novo', [FoodController::class, 'create'], $authMw);
+$router->get('/alimentos/{foodId:\d+}/editar', [FoodController::class, 'editForm'], $authMw);
+$router->post('/alimentos/{foodId:\d+}/editar', [FoodController::class, 'update'], $authMw);
+$router->post('/alimentos/{foodId:\d+}/medidas', [FoodController::class, 'addMeasure'], $authMw);
+$router->post('/alimentos/medidas/{measureId:\d+}/editar', [FoodController::class, 'updateMeasure'], $authMw);
+$router->post('/alimentos/{foodId:\d+}/ativo', [FoodController::class, 'toggle'], $authMw);
 $router->post('/planos/previa', [MealPlanController::class, 'preview'], $authMw);
 $router->get('/planos/{planId:\d+}', [MealPlanController::class, 'show'], $authMw);
 $router->get('/planos/{planId:\d+}/imprimir', [MealPlanController::class, 'print'], $authMw);

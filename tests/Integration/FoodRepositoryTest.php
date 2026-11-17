@@ -57,4 +57,70 @@ final class FoodRepositoryTest extends DbTestCase
         $this->assertSame(0, (int) Container::foods()->find(53)['active']);
         $this->assertNotNull(Container::foods()->find($own));
     }
+
+    public function test_create_own_food_normalizes_and_audits(): void
+    {
+        $u = $this->makeUser('medico');
+        $id = Container::foods()->createOwn(['name' => 'Bolo de Banana da Casa', 'group_name' => 'Receita', 'kcal' => 250.5, 'protein_g' => 4, 'carb_g' => null], (int) $u['id']);
+        $this->assertGreaterThanOrEqual(100000, $id);
+        $f = Container::foods()->find($id);
+        $this->assertSame('proprio', $f['source']);
+        $this->assertSame('bolo de banana da casa', $f['name_search']);
+        $this->assertSame(1, (int) $this->db->one("SELECT COUNT(*) c FROM audit_log WHERE entity='foods' AND action='create' AND entity_id=?", [$id])['c']);
+        $this->expectException(\RuntimeException::class);
+        Container::foods()->createOwn(['name' => 'X', 'kcal' => 10], (int) $u['id']);
+    }
+
+    public function test_own_food_validation_ranges(): void
+    {
+        $u = $this->makeUser('medico');
+        foreach ([['name' => 'Ok ok', 'kcal' => null], ['name' => 'Ok ok', 'kcal' => 901], ['name' => 'Ok ok', 'kcal' => 10, 'fat_g' => 101], ['name' => 'Ok ok', 'kcal' => -1]] as $bad) {
+            try {
+                Container::foods()->createOwn($bad, (int) $u['id']);
+                $this->fail('deveria recusar');
+            } catch (\RuntimeException $e) {
+                $this->assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
+    public function test_update_own_and_taco_is_readonly(): void
+    {
+        $u = $this->makeUser('medico');
+        $id = Container::foods()->createOwn(['name' => 'Sopa da casa', 'kcal' => 50], (int) $u['id']);
+        Container::foods()->updateOwn($id, ['name' => 'Sopa de legumes', 'kcal' => 60], (int) $u['id']);
+        $this->assertSame('sopa de legumes', Container::foods()->find($id)['name_search']);
+        Container::foods()->setActive($id, false, (int) $u['id']);
+        $this->assertSame(0, (int) Container::foods()->find($id)['active']);
+        try {
+            Container::foods()->updateOwn(53, ['name' => 'Outro', 'kcal' => 1], (int) $u['id']);
+            $this->fail('TACO nao editavel');
+        } catch (\RuntimeException $e) {
+            $this->assertNotSame('', $e->getMessage());
+        }
+        $this->expectException(\RuntimeException::class);
+        Container::foods()->setActive(53, false, (int) $u['id']);
+    }
+
+    public function test_add_measure_to_taco_food_and_pof_readonly(): void
+    {
+        $u = $this->makeUser('medico');
+        $mid = Container::foods()->addMeasure(53, ['name' => 'pão da padaria', 'name_plural' => 'pães da padaria', 'grams' => 48.5], (int) $u['id']);
+        $this->assertSame('proprio', Container::foods()->findMeasure($mid)['source']);
+        $ids = [];
+        foreach (Container::foods()->search('pao frances') as $f) {
+            if ((int) $f['id'] === 53) {
+                $ids = array_map('intval', array_column($f['measures'], 'id'));
+            }
+        }
+        $this->assertContains($mid, $ids);
+        Container::foods()->updateMeasure($mid, ['name' => 'pão grande', 'grams' => 60], (int) $u['id']);
+        $this->assertSame('pão grande', Container::foods()->findMeasure($mid)['name']);
+        Container::foods()->setMeasureActive($mid, false, (int) $u['id']);
+        $this->assertSame(0, (int) Container::foods()->findMeasure($mid)['active']);
+        $pof = $this->db->one("SELECT id FROM food_measures WHERE source = 'pof' LIMIT 1");
+        $this->assertNotNull($pof);
+        $this->expectException(\RuntimeException::class);
+        Container::foods()->updateMeasure((int) $pof['id'], ['name' => 'x x', 'grams' => 10], (int) $u['id']);
+    }
 }

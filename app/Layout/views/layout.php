@@ -8,6 +8,9 @@ if (!isset($nav)) {
     $nav = [['Pacientes', '/pacientes']];
     $uid = \App\Core\Session::get('uid');
     $navUser = is_int($uid) ? \App\Core\Container::users()->find($uid) : null;
+    if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'edit', \App\Access\Policy::NUTRICAO, null)) {
+        $nav[] = ['Alimentos', '/alimentos'];
+    }
     if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'view', \App\Access\Policy::USUARIOS, null)) {
         $nav[] = ['Equipe', '/equipe'];
     }

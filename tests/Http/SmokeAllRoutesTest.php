@@ -52,6 +52,9 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/energia'                  => [200, 200, 403, 403, 403],
         '/pacientes/{id}/plano'                    => [200, 200, 403, 403, 403],
         '/alimentos/busca'                         => [200, 200, 403, 403, 403],
+        '/alimentos'                               => [200, 200, 403, 403, 403],
+        '/alimentos/novo'                          => [200, 200, 403, 403, 403],
+        '/alimentos/{foodId}/editar'               => [200, 200, 403, 403, 403],
         '/planos/{planId}'                         => [200, 200, 403, 403, 403],
         '/planos/{planId}/imprimir'                => [200, 200, 403, 403, 403],
         '/planos/{planId}/editar'                  => [302, 302, 403, 403, 403], // publicado redireciona para show
@@ -145,6 +148,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'nome' => 'backup-20200101-000000.rbk',
                 'kind' => 'evolucao',
                 'planId' => (string) $this->fx['plan'],
+                'foodId' => '53',
                 'entryId' => (string) $this->fx['entry'][$role],
                 'id' => match (true) {
                     str_starts_with($pattern, '/equipe/') => (string) $this->fx['secretaria_id'],
