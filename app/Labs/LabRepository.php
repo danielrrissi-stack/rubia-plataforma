@@ -68,17 +68,17 @@ final class LabRepository
 
     public function delete(int $collectionId, int $uid, Request $r): void
     {
-        $this->change($collectionId, $uid, $r, 'delete', 'UPDATE lab_collections SET deleted_at = NOW(), deleted_by = ? WHERE id = ?');
+        $this->change($collectionId, $uid, $r, 'delete', 2, 'UPDATE lab_collections SET deleted_at = NOW(), deleted_by = ?, updated_by = ?, updated_at = NOW() WHERE id = ?');
     }
 
     public function release(int $collectionId, int $uid, Request $r): void
     {
-        $this->change($collectionId, $uid, $r, 'release', 'UPDATE lab_collections SET released_at = NOW(), released_by = ? WHERE id = ?');
+        $this->change($collectionId, $uid, $r, 'release', 2, 'UPDATE lab_collections SET released_at = NOW(), released_by = ?, updated_by = ?, updated_at = NOW() WHERE id = ?');
     }
 
     public function unrelease(int $collectionId, int $uid, Request $r): void
     {
-        $this->change($collectionId, $uid, $r, 'unrelease', 'UPDATE lab_collections SET released_at = NULL, released_by = NULL, updated_by = ? WHERE id = ?');
+        $this->change($collectionId, $uid, $r, 'unrelease', 1, 'UPDATE lab_collections SET released_at = NULL, released_by = NULL, updated_by = ?, updated_at = NOW() WHERE id = ?');
     }
 
     /** Inclui coleta excluida. @return array|null coleta + results */
@@ -195,6 +195,7 @@ final class LabRepository
                 'date' => (string) $row['collected_on'],
                 'value' => $value,
                 'class' => $range === null ? null : LabClassifier::classify($value, $range),
+                'no_range' => $range === null,
             ];
         }
         $band = null;
@@ -251,7 +252,7 @@ final class LabRepository
         $v = (float) $res['value_num'];
         $range = $this->rangeFor($ranges, $patient, $on);
         return [
-            'value' => fmt_num($v, (int) $test['decimals']),
+            'value' => LabValue::format($v, (int) $test['decimals']),
             'class' => $range === null ? null : LabClassifier::classify($v, $range),
             'no_range' => $range === null,
         ];
@@ -364,14 +365,15 @@ final class LabRepository
         return $row;
     }
 
-    private function change(int $id, int $uid, Request $r, string $action, string $sql): void
+    /** $users: quantos "?" de usuario o SQL tem antes do id. */
+    private function change(int $id, int $uid, Request $r, string $action, int $users, string $sql): void
     {
-        $this->db->transaction(function () use ($id, $uid, $r, $action, $sql): void {
+        $this->db->transaction(function () use ($id, $uid, $r, $action, $users, $sql): void {
             $before = $this->lock($id);
             if ($before === null || $before['deleted_at'] !== null) {
                 throw new \RuntimeException('Coleta não encontrada.');
             }
-            $this->db->run($sql, [$uid, $id]);
+            $this->db->run($sql, array_merge(array_fill(0, $users, $uid), [$id]));
             $this->audit->record(
                 $uid, $action, 'lab_collections', $id, (int) $before['patient_id'],
                 $this->view($before), $this->view($this->find($id)), $r,

@@ -41,7 +41,7 @@ $released = $collection['released_at'] !== null;
       <?php foreach ($attachments as $a): ?>
         <li><a href="<?= e(url('/exames/anexos/' . $a['id'])) ?>"><?= e($a['original_name']) ?></a>
           <span class="ajuda">(<?= e(fmt_num((int) $a['size_bytes'] / 1024 / 1024, 1)) ?> MB)</span>
-          <form class="form-inline" method="post" action="<?= e(url('/exames/anexos/' . $a['id'] . '/excluir')) ?>"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir laudo</button></form>
+          <form class="form-inline" method="post" action="<?= e(url('/exames/anexos/' . $a['id'] . '/excluir')) ?>" data-confirm="Excluir este laudo?"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir laudo</button></form>
         </li>
       <?php endforeach; ?>
     </ul>
@@ -65,6 +65,7 @@ $released = $collection['released_at'] !== null;
     <?php else: ?>
       <form class="form-inline" method="post" action="<?= e(url('/exames/' . $cid . '/liberar')) ?>"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Liberar para a família</button></form>
     <?php endif; ?>
-    <form class="form-inline" method="post" action="<?= e(url('/exames/' . $cid . '/excluir')) ?>"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir coleta</button></form>
+    <form class="form-inline" method="post" action="<?= e(url('/exames/' . $cid . '/excluir')) ?>" data-confirm="Excluir esta coleta de exames? Os resultados deixam de aparecer."><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir coleta</button></form>
   </div>
 </section>
+<script src="<?= e(url('/assets/js/confirm-submit.js')) ?>" defer></script>

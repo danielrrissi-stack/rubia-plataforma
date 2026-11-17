@@ -14,6 +14,8 @@
   var BORDER = '#b06000';
   var NORMAL = '#2f5d50';
   var BAND = 'rgba(47,107,95,0.16)';
+  var NO_RANGE = '#8a948f';
+  var NO_RANGE_TEXT = 'sem faixa para esta idade';
 
   function destroy() { if (chart) { chart.destroy(); chart = null; } }
   function say(text) { msg.textContent = text || ''; }
@@ -30,7 +32,7 @@
     list.textContent = '';
     j.points.forEach(function (p) {
       var li = document.createElement('li');
-      li.textContent = brDate(p.date) + ': ' + num(p.value, dec) + ' ' + j.test.unit + (p.label ? ' (' + p.label + ')' : '');
+      li.textContent = brDate(p.date) + ': ' + num(p.value, dec) + ' ' + j.test.unit + (p.no_range ? ' (' + NO_RANGE_TEXT + ')' : (p.label ? ' (' + p.label + ')' : ''));
       list.appendChild(li);
     });
     details.hidden = j.points.length === 0;
@@ -61,8 +63,10 @@
       borderColor: NORMAL, backgroundColor: NORMAL, borderWidth: 2, tension: 0, order: 1,
       pointRadius: function (c) { var p = pts[c.dataIndex]; return p && p.class && p.class !== 'normal' ? 7 : 5; },
       pointStyle: function (c) { var p = pts[c.dataIndex]; return p && p.class && p.class !== 'normal' ? 'triangle' : 'circle'; },
-      pointBackgroundColor: function (c) { var p = pts[c.dataIndex]; return colorOf(p && p.class); },
-      pointBorderColor: function (c) { var p = pts[c.dataIndex]; return colorOf(p && p.class); }
+      // Sem faixa: ponto cinza e vazado (nao parece normal).
+      pointBackgroundColor: function (c) { var p = pts[c.dataIndex]; return p && p.no_range ? '#ffffff' : colorOf(p && p.class); },
+      pointBorderColor: function (c) { var p = pts[c.dataIndex]; return p && p.no_range ? NO_RANGE : colorOf(p && p.class); },
+      pointBorderWidth: function (c) { var p = pts[c.dataIndex]; return p && p.no_range ? 2 : 1; }
     });
     chart = new Chart(canvas, {
       type: 'line',
@@ -76,7 +80,7 @@
             callbacks: {
               label: function (c) {
                 var p = pts[c.dataIndex];
-                return num(p.value, dec) + ' ' + j.test.unit + (p.label ? ' (' + p.label + ')' : '');
+                return num(p.value, dec) + ' ' + j.test.unit + (p.no_range ? ' (' + NO_RANGE_TEXT + ')' : (p.label ? ' (' + p.label + ')' : ''));
               }
             }
           }

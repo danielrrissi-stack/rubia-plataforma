@@ -65,7 +65,7 @@ final class LabCatalogController
         $test = $this->test($r);
         $rows = array_map(self::rowFromRange(...), Container::labCatalog()->ranges((int) $test['id']));
         $rows[] = self::emptyRow();
-        return $this->renderForm($r, $test, self::valuesFrom($test), $rows, []);
+        return $this->renderForm($r, $test, self::valuesFrom($test), $rows, [], self::gapWarnings(Container::labCatalog()->ranges((int) $test['id'])));
     }
 
     /** POST /catalogo-exames/{testId}/editar */
@@ -77,11 +77,15 @@ final class LabCatalogController
         if ($errors === []) {
             $uid = (int) $user['id'];
             try {
-                Container::db()->transaction(function () use ($test, $values, $ranges, $uid, $r): void {
+                $stored = Container::labCatalog()->ranges((int) $test['id']);
+                $changed = self::normalise($ranges) !== self::normalise($stored);
+                Container::db()->transaction(function () use ($test, $values, $ranges, $changed, $uid, $r): void {
                     Container::labCatalog()->saveTest((int) $test['id'], $values, $uid, $r);
-                    Container::labCatalog()->saveRanges((int) $test['id'], $ranges, $uid, $r);
+                    if ($changed) { // so editar as faixas as confirma; salvar so o cadastro mantem "a confirmar"
+                        Container::labCatalog()->saveRanges((int) $test['id'], $ranges, $uid, $r);
+                    }
                 });
-                Session::flash('ok', 'Exame e faixas salvos.');
+                Session::flash('ok', $changed ? 'Exame e faixas salvos (faixas confirmadas).' : 'Exame salvo. As faixas não foram alteradas.');
                 return Response::redirect('/catalogo-exames/' . $test['id'] . '/editar');
             } catch (InvalidLabException $e) {
                 $errors = $e->errors;
@@ -117,6 +121,77 @@ final class LabCatalogController
             throw new HttpException(404, 'Exame não encontrado');
         }
         return $test;
+    }
+
+    /** Faixas em forma comparavel (tipos fixos, ordenadas), para saber se o formulario mudou alguma coisa. */
+    private static function normalise(array $ranges): array
+    {
+        $out = [];
+        foreach ($ranges as $g) {
+            $cut = static fn(mixed $v): ?float => $v === null ? null : round((float) $v, 3);
+            $sex = $g['sex'] ?? null;
+            $src = trim((string) ($g['source'] ?? ''));
+            $out[] = [
+                'sex' => $sex === '' ? null : $sex,
+                'min' => (int) $g['age_min_months'],
+                'max' => ($g['age_max_months'] ?? null) === null ? null : (int) $g['age_max_months'],
+                'bh' => $cut($g['borderline_high'] ?? null), 'ah' => $cut($g['abnormal_high'] ?? null),
+                'bl' => $cut($g['borderline_low'] ?? null), 'al' => $cut($g['abnormal_low'] ?? null),
+                'source' => $src === '' ? null : $src,
+            ];
+        }
+        usort($out, static fn(array $a, array $b): int => [(string) $a['sex'], $a['min'], $a['max'] ?? PHP_INT_MAX] <=> [(string) $b['sex'], $b['min'], $b['max'] ?? PHP_INT_MAX]);
+        return $out;
+    }
+
+    private static function ageText(int $months): string
+    {
+        $y = intdiv($months, 12);
+        $m = $months % 12;
+        $parts = [];
+        if ($y > 0 || $m === 0) {
+            $parts[] = $y . ($y === 1 ? ' ano' : ' anos');
+        }
+        if ($m > 0) {
+            $parts[] = $m . ($m === 1 ? ' mês' : ' meses');
+        }
+        return implode(' e ', $parts);
+    }
+
+    /**
+     * Avisos (nao bloqueiam) de idades sem faixa entre faixas do mesmo sexo, dentro do intervalo coberto.
+     * A idade final conta inteira, entao a faixa seguinte deve comecar no mes seguinte.
+     * @param list<array> $ranges
+     * @return list<string>
+     */
+    public static function gapWarnings(array $ranges): array
+    {
+        $groups = [];
+        $general = array_values(array_filter($ranges, static fn(array $g): bool => ($g['sex'] ?? null) === null));
+        if ($general !== []) {
+            $groups['ambos os sexos'] = $general;
+        }
+        foreach (['M' => 'sexo M', 'F' => 'sexo F'] as $sex => $label) {
+            $own = array_filter($ranges, static fn(array $g): bool => ($g['sex'] ?? null) === $sex);
+            if ($own !== []) {
+                $groups[$label] = array_values(array_filter($ranges, static fn(array $g): bool => ($g['sex'] ?? null) === null || $g['sex'] === $sex));
+            }
+        }
+        $out = [];
+        foreach ($groups as $label => $list) {
+            usort($list, static fn(array $a, array $b): int => $a['age_min_months'] <=> $b['age_min_months']);
+            $coveredUntil = null; // PHP_INT_MAX = sem limite
+            foreach ($list as $g) {
+                $min = (int) $g['age_min_months'];
+                $max = ($g['age_max_months'] ?? null) === null ? PHP_INT_MAX : (int) $g['age_max_months'];
+                if ($coveredUntil !== null && $min > $coveredUntil + 1) {
+                    $out[] = 'Atenção (' . $label . '): as idades de ' . self::ageText($coveredUntil + 1) . ' a '
+                        . self::ageText($min - 1) . ' ficam sem faixa. A idade final conta inteira: a faixa seguinte deve começar no mês seguinte.';
+                }
+                $coveredUntil = $coveredUntil === null ? $max : max($coveredUntil, $max);
+            }
+        }
+        return $out;
     }
 
     private static function emptyRow(): array
@@ -223,10 +298,10 @@ final class LabCatalogController
         return $y * 12 + $m;
     }
 
-    private function renderForm(Request $r, ?array $test, array $values, array $rows, array $errors): Response
+    private function renderForm(Request $r, ?array $test, array $values, array $rows, array $errors, array $warnings = []): Response
     {
         return $this->page('Labs/views/catalog_form.php', $test === null ? 'Novo exame' : (string) $test['name'], $r, [
-            'test' => $test, 'values' => $values, 'rows' => $rows, 'errors' => $errors, 'groups' => LabController::GROUPS,
+            'test' => $test, 'values' => $values, 'rows' => $rows, 'errors' => $errors, 'warnings' => $warnings, 'groups' => LabController::GROUPS,
         ]);
     }
 

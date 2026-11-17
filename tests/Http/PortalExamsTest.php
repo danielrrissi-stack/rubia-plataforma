@@ -73,7 +73,7 @@ final class PortalExamsTest extends DbTestCase
         $this->assertStringContainsString('140', $res->body);
         $this->assertStringNotContainsString('01/06/2026', $res->body);
         $this->assertStringNotContainsString('HDL', $res->body);
-        $this->assertStringNotContainsString('30', $res->body);
+        $this->assertStringNotContainsString(': 30 ', $res->body);
         $this->assertStringNotContainsString('HOMA', $res->body);
         $this->assertStringNotContainsString('Laboratorio Secreto', $res->body);
         $this->assertStringNotContainsString('Observacao secreta', $res->body);

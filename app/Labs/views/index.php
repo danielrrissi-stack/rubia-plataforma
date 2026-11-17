@@ -14,7 +14,7 @@ $cols = $evolution['collections'];
   <?php if ($evolution['rows'] === []): ?>
     <p class="ajuda">Nenhum resultado registrado.</p>
   <?php else: ?>
-    <p class="ajuda">▲ alterado (alto) · ▼ alterado (baixo) · ◆ limítrofe. Coletas mais recentes à esquerda.</p>
+    <p class="ajuda">▲ alterado (alto) · ▼ alterado (baixo) · ◆ limítrofe · sublinhado pontilhado = sem faixa para esta idade. Coletas mais recentes à esquerda.</p>
     <div class="tabela-rolagem">
       <table class="lab-evolucao">
         <thead><tr>

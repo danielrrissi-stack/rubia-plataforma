@@ -15,6 +15,7 @@ use App\Core\View;
 final class LabController
 {
     public const GROUPS = ['glicose' => 'Glicemia e insulina', 'lipidios' => 'Lipídios', 'figado' => 'Fígado', 'outros' => 'Outros'];
+    public const NO_RANGE = 'sem faixa para esta idade';
     private const FILES_AGAIN = 'Escolha os arquivos do laudo de novo.';
 
     /** GET /pacientes/{id}/exames */
@@ -46,7 +47,7 @@ final class LabController
             throw new HttpException(404);
         }
         $points = array_map(static fn(array $p): array => $p + [
-            'label' => $p['class'] === null ? null : LabClassifier::LABEL[$p['class']],
+            'label' => $p['no_range'] ? self::NO_RANGE : ($p['class'] === null ? null : LabClassifier::LABEL[$p['class']]),
         ], $s['points']);
         return Response::json([
             'test' => [
@@ -126,7 +127,7 @@ final class LabController
             $t = $tests[$res['test_id']] ?? null;
             $valor[$res['test_id']] = $res['value_num'] === null
                 ? (string) $res['value_text']
-                : fmt_num($res['value_num'], self::editDecimals($res['value_num'], (int) ($t['decimals'] ?? 0)));
+                : LabValue::format($res['value_num'], (int) ($t['decimals'] ?? 0));
         }
         return $this->renderForm($r, $this->patient((int) $c['patient_id']), $c, [
             'coletado_em' => (string) $c['collected_on'],
@@ -220,16 +221,6 @@ final class LabController
     }
 
     // ---- internos ----
-
-    /** Casas para re-exibir no formulario: as do catalogo, sem perder casas que o valor gravado tenha a mais. */
-    private static function editDecimals(float $v, int $catalog): int
-    {
-        $dec = $catalog;
-        while ($dec < 4 && round($v, $dec) != $v) {
-            $dec++;
-        }
-        return $dec;
-    }
 
     /** @return array{coletado_em:string,laboratorio:string,observacao:string,valor:array<int,string>} */
     private function posted(Request $r): array

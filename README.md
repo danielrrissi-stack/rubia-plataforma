@@ -293,8 +293,8 @@ Dá para retirar a liberação depois.
 
 ### Catálogo de exames (faixas de referência)
 
-No menu **Exames** (`/catalogo-exames`) ficam os exames disponíveis e suas faixas de referência. As faixas já vêm carregadas, mas aparecem como **"a confirmar"**
-até a médica revisar: abra o exame, confira as faixas e clique em **Salvar** (isso confirma). Também é possível editar as faixas e ativar ou desativar exames.
+No menu **Catálogo de exames** (`/catalogo-exames`) ficam os exames disponíveis e suas faixas de referência. As faixas já vêm carregadas, mas aparecem como **"a confirmar"**
+até a médica revisar: abra o exame, confira as faixas e altere o que for preciso e clique em **Salvar** (salvar com as faixas **alteradas** as confirma; salvar sem alterá-las, por exemplo só para desativar um exame, **não** confirma) ou use o botão **Confirmar faixas** para aceitá-las como estão. Também é possível editar as faixas e ativar ou desativar exames.
 As fontes das faixas estão em `data/exams/SOURCES.md`. As faixas são apoio à decisão; a interpretação clínica é sempre da médica.
 
 ## 6. Limites legais
@@ -373,5 +373,5 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    **nesta ordem**: (1) `database/migrations/009_lab_exams.sql`, (2) `database/seeds/lab_catalog.sql`, e logo depois, na aba "SQL":
    `INSERT INTO schema_migrations (name) VALUES ('009_lab_exams.sql');`
    O seed pode ser importado de novo sem duplicar dados. Esta versão **muda `public/`** (gráfico de exames): o passo 3 é obrigatório.
-7. **Envio de laudos:** em cPanel → "Select PHP Version" → "Options", ajuste `upload_max_filesize` e `post_max_size` para **10M ou mais**
+7. **Envio de laudos:** em cPanel → "Select PHP Version" → "Options", ajuste `upload_max_filesize` para **10M ou mais** e `post_max_size` para **pelo menos 32M** (e maior que `upload_max_filesize`, porque vários laudos podem ir juntos)
    (senão o envio de laudos grandes falha). A extensão `fileinfo` do PHP precisa estar ativa (o instalador confere).

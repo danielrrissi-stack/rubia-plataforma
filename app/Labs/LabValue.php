@@ -21,4 +21,20 @@ final class LabValue
         }
         throw new \InvalidArgumentException('Valor de exame inválido: ' . $s);
     }
+
+    /** Casas para exibir: as do catalogo, sem nunca mostrar menos casas do que o valor gravado precisa (ate 4). */
+    public static function displayDecimals(float $v, int $catalog): int
+    {
+        $dec = max(0, $catalog);
+        while ($dec < 4 && round($v, $dec) != $v) {
+            $dec++;
+        }
+        return $dec;
+    }
+
+    /** Valor numerico formatado com virgula, sem arredondar para menos casas do que o necessario. */
+    public static function format(float $v, int $catalog): string
+    {
+        return fmt_num($v, self::displayDecimals($v, $catalog));
+    }
 }

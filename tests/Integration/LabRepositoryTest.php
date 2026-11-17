@@ -229,4 +229,20 @@ final class LabRepositoryTest extends DbTestCase
         $this->assertSame('2026-05-12', (string) $c['collected_on']);
         $this->assertSame(140.0, $c['results'][0]['value_num']);
     }
+
+    public function test_values_show_enough_decimals_not_rounded_silently(): void
+    {
+        $p = $this->setUpPatient('2010-05-10', 'M');
+        $uid = (int) $this->medico['id'];
+        $r = new Request('POST', '/');
+        $id = Container::labs()->create((int) $p['id'], ['collected_on' => '2026-05-10'], [$this->tid('glicemia') => '99,6'], $uid, $r);
+        Container::labs()->release($id, $uid, $r);
+        $cell = Container::labs()->evolution((int) $p['id'])['rows'][0]['cells'][$id];
+        $this->assertSame('99,6', $cell['value']);
+        $this->assertSame('99,6', Container::labs()->familyView((int) $p['id'])[0]['items'][0]['value']);
+        $this->assertSame(0, \App\Labs\LabValue::displayDecimals(99.0, 0));
+        $this->assertSame(1, \App\Labs\LabValue::displayDecimals(99.6, 0));
+        $this->assertSame(2, \App\Labs\LabValue::displayDecimals(5.5, 2));
+        $this->assertSame('99', \App\Labs\LabValue::format(99.0, 0));
+    }
 }

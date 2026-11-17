@@ -59,6 +59,7 @@ input[type=text], input[type=email], input[type=password], input[type=date], inp
 .aviso { padding: .7rem 1rem; border-radius: var(--raio); margin: 0 0 1rem; }
 .aviso-ok { background: var(--ok-fundo); color: var(--salvia-escura); }
 .aviso-erro { background: var(--alerta-fundo); color: var(--alerta); }
+.aviso-atencao { background: var(--alerta-fundo); color: var(--tinta); }
 
 table { width: 100%; border-collapse: collapse; background: var(--papel); }
 th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--linha); }

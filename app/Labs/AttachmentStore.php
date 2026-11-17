@@ -168,6 +168,19 @@ final class AttachmentStore
         }
     }
 
+    /** Limite real de envio, em MB inteiros: o menor entre 10 MB e o upload_max_filesize do PHP (ex.: "2M", "512K", "1G"). */
+    public static function limitMegabytes(string|false $iniValue): string
+    {
+        $max = self::MAX_BYTES;
+        $v = is_string($iniValue) ? strtolower(trim($iniValue)) : '';
+        if ($v !== '' && preg_match('/^(\d+)\s*([kmg]?)b?$/', $v, $m) === 1 && (int) $m[1] > 0) {
+            $mult = ['' => 1, 'k' => 1024, 'm' => 1024 ** 2, 'g' => 1024 ** 3][$m[2]];
+            $max = min($max, (int) $m[1] * $mult);
+        }
+        $mb = $max / (1024 * 1024);
+        return $mb >= 1 ? (string) (int) $mb : rtrim(rtrim(number_format($mb, 1, ',', ''), '0'), ',');
+    }
+
     /** @return string|array{tmp:string,name:string,mime:string,ext:string,size:int,sha256:string} mensagem de erro ou dados do arquivo */
     private function validate(array $f): string|array
     {
@@ -175,7 +188,7 @@ final class AttachmentStore
         $error = (int) ($f['error'] ?? UPLOAD_ERR_NO_FILE);
         $tooBig = "O arquivo $name é maior que o permitido (máx. 10 MB).";
         if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
-            return $tooBig;
+            return "O arquivo $name é maior que o permitido (máx. " . self::limitMegabytes(ini_get('upload_max_filesize')) . ' MB).';
         }
         if ($error === UPLOAD_ERR_NO_FILE) {
             return 'Selecione o arquivo do laudo.';

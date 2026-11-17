@@ -91,7 +91,7 @@ final class PatientController
         ]);
     }
 
-    /** Ultima coleta e quantos valores alterados nela (cartao Exames da ficha). @return ?array{date:string,altered:int} */
+    /** Ultima coleta e quantos valores alterados nela (cartao Exames da ficha). @return ?array{date:string,altered:int,no_range:int} */
     private static function labSummary(int $patientId): ?array
     {
         $evo = Container::labs()->evolution($patientId, 1);
@@ -100,12 +100,16 @@ final class PatientController
         }
         $cid = $evo['collections'][0]['id'];
         $altered = 0;
+        $noRange = 0;
         foreach ($evo['rows'] as $row) {
             if (str_starts_with((string) ($row['cells'][$cid]['class'] ?? ''), 'alterado_')) {
                 $altered++;
             }
+            if (($row['cells'][$cid]['no_range'] ?? false) === true) {
+                $noRange++;
+            }
         }
-        return ['date' => $evo['collections'][0]['collected_on'], 'altered' => $altered];
+        return ['date' => $evo['collections'][0]['collected_on'], 'altered' => $altered, 'no_range' => $noRange];
     }
 
     public function edit(Request $r): Response

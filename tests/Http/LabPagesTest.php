@@ -377,4 +377,69 @@ final class LabPagesTest extends DbTestCase
         $this->assertStringContainsString('lab-chart.js', $html);
         $this->assertStringContainsString('data-exame="' . $this->ldl . '"', $html);
     }
+
+    public function test_series_json_flags_points_without_range(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->makePatient(['birth_date' => '2025-12-01', 'responsible_professional_id' => $med['id'], 'created_by' => $med['id']]);
+        $this->loginAs($med);
+        $this->idFrom($this->newCollection((int) $p['id'], [$this->ldl => '140']));
+        $j = json_decode($this->get('/pacientes/' . $p['id'] . '/exames/serie.json', ['exame' => (string) $this->ldl])->body, true);
+        $this->assertTrue($j['points'][0]['no_range']);
+        $this->assertNull($j['points'][0]['class']);
+        $this->assertSame('sem faixa para esta idade', $j['points'][0]['label']);
+    }
+
+    public function test_series_json_point_with_range_is_not_flagged(): void
+    {
+        [, $p] = $this->eightYearOldWithTwoLdl();
+        $j = json_decode($this->get('/pacientes/' . $p['id'] . '/exames/serie.json', ['exame' => (string) $this->ldl])->body, true);
+        foreach ($j['points'] as $pt) {
+            $this->assertFalse($pt['no_range']);
+            $this->assertNotSame('sem faixa para esta idade', $pt['label']);
+        }
+    }
+
+    public function test_legend_explains_dotted_underline_and_card_counts_no_range(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->makePatient(['birth_date' => '2025-12-01', 'responsible_professional_id' => $med['id'], 'created_by' => $med['id']]);
+        $this->loginAs($med);
+        $id = $this->idFrom($this->newCollection((int) $p['id'], [$this->ldl => '140']));
+        $this->assertStringContainsString('sublinhado pontilhado = sem faixa para esta idade', $this->get('/pacientes/' . $p['id'] . '/exames')->body);
+        $this->assertStringContainsString('sem faixa para esta idade', $this->get('/exames/' . $id)->body);
+        $this->assertStringContainsString('1 valor sem faixa para esta idade', $this->get('/pacientes/' . $p['id'])->body);
+    }
+
+    public function test_show_page_displays_unrounded_value_with_needed_decimals(): void
+    {
+        [, $p] = $this->setupDoctor();
+        $id = $this->idFrom($this->newCollection((int) $p['id'], [$this->glic => '99,6']));
+        $this->assertStringContainsString('>99,6<', $this->get('/exames/' . $id)->body);
+        $this->assertStringContainsString('>99,6<', $this->get('/pacientes/' . $p['id'] . '/exames')->body);
+    }
+
+    public function test_destructive_forms_ask_for_confirmation_without_inline_js(): void
+    {
+        [, $p] = $this->setupDoctor();
+        $id = $this->idFrom($this->newCollection((int) $p['id'], [$this->glic => '90'], $this->laudos()));
+        $body = $this->get('/exames/' . $id)->body;
+        $this->assertSame(2, substr_count($body, 'data-confirm="'));
+        $this->assertStringContainsString('/assets/js/confirm-submit.js', $body);
+        $this->assertStringNotContainsString('onsubmit', $body);
+        $this->assertStringNotContainsString('onclick', $body);
+    }
+
+    public function test_release_unrelease_delete_set_updated_by_and_at(): void
+    {
+        [$med, $p] = $this->setupDoctor();
+        $id = $this->idFrom($this->newCollection((int) $p['id'], [$this->glic => '90']));
+        foreach (['liberar', 'recolher', 'excluir'] as $act) {
+            $this->db->run('UPDATE lab_collections SET updated_by = NULL, updated_at = NULL WHERE id = ?', [$id]);
+            $this->post('/exames/' . $id . '/' . $act, []);
+            $row = $this->db->one('SELECT updated_by, updated_at FROM lab_collections WHERE id = ?', [$id]);
+            $this->assertSame((int) $med['id'], (int) $row['updated_by'], $act);
+            $this->assertNotNull($row['updated_at'], $act);
+        }
+    }
 }

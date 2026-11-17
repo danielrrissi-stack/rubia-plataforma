@@ -1,6 +1,6 @@
 <?php
 /**
- * @var ?array $test @var array $values @var list<array> $rows @var string[] $errors @var array<string,string> $groups
+ * @var ?array $test @var array $values @var list<array> $rows @var string[] $errors @var string[] $warnings @var array<string,string> $groups
  */
 $isNew = $test === null;
 $action = $isNew ? '/catalogo-exames/novo' : '/catalogo-exames/' . $test['id'] . '/editar';
@@ -11,11 +11,16 @@ $action = $isNew ? '/catalogo-exames/novo' : '/catalogo-exames/' . $test['id'] .
     <ul><?php foreach ($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul>
   </div>
 <?php endif; ?>
+<?php if ($warnings !== []): ?>
+  <div class="aviso aviso-atencao" role="status">
+    <ul><?php foreach ($warnings as $w): ?><li><?= e($w) ?></li><?php endforeach; ?></ul>
+  </div>
+<?php endif; ?>
 <?php if (!$isNew && (int) $test['reference_confirmed'] === 0): ?>
   <form method="post" action="<?= e(url('/catalogo-exames/' . $test['id'] . '/confirmar')) ?>" class="cartao">
     <?= csrf_field() ?>
     <p><span class="selo selo-alerta">a confirmar</span> As faixas deste exame vieram pré-carregadas e ainda não foram conferidas.
-      Salvar as faixas também as confirma.</p>
+      Alterar e salvar as faixas as confirma; para aceitá-las como estão, use o botão abaixo (salvar só o cadastro não confirma).</p>
     <button type="submit" class="btn btn-quiet">Confirmar faixas</button>
   </form>
 <?php endif; ?>
@@ -40,6 +45,7 @@ $action = $isNew ? '/catalogo-exames/novo' : '/catalogo-exames/' . $test['id'] .
   <h2>Faixas de referência</h2>
   <p class="ajuda">O valor igual ao limite já conta como limítrofe/alterado.</p>
   <p class="ajuda">Idade em anos e meses (deixe a idade final em branco para "sem limite"). Preencha só os cortes que se aplicam.</p>
+  <p class="ajuda">A idade final conta inteira: para “até os 10 anos” use 9 anos e 11 meses.</p>
   <table id="faixas">
     <thead><tr><th>Sexo</th><th>Idade de (anos / meses)</th><th>Idade até (anos / meses)</th><th>Limítrofe alto</th><th>Alterado alto</th><th>Limítrofe baixo</th><th>Alterado baixo</th><th>Fonte</th><th></th></tr></thead>
     <tbody>

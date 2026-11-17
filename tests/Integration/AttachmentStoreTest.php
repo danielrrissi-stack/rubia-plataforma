@@ -139,7 +139,7 @@ final class AttachmentStoreTest extends DbTestCase
     {
         $f = $this->upload('enorme.pdf', '', UPLOAD_ERR_INI_SIZE);
         $errs = $this->errors(fn() => $this->store()->store($this->collectionId, $this->patientId, $f, $this->uid, new Request('POST', '/')));
-        $this->assertSame(['O arquivo enorme.pdf é maior que o permitido (máx. 10 MB).'], $errs);
+        $this->assertSame(['O arquivo enorme.pdf é maior que o permitido (máx. ' . \App\Labs\AttachmentStore::limitMegabytes(ini_get('upload_max_filesize')) . ' MB).'], $errs);
         $f = $this->upload('parcial.pdf', self::PDF, UPLOAD_ERR_PARTIAL);
         $this->assertNotEmpty($this->errors(fn() => $this->store()->store($this->collectionId, $this->patientId, $f, $this->uid, new Request('POST', '/'))));
         $this->assertSame(0, $this->rows());
@@ -260,5 +260,15 @@ final class AttachmentStoreTest extends DbTestCase
     public function test_container_accessor(): void
     {
         $this->assertInstanceOf(AttachmentStore::class, Container::labAttachments());
+    }
+
+    public function test_limit_reports_min_of_10mb_and_ini(): void
+    {
+        $this->assertSame('2', \App\Labs\AttachmentStore::limitMegabytes('2M'));
+        $this->assertSame('10', \App\Labs\AttachmentStore::limitMegabytes('64M'));
+        $this->assertSame('10', \App\Labs\AttachmentStore::limitMegabytes('1G'));
+        $this->assertSame('0,5', \App\Labs\AttachmentStore::limitMegabytes('512K'));
+        $this->assertSame('10', \App\Labs\AttachmentStore::limitMegabytes(false));
+        $this->assertSame('10', \App\Labs\AttachmentStore::limitMegabytes('0'));
     }
 }

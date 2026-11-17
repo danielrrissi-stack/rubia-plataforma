@@ -76,6 +76,7 @@ $pid = (int) $patient['id'];
   <?php if ($canExames): ?><section class="cartao" id="cartao-exames"><h2>Exames</h2>
     <?php if ($labSummary === null): ?><p class="ajuda">Nenhuma coleta registrada.</p><?php else: $n = $labSummary['altered']; ?>
       <p>Última coleta: <?= e(fmt_date($labSummary['date'])) ?> · <?= $n === 0 ? 'nenhum valor alterado' : e($n) . ($n === 1 ? ' valor alterado' : ' valores alterados') ?></p>
+      <?php if ($labSummary['no_range'] > 0): ?><p class="ajuda"><?= e($labSummary['no_range']) ?> <?= $labSummary['no_range'] === 1 ? 'valor' : 'valores' ?> sem faixa para esta idade (não classificado<?= $labSummary['no_range'] === 1 ? '' : 's' ?>).</p><?php endif; ?>
     <?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/exames')) ?>">Ver exames</a></p></section><?php endif; ?>
 </div>
