@@ -18,6 +18,7 @@ use App\Growth\GrowthCalculator;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
 use App\Nutrition\FoodRepository;
+use App\Nutrition\MealPlanRepository;
 use App\Patients\AccessGrantRepository;
 use App\Patients\ConsentService;
 use App\Patients\GuardianRepository;
@@ -164,5 +165,10 @@ final class Container
     public static function foods(): FoodRepository
     {
         return self::$items['foods'] ??= new FoodRepository(self::db());
+    }
+
+    public static function mealPlans(): MealPlanRepository
+    {
+        return self::$items['mealPlans'] ??= new MealPlanRepository(self::db(), self::audit());
     }
 }
