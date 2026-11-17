@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// So pela linha de comando (Terminal do cPanel); pelo navegador, 403.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('403 Forbidden');
+}
+
 // Uso: php tools/import_bp.php [--from-dat] [--sql-only]
 //   --from-dat: regenera data/bp/aap2017.csv a partir dos arquivos brutos data/bp/flynn2017_bp_*.dat.
 //   Le data/bp/aap2017.csv, gera database/seeds/bp_reference.sql e (sem --sql-only) grava

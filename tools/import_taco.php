@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// So pela linha de comando (Terminal do cPanel); pelo navegador, 403.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('403 Forbidden');
+}
+
 // Uso: php tools/import_taco.php [--sql-only]
 //   Le data/taco/*.csv, gera database/seeds/food_1_taco.sql e (sem --sql-only) carrega no banco
 //   configurado (APP_ENV=test para o banco de testes). Idempotente; nao reativa alimentos desativados.

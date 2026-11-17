@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// So pela linha de comando (Terminal do cPanel); pelo navegador, 403.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('403 Forbidden');
+}
+
 // Uso: php tools/import_who.php [--sql-only]
 //   Le data/who/*.txt, gera database/seeds/who_lms.sql e (sem --sql-only) grava
 //   who_lms no banco configurado (APP_ENV=test para o banco de testes). Idempotente.

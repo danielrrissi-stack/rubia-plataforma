@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// So pela linha de comando (Terminal do cPanel); pelo navegador, 403.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('403 Forbidden');
+}
+
 // Uso: php tools/migrate.php   (APP_ENV=test para o banco de testes)
 require __DIR__ . '/../app/bootstrap.php';
 

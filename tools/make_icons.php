@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// So pela linha de comando (Terminal do cPanel); pelo navegador, 403.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit('403 Forbidden');
+}
+
 /**
  * Gera os icones PWA (public/assets/icons/icon-192.png e icon-512.png) sem GD:
  * escreve PNG RGB direto com zlib. Uso: php tools/make_icons.php

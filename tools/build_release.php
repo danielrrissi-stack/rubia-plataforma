@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Uso: php tools/build_release.php
  */
 if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
     exit('Execute pela linha de comando.');
 }
 
