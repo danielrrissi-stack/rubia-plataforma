@@ -25,7 +25,11 @@ final class MealPlanRepository
     ): int {
         return $this->db->transaction(function () use ($patientId, $mode, $data, $by, $r, $sourceTemplateId, $sourcePlanId): int {
             $this->lockPatient($patientId);
-            if ($this->draft($patientId) !== null) {
+            $existing = $this->db->one(
+                "SELECT id FROM meal_plans WHERE patient_id = ? AND status = 'rascunho' AND discarded_at IS NULL FOR UPDATE",
+                [$patientId],
+            );
+            if ($existing !== null) {
                 throw new \RuntimeException('Já existe um rascunho para este paciente.');
             }
             $row = [
@@ -42,25 +46,32 @@ final class MealPlanRepository
             ];
             $id = $this->db->insert('meal_plans', $row);
             $this->audit->record($by, 'create', 'meal_plans', $id, $patientId, null, [
-                'mode' => $mode, 'title' => $row['title'],
+                'mode' => $mode,
                 'source_template_id' => $sourceTemplateId, 'source_plan_id' => $sourcePlanId,
-            ], $r);
+            ] + $this->content($row['title'], $row['body_text'], $row['guidance_text'], $data['structure'] ?? null), $r);
             return $id;
         });
     }
 
     public function draftFrom(int $publishedPlanId, int $by, ?Request $r = null): int
     {
-        $src = $this->find($publishedPlanId);
-        if ($src === null || $src['status'] !== 'publicado') {
-            throw new \RuntimeException('Só é possível editar a partir de um plano publicado.');
+        $pid = $this->patientIdOf($publishedPlanId);
+        if ($pid === null) {
+            throw new \RuntimeException('Plano não encontrado.');
         }
-        return $this->createDraft((int) $src['patient_id'], (string) $src['mode'], [
-            'title' => $src['title'],
-            'body_text' => $src['body_text'],
-            'guidance_text' => $src['guidance_text'],
-            'structure' => $src['structure'],
-        ], $by, $r, null, $publishedPlanId);
+        return $this->db->transaction(function () use ($publishedPlanId, $pid, $by, $r): int {
+            $this->lockPatient($pid);
+            $src = $this->decode($this->db->one('SELECT * FROM meal_plans WHERE id = ? FOR UPDATE', [$publishedPlanId]));
+            if ($src === null || $src['status'] !== 'publicado') {
+                throw new \RuntimeException('Só é possível editar a partir de um plano publicado.');
+            }
+            return $this->createDraft($pid, (string) $src['mode'], [
+                'title' => $src['title'],
+                'body_text' => $src['body_text'],
+                'guidance_text' => $src['guidance_text'],
+                'structure' => $src['structure'],
+            ], $by, $r, null, $publishedPlanId);
+        });
     }
 
     /** @return array{revision:int,conflict:bool} */
@@ -96,7 +107,8 @@ final class MealPlanRepository
                 $this->audit->record(
                     $by, 'update', 'meal_plans', $planId, (int) $plan['patient_id'],
                     ['revision' => $prev, 'title' => $plan['title']],
-                    ['revision' => $new, 'title' => $title, 'auto' => $auto, 'conflict' => $conflict],
+                    ['revision' => $new, 'auto' => $auto, 'conflict' => $conflict]
+                    + $this->content($title, $this->nullIfEmpty($data['body_text'] ?? null), $this->nullIfEmpty($data['guidance_text'] ?? null), $data['structure'] ?? null),
                     $r,
                 );
             }
@@ -107,13 +119,12 @@ final class MealPlanRepository
     public function publish(int $planId, int $by, ?Request $r = null): void
     {
         $this->db->transaction(function () use ($planId, $by, $r): void {
-            $plan = $this->find($planId);
-            if ($plan === null) {
+            $pid = $this->patientIdOf($planId);
+            if ($pid === null) {
                 throw new \RuntimeException('Plano não encontrado.');
             }
-            $pid = (int) $plan['patient_id'];
             $this->lockPatient($pid);
-            $plan = $this->find($planId);
+            $plan = $this->decode($this->db->one('SELECT * FROM meal_plans WHERE id = ? FOR UPDATE', [$planId]));
             if ($plan['status'] !== 'rascunho' || $plan['discarded_at'] !== null) {
                 throw new \RuntimeException('Só é possível publicar um rascunho.');
             }
@@ -158,7 +169,8 @@ final class MealPlanRepository
             $this->audit->record(
                 $by, 'publish', 'meal_plans', $planId, $pid,
                 ['status' => 'rascunho'],
-                ['status' => 'publicado', 'revision' => (int) $plan['revision'], 'total_kcal' => $totals[0]],
+                ['status' => 'publicado', 'revision' => (int) $plan['revision'], 'total_kcal' => $totals[0]]
+                + $this->content((string) $plan['title'], $plan['body_text'], $plan['guidance_text'], $structure),
                 $r,
             );
         });
@@ -238,6 +250,18 @@ final class MealPlanRepository
             [$patientId],
         );
         return array_map(fn(array $x): array => $this->decode($x), $rows);
+    }
+
+    /** Lê patient_id fora do snapshot da transação (leitura simples antes de travar). */
+    private function patientIdOf(int $planId): ?int
+    {
+        $row = $this->db->one('SELECT patient_id FROM meal_plans WHERE id = ?', [$planId]);
+        return $row === null ? null : (int) $row['patient_id'];
+    }
+
+    private function content(string $title, ?string $body, ?string $guidance, mixed $structure): array
+    {
+        return ['title' => $title, 'body_text' => $body, 'guidance_text' => $guidance, 'structure' => $structure];
     }
 
     private function lockPatient(int $patientId): void

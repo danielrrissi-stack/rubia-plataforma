@@ -180,4 +180,36 @@ final class MealPlanRepositoryTest extends DbTestCase
         $this->repo->publish($t, $this->uid);
         $this->assertNull($this->repo->find($t)['total_kcal']);
     }
+
+    public function test_publish_twice_fails_and_keeps_single_published(): void
+    {
+        $id = $this->structured();
+        $this->repo->publish($id, $this->uid);
+        try {
+            $this->repo->publish($id, $this->uid);
+            $this->fail('esperava exceção');
+        } catch (\RuntimeException) {
+        }
+        $n = $this->db->one("SELECT COUNT(*) c FROM meal_plans WHERE patient_id = ? AND status = 'publicado'", [$this->pid]);
+        $this->assertSame(1, (int) $n['c']);
+        $this->assertSame(1, $this->auditCount($id, 'publish'));
+        $this->assertSame($id, (int) $this->repo->current($this->pid)['id']);
+    }
+
+    public function test_audit_rows_carry_full_content(): void
+    {
+        $id = $this->structured('Completo');
+        $create = $this->db->one("SELECT after_json FROM audit_log WHERE entity='meal_plans' AND entity_id=? AND action='create'", [$id]);
+        $this->assertEquals($this->structure(), json_decode($create['after_json'], true)['structure']);
+        $this->repo->saveDraft($id, $this->data($this->structure(), 'Completo'), $this->uid);
+        $upd = $this->db->one("SELECT after_json FROM audit_log WHERE entity='meal_plans' AND entity_id=? AND action='update'", [$id]);
+        $this->assertEquals($this->structure(), json_decode($upd['after_json'], true)['structure']);
+        $this->repo->publish($id, $this->uid);
+        $pub = $this->db->one("SELECT after_json FROM audit_log WHERE entity='meal_plans' AND entity_id=? AND action='publish'", [$id]);
+        $after = json_decode($pub['after_json'], true);
+        $this->assertEquals($this->structure(), $after['structure']);
+        $this->assertSame('Completo', $after['title']);
+        $this->assertArrayHasKey('body_text', $after);
+        $this->assertArrayHasKey('guidance_text', $after);
+    }
 }
