@@ -36,9 +36,10 @@ final class AuthService
         return (int) ($this->now)();
     }
 
-    public function attempt(string $email, string $password, Request $r): LoginResult
+    /** $login: e-mail ou nome de usuario (UserRepository::findByLogin). */
+    public function attempt(string $login, string $password, Request $r): LoginResult
     {
-        $user = $this->users->findByEmail($email);
+        $user = $this->users->findByLogin($login);
         if ($user === null) {
             // Gasta tempo de hash para nao revelar a existencia da conta.
             password_verify($password, '$2y$10$usesomesillystringforsalt$');

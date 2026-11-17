@@ -7,8 +7,8 @@
   <form method="post" action="<?= e(url('/login')) ?>">
     <?= csrf_field() ?>
     <div class="campo">
-      <label for="email">E-mail</label>
-      <input type="email" id="email" name="email" value="<?= e($email) ?>" autocomplete="username" required autofocus>
+      <label for="email">E-mail ou usuário</label>
+      <input type="text" id="email" name="email" value="<?= e($email) ?>" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="190" required autofocus>
     </div>
     <div class="campo">
       <label for="senha">Senha</label>

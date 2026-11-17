@@ -94,6 +94,49 @@ final class AuthController
         return Response::redirect('/login');
     }
 
+    /** Troca obrigatoria da senha provisoria (a guarda 'childarea' manda para ca enquanto estiver pendente). */
+    public function showForcedChange(Request $r): Response
+    {
+        if ((int) ($r->attributes['user']['must_change_password'] ?? 0) !== 1) {
+            return Response::redirect('/');
+        }
+        return $this->forcedPage($r->attributes['user'], null);
+    }
+
+    public function forcedChange(Request $r): Response
+    {
+        $user = $r->attributes['user'];
+        if ((int) ($user['must_change_password'] ?? 0) !== 1) {
+            return Response::redirect('/');
+        }
+        $new = (string) $r->input('nova', '');
+        $confirm = (string) $r->input('confirmacao', '');
+        $error = null;
+        if (mb_strlen($new) < self::MIN_PASSWORD) {
+            $error = 'A nova senha precisa ter pelo menos ' . self::MIN_PASSWORD . ' caracteres.';
+        } elseif ($new !== $confirm) {
+            $error = 'A confirmação não é igual à nova senha.';
+        } elseif (is_string($user['password_hash'] ?? null) && password_verify($new, $user['password_hash'])) {
+            $error = 'A nova senha precisa ser diferente da provisória.';
+        }
+        if ($error !== null) {
+            return $this->forcedPage($user, $error);
+        }
+        $uid = (int) $user['id'];
+        Container::users()->setPassword($uid, $new);
+        Container::audit()->record($uid, 'update', 'users', $uid, null, null, ['campo' => 'senha', 'motivo' => 'senha_provisoria'], $r);
+        \App\Core\Session::regenerate();
+        \App\Core\Session::flash('ok', 'Senha alterada. Pronto!');
+        return Response::redirect('/');
+    }
+
+    private function forcedPage(array $user, ?string $error): Response
+    {
+        return Response::html(View::render('Auth/views/change_password_forced.php', [
+            'title' => 'Criar sua senha', 'userName' => $user['name'], 'error' => $error,
+        ], self::LAYOUT));
+    }
+
     private function userIdForToken(string $token): int
     {
         $tokens = Container::tokens();

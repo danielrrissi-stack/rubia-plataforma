@@ -21,6 +21,7 @@ use App\Support\Num;
 final class PortalController
 {
     private const FAMILY = ['paciente', 'responsavel'];
+    private const CHILD = 'crianca';
     private const STAFF = ['medico', 'nutricionista', 'secretaria'];
     private const MIN_PASSWORD = 10;
     private const GENTLE_HIGH = 'Acima da faixa esperada — a equipe vai conversar com vocês sobre isso.';
@@ -184,7 +185,7 @@ final class PortalController
 
     public function account(Request $r): Response
     {
-        if (($redirect = $this->guard($r)) !== null) {
+        if (($redirect = $this->guard($r, true)) !== null) {
             return $redirect;
         }
         return $this->accountPage($r->attributes['user'], []);
@@ -192,7 +193,7 @@ final class PortalController
 
     public function changePassword(Request $r): Response
     {
-        if (($redirect = $this->guard($r)) !== null) {
+        if (($redirect = $this->guard($r, true)) !== null) {
             return $redirect;
         }
         $user = $r->attributes['user'];
@@ -227,12 +228,16 @@ final class PortalController
 
     // ---- helpers ----
 
-    /** Equipe nao usa o portal. */
-    private function guard(Request $r): ?Response
+    /**
+     * Equipe nao usa o portal. A conta propria da crianca ('crianca') nao e familia: so entra na propria conta
+     * ($ownAccount) e na area de metas; nas demais telas do portal ve "acesso ainda nao disponivel"
+     * (a guarda global 'childarea' ja a redireciona antes).
+     */
+    private function guard(Request $r, bool $ownAccount = false): ?Response
     {
         $user = $r->attributes['user'];
         $role = (string) ($user['role'] ?? '');
-        if (in_array($role, self::FAMILY, true)) {
+        if (in_array($role, self::FAMILY, true) || ($ownAccount && $role === self::CHILD)) {
             return null;
         }
         if (in_array($role, self::STAFF, true)) {
@@ -358,9 +363,12 @@ final class PortalController
     private function accountPage(array $user, array $errors): Response
     {
         $fresh = Container::users()->find((int) $user['id']) ?? $user;
+        $child = ($user['role'] ?? '') === self::CHILD;
         return $this->page('Portal/views/account.php', 'Minha conta', $user, [
             'errors' => $errors,
             'totpOn' => (int) ($fresh['totp_enabled'] ?? 0) === 1,
+            'offerTotp' => !$child, // sem 2FA para a conta de crianca (spec 5.6)
+            'back' => $child ? \App\Auth\ChildArea::home(\App\Auth\ChildArea::patientIdFor($user)) : '/portal',
         ]);
     }
 

@@ -8,6 +8,7 @@ use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
 use App\Dashboard\DashboardController;
 use App\Energy\EnergyController;
+use App\Goals\ChildAccountController;
 use App\Nutrition\FoodController;
 use App\Nutrition\MealPlanController;
 use App\Nutrition\TemplateController;
@@ -37,12 +38,19 @@ $router->post('/senha/definir/{token}', [AuthController::class, 'reset']);
 
 $router->get('/2fa', [TwoFactorController::class, 'showVerify']);
 $router->post('/2fa', [TwoFactorController::class, 'verify']);
-$router->get('/2fa/configurar', [TwoFactorController::class, 'showSetup'], ['auth', 'twofactor']);
-$router->post('/2fa/configurar', [TwoFactorController::class, 'setup'], ['auth', 'twofactor']);
+$router->get('/2fa/configurar', [TwoFactorController::class, 'showSetup'], ['auth', 'twofactor', 'childarea']);
+$router->post('/2fa/configurar', [TwoFactorController::class, 'setup'], ['auth', 'twofactor', 'childarea']);
 
-$router->get('/', [DashboardController::class, 'index'], ['auth', 'twofactor', 'consent']);
+// 'childarea' fecha toda rota logada: senha provisoria obriga a troca e o papel crianca fica na propria area.
+$authMw = ['auth', 'twofactor', 'consent', 'childarea'];
 
-$staffMw = ['auth', 'twofactor'];
+// Troca obrigatoria da senha provisoria: sem 'twofactor'/'consent' para nao criar laco com /2fa/configurar e /consentimento.
+$router->get('/senha/trocar', [AuthController::class, 'showForcedChange'], ['auth', 'childarea']);
+$router->post('/senha/trocar', [AuthController::class, 'forcedChange'], ['auth', 'childarea']);
+
+$router->get('/', [DashboardController::class, 'index'], $authMw);
+
+$staffMw = ['auth', 'twofactor', 'childarea'];
 $router->get('/equipe', [UserController::class, 'index'], $staffMw);
 $router->get('/equipe/novo', [UserController::class, 'create'], $staffMw);
 $router->post('/equipe/novo', [UserController::class, 'store'], $staffMw);
@@ -58,7 +66,6 @@ $router->post('/admin/backups/gerar', [BackupController::class, 'generate'], $st
 $router->get('/admin/backups/chave-privada', [BackupController::class, 'privateKey'], $staffMw);
 $router->get('/admin/backups/{nome}', [BackupController::class, 'download'], $staffMw);
 
-$authMw = ['auth', 'twofactor', 'consent'];
 $router->get('/pacientes', [PatientController::class, 'index'], $authMw);
 $router->get('/pacientes/novo', [PatientController::class, 'create'], $authMw);
 $router->post('/pacientes/novo', [PatientController::class, 'store'], $authMw);
@@ -66,11 +73,13 @@ $router->get('/pacientes/{id:\d+}', [PatientController::class, 'show'], $authMw)
 $router->get('/pacientes/{id:\d+}/editar', [PatientController::class, 'edit'], $authMw);
 $router->post('/pacientes/{id:\d+}/editar', [PatientController::class, 'update'], $authMw);
 $router->post('/pacientes/{id:\d+}/acesso', [PatientController::class, 'grantAccess'], $authMw);
+$router->get('/pacientes/{id:\d+}/acesso-crianca', [ChildAccountController::class, 'show'], $authMw);
+$router->post('/pacientes/{id:\d+}/acesso-crianca', [ChildAccountController::class, 'update'], $authMw);
 $router->get('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'add'], $authMw);
 $router->post('/responsaveis/{linkId:\d+}/remover', [GuardianController::class, 'remove'], $authMw);
-$router->get('/consentimento', [PatientController::class, 'showConsent'], ['auth', 'twofactor', 'consent']);
-$router->post('/consentimento', [PatientController::class, 'acceptConsent'], ['auth', 'twofactor', 'consent']);
+$router->get('/consentimento', [PatientController::class, 'showConsent'], $authMw);
+$router->post('/consentimento', [PatientController::class, 'acceptConsent'], $authMw);
 $router->get('/pacientes/{id:\d+}/acesso-profissionais', [AccessGrantController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/acesso-profissionais', [AccessGrantController::class, 'grant'], $authMw);
 $router->post('/acesso-profissionais/{grantId:\d+}/revogar', [AccessGrantController::class, 'revoke'], $authMw);

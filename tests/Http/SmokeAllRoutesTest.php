@@ -15,77 +15,81 @@ use Tests\DbTestCase;
 final class SmokeAllRoutesTest extends DbTestCase
 {
     // Codigos esperados: 200 = pagina, 403 = negado, 404 = nao encontrado, 302 = redireciona por desenho.
-    private const ROLES = ['M', 'N', 'S', 'R', 'P'];
+    private const ROLES = ['M', 'N', 'S', 'R', 'P', 'C'];
 
     /**
      * M = medico admin, N = nutricionista (com liberacao), S = secretaria,
-     * R = responsavel (termo aceito), P = paciente adulto (termo aceito, vinculado ao proprio cadastro).
-     * Ordem das colunas: M N S R P.
+     * R = responsavel (termo aceito), P = paciente adulto (termo aceito, vinculado ao proprio cadastro),
+     * C = crianca com conta propria vinculada a crianca de fumaca (guarda 'childarea': so a area de metas,
+     *     a propria conta e as rotas publicas; o resto redireciona para /portal/p/{id}/metas).
+     * Ordem das colunas: M N S R P C.
      */
     private const EXPECTED = [
-        '/instalar'                                => [404, 404, 404, 404, 404], // ja instalado
-        '/login'                                   => [302, 302, 302, 302, 302], // logado volta para /
-        '/senha/esqueci'                           => [200, 200, 200, 200, 200],
-        '/senha/definir/{token}'                   => [404, 404, 404, 404, 404], // token invalido
-        '/2fa'                                     => [302, 302, 302, 302, 302], // sem 2FA pendente
-        '/2fa/configurar'                          => [200, 200, 200, 200, 200],
-        '/'                                        => [200, 200, 200, 302, 302], // familia vai ao /portal
-        '/equipe'                                  => [200, 403, 403, 403, 403],
-        '/equipe/novo'                             => [200, 403, 403, 403, 403],
-        '/equipe/{id}/editar'                      => [200, 403, 403, 403, 403],
-        '/admin/backups'                           => [200, 403, 403, 403, 403],
-        '/admin/backups/chave-privada'             => [404, 403, 403, 403, 403], // sem chaves no ambiente de teste
-        '/admin/backups/{nome}'                    => [404, 403, 403, 403, 403], // arquivo inexistente
-        '/pacientes'                               => [200, 200, 200, 302, 302], // familia vai a /portal
-        '/pacientes/novo'                          => [200, 403, 200, 403, 403],
-        '/pacientes/{id}'                          => [200, 200, 200, 302, 302], // familia vai a /portal/p/{id}
-        '/pacientes/{id}/editar'                   => [200, 403, 200, 403, 403],
-        '/pacientes/{id}/responsaveis'             => [200, 403, 200, 403, 403],
-        '/consentimento'                           => [302, 302, 302, 302, 302], // sem pendencia
-        '/pacientes/{id}/acesso-profissionais'     => [200, 403, 403, 403, 403],
-        '/maioridade'                              => [200, 403, 403, 403, 403],
-        '/pacientes/{id}/crescimento'              => [200, 200, 403, 302, 302], // familia vai a /portal/p/{id}/crescimento
-        '/pacientes/{id}/curvas.json'              => [200, 200, 403, 200, 200],
-        '/pacientes/{id}/medidas/nova'             => [200, 200, 403, 403, 403],
-        '/medidas/{id}/corrigir'                   => [200, 200, 403, 403, 403],
-        '/medidas/{id}/versoes'                    => [200, 200, 403, 403, 403],
-        '/pacientes/{id}/energia'                  => [200, 200, 403, 403, 403],
-        '/pacientes/{id}/plano'                    => [200, 200, 403, 403, 403],
-        '/alimentos/busca'                         => [200, 200, 403, 403, 403],
-        '/alimentos'                               => [200, 200, 403, 403, 403],
-        '/alimentos/novo'                          => [200, 200, 403, 403, 403],
-        '/alimentos/{foodId}/editar'               => [200, 200, 403, 403, 403],
-        '/modelos-plano'                           => [200, 200, 403, 403, 403],
-        '/modelos-plano/novo'                      => [200, 200, 403, 403, 403],
-        '/modelos-plano/{templateId}/editar'       => [200, 403, 403, 403, 403], // nutricionista nao e a autora
-        '/trechos'                                 => [200, 200, 403, 403, 403],
-        '/trechos/novo'                            => [200, 200, 403, 403, 403],
-        '/trechos/{snippetId}/editar'              => [200, 403, 403, 403, 403],
-        '/trechos.json'                            => [200, 200, 403, 403, 403],
-        '/planos/{planId}'                         => [200, 200, 403, 403, 403],
-        '/planos/{planId}/imprimir'                => [200, 200, 403, 403, 403],
-        '/planos/{planId}/editar'                  => [302, 302, 403, 403, 403], // publicado redireciona para show
-        '/pacientes/{id}/prontuario'               => [200, 403, 403, 403, 403],
-        '/pacientes/{id}/prontuario/{kind}'        => [200, 403, 403, 403, 403],
-        '/prontuario/{entryId}/revisar'            => [200, 403, 403, 403, 403],
-        '/prontuario/{entryId}/versoes'            => [200, 403, 403, 403, 403],
-        '/pacientes/{id}/exames'                   => [200, 403, 403, 403, 403], // so medico (Clinician antes do Gate)
-        '/pacientes/{id}/exames/serie.json'        => [404, 403, 403, 403, 403], // sem ?exame= o exame nao existe: 404 so depois da permissao
-        '/pacientes/{id}/exames/nova'              => [200, 403, 403, 403, 403],
-        '/exames/{collectionId}'                   => [200, 403, 403, 403, 403],
-        '/exames/{collectionId}/editar'            => [200, 403, 403, 403, 403],
-        '/catalogo-exames'                         => [200, 403, 403, 403, 403],
-        '/catalogo-exames/novo'                    => [200, 403, 403, 403, 403],
-        '/catalogo-exames/{testId}/editar'         => [200, 403, 403, 403, 403],
-        '/exames/anexos/{attachmentId}'            => [404, 403, 403, 403, 403], // registro sem arquivo no disco: 404 so depois da permissao
-        '/portal'                                  => [302, 302, 302, 302, 302], // equipe volta a /; 1 filho vai direto a ele
-        '/portal/p/{id}'                           => [302, 302, 302, 200, 200], // portal e so da familia
-        '/portal/p/{id}/crescimento'               => [302, 302, 302, 200, 200],
-        '/portal/p/{id}/medidas/nova'              => [302, 302, 302, 200, 200],
-        '/portal/p/{id}/alimentacao'               => [302, 302, 302, 200, 200],
-        '/portal/p/{id}/alimentacao/imprimir'      => [302, 302, 302, 200, 200],
-        '/portal/p/{id}/exames'                    => [302, 302, 302, 200, 200],
-        '/portal/conta'                            => [302, 302, 302, 200, 200],
+        '/instalar'                                => [404, 404, 404, 404, 404, 404], // ja instalado
+        '/login'                                   => [302, 302, 302, 302, 302, 302], // logado volta para /
+        '/senha/esqueci'                           => [200, 200, 200, 200, 200, 200],
+        '/senha/definir/{token}'                   => [404, 404, 404, 404, 404, 404], // token invalido
+        '/2fa'                                     => [302, 302, 302, 302, 302, 302], // sem 2FA pendente
+        '/2fa/configurar'                          => [200, 200, 200, 200, 200, 302],
+        '/'                                        => [200, 200, 200, 302, 302, 302], // familia vai ao /portal
+        '/equipe'                                  => [200, 403, 403, 403, 403, 302],
+        '/equipe/novo'                             => [200, 403, 403, 403, 403, 302],
+        '/equipe/{id}/editar'                      => [200, 403, 403, 403, 403, 302],
+        '/admin/backups'                           => [200, 403, 403, 403, 403, 302],
+        '/admin/backups/chave-privada'             => [404, 403, 403, 403, 403, 302], // sem chaves no ambiente de teste
+        '/admin/backups/{nome}'                    => [404, 403, 403, 403, 403, 302], // arquivo inexistente
+        '/pacientes'                               => [200, 200, 200, 302, 302, 302], // familia vai a /portal
+        '/pacientes/novo'                          => [200, 403, 200, 403, 403, 302],
+        '/pacientes/{id}'                          => [200, 200, 200, 302, 302, 302], // familia vai a /portal/p/{id}
+        '/pacientes/{id}/editar'                   => [200, 403, 200, 403, 403, 302],
+        '/pacientes/{id}/responsaveis'             => [200, 403, 200, 403, 403, 302],
+        '/consentimento'                           => [302, 302, 302, 302, 302, 302], // sem pendencia
+        '/pacientes/{id}/acesso-profissionais'     => [200, 403, 403, 403, 403, 302],
+        '/maioridade'                              => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/crescimento'              => [200, 200, 403, 302, 302, 302], // familia vai a /portal/p/{id}/crescimento
+        '/pacientes/{id}/curvas.json'              => [200, 200, 403, 200, 200, 302],
+        '/pacientes/{id}/medidas/nova'             => [200, 200, 403, 403, 403, 302],
+        '/medidas/{id}/corrigir'                   => [200, 200, 403, 403, 403, 302],
+        '/medidas/{id}/versoes'                    => [200, 200, 403, 403, 403, 302],
+        '/pacientes/{id}/energia'                  => [200, 200, 403, 403, 403, 302],
+        '/pacientes/{id}/plano'                    => [200, 200, 403, 403, 403, 302],
+        '/alimentos/busca'                         => [200, 200, 403, 403, 403, 302],
+        '/alimentos'                               => [200, 200, 403, 403, 403, 302],
+        '/alimentos/novo'                          => [200, 200, 403, 403, 403, 302],
+        '/alimentos/{foodId}/editar'               => [200, 200, 403, 403, 403, 302],
+        '/modelos-plano'                           => [200, 200, 403, 403, 403, 302],
+        '/modelos-plano/novo'                      => [200, 200, 403, 403, 403, 302],
+        '/modelos-plano/{templateId}/editar'       => [200, 403, 403, 403, 403, 302], // nutricionista nao e a autora
+        '/trechos'                                 => [200, 200, 403, 403, 403, 302],
+        '/trechos/novo'                            => [200, 200, 403, 403, 403, 302],
+        '/trechos/{snippetId}/editar'              => [200, 403, 403, 403, 403, 302],
+        '/trechos.json'                            => [200, 200, 403, 403, 403, 302],
+        '/planos/{planId}'                         => [200, 200, 403, 403, 403, 302],
+        '/planos/{planId}/imprimir'                => [200, 200, 403, 403, 403, 302],
+        '/planos/{planId}/editar'                  => [302, 302, 403, 403, 403, 302], // publicado redireciona para show
+        '/pacientes/{id}/prontuario'               => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/prontuario/{kind}'        => [200, 403, 403, 403, 403, 302],
+        '/prontuario/{entryId}/revisar'            => [200, 403, 403, 403, 403, 302],
+        '/prontuario/{entryId}/versoes'            => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/exames'                   => [200, 403, 403, 403, 403, 302], // so medico (Clinician antes do Gate)
+        '/pacientes/{id}/exames/serie.json'        => [404, 403, 403, 403, 403, 302], // sem ?exame= o exame nao existe: 404 so depois da permissao
+        '/pacientes/{id}/exames/nova'              => [200, 403, 403, 403, 403, 302],
+        '/exames/{collectionId}'                   => [200, 403, 403, 403, 403, 302],
+        '/exames/{collectionId}/editar'            => [200, 403, 403, 403, 403, 302],
+        '/catalogo-exames'                         => [200, 403, 403, 403, 403, 302],
+        '/catalogo-exames/novo'                    => [200, 403, 403, 403, 403, 302],
+        '/catalogo-exames/{testId}/editar'         => [200, 403, 403, 403, 403, 302],
+        '/exames/anexos/{attachmentId}'            => [404, 403, 403, 403, 403, 302], // registro sem arquivo no disco: 404 so depois da permissao
+        '/portal'                                  => [302, 302, 302, 302, 302, 302], // equipe volta a /; 1 filho vai direto a ele
+        '/portal/p/{id}'                           => [302, 302, 302, 200, 200, 302], // portal e so da familia
+        '/portal/p/{id}/crescimento'               => [302, 302, 302, 200, 200, 302],
+        '/portal/p/{id}/medidas/nova'              => [302, 302, 302, 200, 200, 302],
+        '/portal/p/{id}/alimentacao'               => [302, 302, 302, 200, 200, 302],
+        '/portal/p/{id}/alimentacao/imprimir'      => [302, 302, 302, 200, 200, 302],
+        '/portal/p/{id}/exames'                    => [302, 302, 302, 200, 200, 302],
+        '/portal/conta'                            => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
+        '/senha/trocar'                            => [302, 302, 302, 302, 302, 302], // sem senha provisoria volta para /
+        '/pacientes/{id}/acesso-crianca'           => [200, 403, 403, 403, 403, 302], // so medico; C vai para a area dele
     ];
 
     private array $fx = [];
@@ -103,11 +107,13 @@ final class SmokeAllRoutesTest extends DbTestCase
         $sec = $this->makeUser('secretaria', ['totp_enabled' => 1]);
         $resp = $this->makeUser('responsavel');
         $pac = $this->makeUser('paciente');
+        $kid = $this->makeUser('crianca', ['email' => null, 'username' => 'fumaca.' . bin2hex(random_bytes(3))]);
 
         $year = (int) date('Y');
         $child = $this->makePatient([
             'full_name' => 'Crianca Fumaca', 'sex' => 'F', 'birth_date' => ($year - 8) . '-03-10',
             'responsible_professional_id' => $admin['id'], 'created_by' => $admin['id'],
+            'child_user_id' => $kid['id'],
         ]);
         $adult = $this->makePatient([
             'full_name' => 'Adulto Fumaca', 'sex' => 'M', 'birth_date' => ($year - 40) . '-06-15',
@@ -154,10 +160,10 @@ final class SmokeAllRoutesTest extends DbTestCase
         ]);
 
         $this->fx = [
-            'users' => ['M' => $admin, 'N' => $nutri, 'S' => $sec, 'R' => $resp, 'P' => $pac],
-            'patient' => ['M' => $child, 'N' => $child, 'S' => $child, 'R' => $child, 'P' => $adult],
-            'measure' => ['M' => $mChild, 'N' => $mChild, 'S' => $mChild, 'R' => $mChild, 'P' => $mAdult],
-            'entry' => ['M' => $eChild, 'N' => $eChild, 'S' => $eChild, 'R' => $eChild, 'P' => $eAdult],
+            'users' => ['M' => $admin, 'N' => $nutri, 'S' => $sec, 'R' => $resp, 'P' => $pac, 'C' => $kid],
+            'patient' => ['M' => $child, 'N' => $child, 'S' => $child, 'R' => $child, 'P' => $adult, 'C' => $child],
+            'measure' => ['M' => $mChild, 'N' => $mChild, 'S' => $mChild, 'R' => $mChild, 'P' => $mAdult, 'C' => $mChild],
+            'entry' => ['M' => $eChild, 'N' => $eChild, 'S' => $eChild, 'R' => $eChild, 'P' => $eAdult, 'C' => $eChild],
             'plan' => $planId,
             'collection' => $collectionId,
             'attachment' => $attachmentId,
@@ -234,6 +240,12 @@ final class SmokeAllRoutesTest extends DbTestCase
                 }
                 if ($res->status !== $want) {
                     $bad[] = "$role GET $path: esperado " . var_export($want, true) . ', obtido ' . $res->status;
+                }
+                // Crianca: todo redirecionamento da guarda leva a area de metas dela (nunca a outra tela).
+                $childHome = '/portal/p/' . (int) $this->fx['patient']['C']['id'] . '/metas';
+                if ($role === 'C' && $res->status === 302 && !in_array($pattern, ['/login', '/2fa', '/senha/trocar'], true)
+                    && ($res->headers['Location'] ?? '') !== $childHome) {
+                    $bad[] = "C GET $path: redirecionou para " . ($res->headers['Location'] ?? '?') . ", esperado $childHome";
                 }
             }
         }

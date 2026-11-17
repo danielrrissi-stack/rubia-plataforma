@@ -2,7 +2,7 @@
 /** @var array $pending @var string $today */
 ?>
 <h1>Decisões de maioridade</h1>
-<p class="ajuda">Pacientes que completaram 18 anos e ainda têm responsáveis com acesso. Escolha o que acontece com esse acesso.</p>
+<p class="ajuda">Pacientes que completaram 18 anos e ainda têm responsáveis com acesso ou conta própria de criança. Escolha o que acontece com esse acesso.</p>
 <?php if ($pending === []): ?>
   <p>Nenhuma decisão pendente.</p>
 <?php endif; ?>
@@ -22,6 +22,9 @@
       </select>
     </div>
     <?php if ($p['user_id'] === null): ?>
+    <?php if ($p['child_username'] !== null): ?>
+    <p class="ajuda">O paciente tem conta própria de criança (usuário <strong><?= e($p['child_username']) ?></strong>). Ao transferir, essa conta vira o acesso do paciente adulto, com as metas e marcações preservadas.</p>
+    <?php endif; ?>
     <div class="campo">
       <label for="email<?= $pid ?>">E-mail do paciente (obrigatório ao transferir)</label>
       <input type="email" id="email<?= $pid ?>" name="email" maxlength="190">

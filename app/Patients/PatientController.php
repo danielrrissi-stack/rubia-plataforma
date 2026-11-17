@@ -78,6 +78,7 @@ final class PatientController
             'canProntuario' => $gate->check($user, 'view', Policy::CLINICO, $id),
             'evolutions' => $gate->check($user, 'view', Policy::CLINICO, $id) ? Container::clinicalEntries()->evolutions($id) : [],
             'canAcessoProf' => $gate->check($user, 'edit', Policy::CLINICO, $id),
+            'canChildAccount' => \App\Labs\Clinician::is($user) && $gate->check($user, 'edit', Policy::CLINICO, $id),
             'canEnergia' => $gate->check($user, 'view', Policy::ENERGIA, $id),
             'energy' => $gate->check($user, 'view', Policy::ENERGIA, $id) ? Container::energyGoals()->current($id) : null,
             'canPlano' => $canPlano,
@@ -371,7 +372,7 @@ final class PatientController
     private function page(string $template, string $title, Request $r, array $data): Response
     {
         $user = $r->attributes['user'];
-        $family = in_array($user['role'], ['paciente', 'responsavel', 'crianca'], true);
+        $family = in_array($user['role'], ['paciente', 'responsavel'], true);
         return Response::html(View::render($template, $data + [
             'title' => $title,
             'userName' => $user['name'],
