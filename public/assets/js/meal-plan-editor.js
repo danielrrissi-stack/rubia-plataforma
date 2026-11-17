@@ -49,6 +49,7 @@
   var statusEl = document.getElementById('pe-status');
   var errorsBox = document.getElementById('pe-erros');
   var conflictBox = document.getElementById('pe-conflito');
+  var autoBox = document.getElementById('pe-aviso-auto');
   var changes = 0, savedChanges = 0, saving = false;
 
   // ---------- calculo (mesmas formulas do MealPlanCalculator) ----------
@@ -465,6 +466,18 @@
       errorsBox.focus({ preventScroll: true });
     }
   }
+  // Aviso do salvamento automatico: fica abaixo dos botoes (nao desloca o editor enquanto se digita).
+  function showAutoNotice(title, items) {
+    if (!autoBox) return;
+    var p = autoBox.querySelector('p');
+    var ul = autoBox.querySelector('ul');
+    if (p) p.textContent = title || '';
+    if (ul) {
+      ul.textContent = '';
+      (items || []).forEach(function (e) { ul.appendChild(el('li', { text: String(e) })); });
+    }
+    autoBox.hidden = !title;
+  }
   function setStatus(t) { if (statusEl) statusEl.textContent = t; }
 
   var inflight = null;
@@ -515,14 +528,18 @@
         var j = res.j;
         if (!j && ctrl && ctrl.signal.aborted) throw { name: 'AbortError' }; // tempo esgotado lendo a resposta
         if (!j || !j.ok) {
-          showErrors(j && Array.isArray(j.errors) ? j.errors : ['Não foi possível salvar (erro ' + res.status + '). Tente de novo.'], !auto);
+          var errs = j && Array.isArray(j.errors) ? j.errors : ['Não foi possível salvar (erro ' + res.status + '). Tente de novo.'];
+          if (auto) showAutoNotice('O salvamento automático não foi concluído:', errs);
+          else showErrors(errs, true);
           setStatus('Não salvo.');
           return null;
         }
         revision = String(j.revision);
         savedChanges = at;
+        // O aviso do topo so muda num salvamento manual (o automatico nunca desloca a tela).
+        if (!auto) showErrors([]);
         // Automatico com linhas sem alimento: salvou o resto e avisa quais ficaram de fora.
-        showErrors(missing.length ? ['O salvamento automático deixou de fora as linhas sem alimento escolhido:'].concat(missing) : []);
+        showAutoNotice(missing.length ? 'Rascunho salvo em parte. Ficaram de fora as linhas sem alimento escolhido:' : '', missing);
         if (conflictBox && j.conflict) conflictBox.hidden = false;
         if (at === changes && j.totals && j.totals.day) { // servidor e a referencia
           showDay(j.totals.day, j.percents || percents(j.totals.day));

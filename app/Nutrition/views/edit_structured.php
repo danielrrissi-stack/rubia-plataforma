@@ -62,6 +62,11 @@ $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     <?php if ($isPlan && isset($context['publishUrl'])): ?><button type="button" class="btn" id="pe-publicar">Salvar e publicar</button><?php endif; ?>
     <span id="pe-status" class="ajuda" role="status"></span>
   </p>
+  <?php /* Avisos do salvamento automatico ficam aqui, abaixo dos botoes: nao empurram a tela enquanto se digita. */ ?>
+  <div id="pe-aviso-auto" class="aviso" role="status" hidden>
+    <p></p>
+    <ul></ul>
+  </div>
 </div>
 <?php if ($isPlan && isset($context['publishUrl'])): ?>
   <form id="pe-form-publicar" method="post" action="<?= e(url($context['publishUrl'])) ?>" hidden><?= csrf_field() ?></form>
