@@ -37,7 +37,9 @@ final class Installer
     }
 
     /**
-     * Escolhe a pasta de dados: fora da raiz pública se possível, senão APP_ROOT/storage.
+     * Escolhe a pasta de dados: fora da raiz pública (e de qualquer public_html) se possível,
+     * senão APP_ROOT/storage. Candidatas: ao lado da raiz do site (cPanel padrão: /home/U/rubia_storage)
+     * e ao lado do APP_ROOT (domínio adicional em public_html/dominio: também /home/U/rubia_storage).
      * @return array{path:string,warning:string}
      */
     public function chooseStorage(): array
@@ -45,18 +47,37 @@ final class Installer
         if ($this->storageOverride !== null) {
             return ['path' => $this->storageOverride, 'warning' => ''];
         }
+        $norm = static fn (string $p): string => rtrim(str_replace('\\', '/', $p), '/');
         $docRoot = (string) ($_SERVER['DOCUMENT_ROOT'] ?? '');
         $real = $docRoot !== '' ? realpath($docRoot) : false;
-        $public = $real !== false ? $real : $this->appRoot . '/public';
-        $candidate = dirname($public) . DIRECTORY_SEPARATOR . 'rubia_storage';
-        $ok = is_dir($candidate) ? is_writable($candidate) : is_writable(dirname($candidate));
-        if ($ok) {
-            return ['path' => str_replace('\\', '/', $candidate), 'warning' => ''];
+        $public = $norm($real !== false ? $real : $this->appRoot . '/public');
+        $realApp = realpath($this->appRoot);
+        $app = $norm($realApp !== false ? $realApp : $this->appRoot);
+
+        foreach (array_unique([dirname($public) . '/rubia_storage', dirname($app) . '/rubia_storage']) as $candidate) {
+            if (self::isPublicPath($candidate, $public)) {
+                continue;
+            }
+            $ok = is_dir($candidate) ? is_writable($candidate) : is_writable(dirname($candidate));
+            if ($ok) {
+                return ['path' => $candidate, 'warning' => ''];
+            }
         }
         return [
             'path' => str_replace('\\', '/', $this->appRoot) . '/storage',
             'warning' => 'Não foi possível usar uma pasta fora de public_html. Os dados ficarão em storage/, protegida por .htaccess.',
         ];
+    }
+
+    /** Verdadeiro se o caminho fica dentro da raiz do site ou de alguma pasta public_html. */
+    public static function isPublicPath(string $path, string $docRoot): bool
+    {
+        $p = rtrim(str_replace('\\', '/', $path), '/');
+        $root = rtrim(str_replace('\\', '/', $docRoot), '/');
+        if ($root !== '' && ($p === $root || str_starts_with($p, $root . '/'))) {
+            return true;
+        }
+        return preg_match('#/public_html(/|$)#i', $p) === 1;
     }
 
     /** @return array<string,string> campo => mensagem */

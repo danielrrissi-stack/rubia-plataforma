@@ -22,9 +22,13 @@ Troque `USUARIO` pelo nome de usuário da sua conta no cPanel.
    (cria `dist/rubia-release-AAAAMMDD.zip`). No "Gerenciador de arquivos" do cPanel, crie a pasta
    `/home/USUARIO/rubia_app/`, envie o `.zip` para ela e use "Extrair". A pasta `rubia_app` fica **fora** de `public_html`.
 3. **Publicar a parte pública.** Copie **o conteúdo** da pasta `rubia_app/public/` (incluindo o arquivo oculto `.htaccess`,
-   a pasta `assets`, `index.php`, `manifest.json` e `sw.js`) para `public_html/`.
+   a pasta `assets`, `index.php`, `manifest.json` e `sw.js`) para a **raiz do domínio**.
+   Confira qual é ela no cPanel, em "Domínios" → "Raiz do documento": no domínio principal costuma ser `public_html/`;
+   num domínio adicional costuma ser uma pasta com o nome dele, como `public_html/rubia.med.br/`.
+   Nesse caso, use essa pasta no lugar de `public_html/` aqui e no passo 4, e não mexa no resto de `public_html/`
+   (pode ser outro site). Não apague a pasta `.well-known/`, que é usada pelo certificado SSL.
    Se `.htaccess` não aparecer, em "Configurações" do Gerenciador de arquivos marque "Mostrar arquivos ocultos".
-4. **Ajustar o caminho.** Abra `public_html/index.php` no editor do cPanel e procure a linha marcada com `// AJUSTE NO DEPLOY`:
+4. **Ajustar o caminho.** Abra o `index.php` da raiz do domínio no editor do cPanel e procure a linha marcada com `// AJUSTE NO DEPLOY`:
 
    ```php
    $APP_ROOT = dirname(__DIR__); // AJUSTE NO DEPLOY
@@ -39,14 +43,67 @@ Troque `USUARIO` pelo nome de usuário da sua conta no cPanel.
 5. **Ativar o SSL.** No cPanel, em "SSL/TLS Status", rode o AutoSSL para o domínio e espere o certificado ficar ativo.
    O sistema só deve ser usado por `https://`: o `.htaccess` sempre redireciona `http://` para `https://`
    (exceto em `localhost`, para desenvolvimento) e envia o cabeçalho HSTS. Não há opção para desligar isso.
-6. **Instalar, logo em seguida.** Abra `https://rubia.med.br/instalar` **imediatamente** depois de enviar os arquivos:
-   a página de instalação não pede senha, então quem chegar primeiro configura o sistema. Preencha banco, endereço do site,
-   e-mail de envio, os dados e a senha da médica administradora e a **senha de backup** (mínimo de 12 caracteres).
-   O instalador cria as tabelas, carrega sozinho as tabelas de referência (curvas da OMS e pressão arterial da AAP),
-   grava `config/config.php` e trava a instalação (arquivo `config/.install.lock`).
-   Depois disso, `/instalar` passa a mostrar "página não encontrada".
-   Os dados enviados pelo sistema (backups, fotos, registros) ficam em `/home/USUARIO/rubia_storage/`
-   (fora do site) ou, se isso não for possível, em `rubia_app/storage/` protegida por `.htaccess`.
+6. **Instalar, logo em seguida.** Abra `https://rubia.med.br/instalar` **imediatamente** depois de enviar os arquivos.
+
+   **Por que imediatamente:** enquanto o sistema não está instalado, qualquer pessoa que abrir `/instalar` vê o formulário,
+   e a página não pede senha. Quem enviar primeiro vira a médica administradora e escolhe o banco e a senha de backup.
+   Faça os passos 2 a 6 numa mesma sessão, com os dados do passo 1 já anotados.
+
+   **6.1. Confira a tabela "Requisitos do servidor"** no topo da página:
+
+   | Item | Se falhar |
+   |---|---|
+   | PHP 8.1 ou superior | No cPanel, em "Selecionar versão do PHP" / "MultiPHP Manager", escolha 8.1 ou mais nova |
+   | Extensões `pdo_mysql`, `openssl`, `zip`, `mbstring`, `json` | Ative em "Selecionar versão do PHP" → Extensões, ou peça à hospedagem |
+   | Pasta de dados gravável | Verifique as permissões da pasta indicada |
+   | Pasta config gravável | `rubia_app/config/` precisa permitir gravação (permissão 755) |
+   | *(informativos)* pasta fora da raiz pública, `mysqldump`, HTTPS | Não impedem a instalação, mas leia o aviso |
+
+   Se algum item **obrigatório** aparecer como "Falhou", o formulário não é exibido. Corrija o problema e recarregue a página.
+
+   **6.2. Preencha o formulário.**
+
+   - *Banco de dados* (os dados anotados no passo 1):
+     - **Servidor do banco:** deixe `localhost`, que já vem preenchido e é o padrão no cPanel.
+     - **Nome do banco** e **Usuário do banco:** com o prefixo da conta, por exemplo `USUARIO_rubia`.
+     - **Senha do banco:** a que você criou no cPanel.
+   - *Site e e-mail:*
+     - **Endereço do site:** já vem preenchido. Confirme que está `https://rubia.med.br`, sem barra no final.
+       É esse endereço que vai nos links dos e-mails.
+     - **E-mail remetente dos avisos:** por exemplo `nao-responda@rubia.med.br`. O e-mail precisa existir no cPanel;
+       se não existir, as mensagens podem cair no spam ou nem ser enviadas.
+   - *Médica administradora* (a conta principal):
+     - **Nome completo**, **E-mail** (que será o login dela) e **CRM** (ex.: `CRM-SP 123456`).
+     - **Senha:** no mínimo **10 caracteres**, digitada duas vezes.
+   - *Senha de backup:* no mínimo **12 caracteres**, digitada duas vezes. Ela não é a senha de login: protege a chave
+     que abre os backups criptografados. **Anote num cofre de senhas antes de clicar em Instalar.** Se ela se perder,
+     nenhum backup poderá ser restaurado, e o sistema não tem como recuperá-la.
+
+   **6.3. Clique em "Instalar".** O instalador:
+   1. testa a conexão com o banco (se falhar, mostra "Não foi possível conectar ao banco de dados…"; confira os quatro campos do banco);
+   2. cria as tabelas e carrega as tabelas de referência (curvas da OMS e pressão arterial da AAP);
+   3. cria a pasta de dados (uploads, backups, chaves, logs) em `/home/USUARIO/rubia_storage/`, fora de `public_html` (mesmo quando a raiz do domínio fica dentro dela), ou,
+      se isso não for possível, em `rubia_app/storage/`, protegida por `.htaccess`;
+   4. gera o par de chaves de backup, protegido pela senha de backup;
+   5. cria a conta da médica administradora e o termo de consentimento padrão;
+   6. grava `config/config.php` e trava a instalação (arquivo `config/.install.lock`).
+
+   Se aparecer um erro de validação (senha curta, e-mail inválido…), o formulário volta com os campos de texto preenchidos.
+   **Só as senhas precisam ser digitadas de novo.**
+
+   **6.4. Resultado.**
+   - Aparece a tela **"Instalação concluída"**, com a chave `backup_private.pem`. **Não feche essa tela antes de fazer o passo 7.**
+   - A partir daí, `/instalar` passa a mostrar "página não encontrada", e ninguém mais consegue reinstalar por cima.
+   - No primeiro login, a médica é levada a configurar a verificação em duas etapas (2FA). Tenha o celular com o
+     aplicativo autenticador por perto.
+
+   **6.5. Se der errado no meio.**
+   - Se a instalação falhar **antes** de gravar os dados (por exemplo, banco errado), basta corrigir e enviar de novo.
+     A trava é liberada automaticamente.
+   - Se aparecer *"Os dados foram gravados, mas não foi possível gravar a configuração…"*, apague todas as tabelas do banco
+     (no phpMyAdmin) e o arquivo `rubia_app/config/.install.lock`, e repita o passo 6.
+   - Se alguém instalar antes de você (`/instalar` mostra "página não encontrada" e o login não aceita a sua senha),
+     apague `rubia_app/config/config.php`, `rubia_app/config/.install.lock` e as tabelas do banco, e instale de novo.
 7. **Guardar a chave de backup.** Na tela final aparece o conteúdo de `backup_private.pem`. Copie e salve em um arquivo com
    esse nome, fora do servidor (pendrive, cofre de senhas), **junto com a senha de backup**. Essa tela não aparece de novo
    (a chave também pode ser baixada pela médica em "Backups"). Sem a chave e a senha, os backups não podem ser abertos.
@@ -169,7 +226,7 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
 2. Extraia **por cima** dos arquivos existentes (opção de sobrescrever). O pacote não contém `config/config.php`, `config/.install.lock`
    nem a pasta de dados (`storage/` ou `rubia_storage/`), então esses itens **não são apagados** — nunca exclua a pasta `rubia_app` inteira
    nem o `config/` do servidor.
-3. Se a versão trouxe mudanças em `public/` (visual, JavaScript), copie de novo o conteúdo de `rubia_app/public/` para `public_html/`
+3. Se a versão trouxe mudanças em `public/` (visual, JavaScript), copie de novo o conteúdo de `rubia_app/public/` para a raiz do domínio (ex.: `public_html/rubia.med.br/`)
    e refaça o ajuste da linha `// AJUSTE NO DEPLOY` do `index.php`.
 4. Se a versão trouxe novas tabelas, elas estão em `database/migrations/`; aplique-as com `php /home/USUARIO/rubia_app/tools/migrate.php`
    (se o cPanel tiver terminal) ou importe os arquivos novos pelo phpMyAdmin. Faça um backup antes de atualizar.
