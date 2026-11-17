@@ -42,7 +42,9 @@ final class MealPlanController
             }
             try {
                 $repo->discard((int) $draft['id'], (int) $user['id'], $r);
-            } catch (\RuntimeException $e) {
+            } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
+        } catch (\RuntimeException $e) {
                 Session::flash('erro', $e->getMessage());
                 return Response::redirect('/pacientes/' . $id . '/plano');
             }
@@ -77,6 +79,8 @@ final class MealPlanController
                     'structure' => $mode === 'estruturado' ? self::DEFAULT_STRUCTURE : null,
                 ], (int) $user['id'], $r);
             }
+        } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
         } catch (\RuntimeException $e) {
             Session::flash('erro', $e->getMessage());
             return Response::redirect('/pacientes/' . $id . '/plano');
@@ -89,7 +93,7 @@ final class MealPlanController
     {
         $plan = $this->authPlan($r, 'view');
         $user = $r->attributes['user'];
-        Container::audit()->record((int) $user['id'], 'view', 'meal_plans', (int) $plan['id'], (int) $plan['patient_id'], null, null, $r);
+        Container::audit()->record((int) $user['id'], 'view', 'meal_plans', (int) $plan['id'], (int) $plan['patient_id'], null, ['section' => 'nutricao'], $r);
         return $this->renderShow($r, $plan);
     }
 
@@ -98,7 +102,7 @@ final class MealPlanController
     {
         $plan = $this->authPlan($r, 'view');
         $user = $r->attributes['user'];
-        Container::audit()->record((int) $user['id'], 'view', 'meal_plans', (int) $plan['id'], (int) $plan['patient_id'], null, ['print' => true], $r);
+        Container::audit()->record((int) $user['id'], 'view', 'meal_plans', (int) $plan['id'], (int) $plan['patient_id'], null, ['section' => 'nutricao', 'print' => true], $r);
         return Response::html(View::render('Nutrition/views/print.php', [
             'plan' => $plan,
             'patient' => $this->patient((int) $plan['patient_id']),
@@ -157,16 +161,18 @@ final class MealPlanController
             $res = Container::mealPlans()->saveDraft((int) $plan['id'], [
                 'title' => $title, 'body_text' => $body, 'guidance_text' => $guidance, 'structure' => null,
             ], (int) $user['id'], $r, false, $base);
-            if (($post['acao'] ?? '') === 'publicar') {
+            if (($post['acao'] ?? '') === 'publicar' && !$res['conflict']) {
                 Container::mealPlans()->publish((int) $plan['id'], (int) $user['id'], $r);
                 Session::flash('ok', 'Plano publicado.');
                 return Response::redirect('/pacientes/' . $plan['patient_id'] . '/plano');
             }
+        } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
         } catch (\RuntimeException $e) {
             return $this->renderEditor($r, $plan, $values, [$e->getMessage()]);
         }
         if ($res['conflict']) {
-            Session::flash('erro', 'Rascunho salvo, mas outra pessoa também o alterou desde que você o abriu. Confira o texto.');
+            Session::flash('erro', 'Este rascunho foi alterado em outra janela depois que você o abriu. Suas edições foram salvas, mas o plano não foi publicado; confira o texto e publique de novo.');
         } else {
             Session::flash('ok', 'Rascunho salvo.');
         }
@@ -199,6 +205,8 @@ final class MealPlanController
         $reason = is_string($reason) ? trim(mb_scrub($reason, 'UTF-8')) : '';
         try {
             Container::mealPlans()->end((int) $plan['id'], $reason, (int) $user['id'], $r);
+        } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
         } catch (\RuntimeException $e) {
             return $this->renderShow($r, $plan, ['endError' => $e->getMessage(), 'motivo' => $reason]);
         }
@@ -229,6 +237,8 @@ final class MealPlanController
         $plan = $this->authPlan($r, 'edit');
         try {
             return $do($plan, (int) $r->attributes['user']['id']);
+        } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
         } catch (\RuntimeException $e) {
             Session::flash('erro', $e->getMessage());
             return Response::redirect($back($plan));
@@ -279,7 +289,7 @@ final class MealPlanController
     {
         $user = $r->attributes['user'];
         $repo = Container::mealPlans();
-        Container::audit()->record((int) $user['id'], 'view', 'patients', $id, $id, null, ['section' => 'plano'], $r);
+        Container::audit()->record((int) $user['id'], 'view', 'patients', $id, $id, null, ['section' => 'nutricao'], $r);
         return $this->page('Nutrition/views/index.php', 'Plano alimentar', $r, $extra + [
             'patient' => $this->patient($id),
             'current' => $repo->current($id),

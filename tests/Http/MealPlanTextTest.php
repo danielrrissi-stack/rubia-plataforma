@@ -120,16 +120,97 @@ final class MealPlanTextTest extends DbTestCase
         $nutri = $this->makeUser('nutricionista');
         $p = $this->makePatient(['responsible_professional_id' => $nutri['id'], 'created_by' => $nutri['id']]);
         $planId = Container::mealPlans()->createDraft((int) $p['id'], 'texto', ['title' => 'Plano', 'body_text' => 'x'], (int) $nutri['id']);
+        Container::mealPlans()->publish($planId, (int) $nutri['id']);
         $resp = $this->makeUser('responsavel');
         $this->db->insert('guardian_links', ['patient_id' => $p['id'], 'user_id' => $resp['id'], 'relationship' => 'mãe', 'created_by' => $nutri['id']]);
         $sec = $this->makeUser('secretaria');
         foreach ([$resp, $sec] as $u) {
             \App\Core\Session::reset();
             $this->loginAs($u);
+            $before = (int) $this->db->one("SELECT COUNT(*) c FROM audit_log WHERE action='denied' AND user_id = ?", [$u['id']])['c'];
             $this->assertSame(403, $this->get('/pacientes/' . $p['id'] . '/plano')->status);
             $this->assertSame(403, $this->get('/planos/' . $planId)->status);
             $this->assertSame(403, $this->post('/planos/' . $planId . '/publicar', [])->status);
+            $after = (int) $this->db->one("SELECT COUNT(*) c FROM audit_log WHERE action='denied' AND user_id = ?", [$u['id']])['c'];
+            $this->assertSame($before + 3, $after);
+            $this->assertSame('publicado', Container::mealPlans()->find($planId)['status']);
         }
+    }
+
+    public function testConflictDoesNotPublish(): void
+    {
+        [, $p] = $this->setup2();
+        $planId = $this->planIdFrom($this->newDraft((int) $p['id']));
+        $body = ['titulo' => 'Plano', 'corpo' => "ALMOÇO\n• arroz", 'orientacoes' => '', 'acao' => 'publicar'];
+        $this->post('/planos/' . $planId . '/editar', ['revisao' => '1', 'acao' => ''] + $body); // revisao passa a 2
+        $res = $this->post('/planos/' . $planId . '/editar', ['revisao' => '1'] + $body);
+        $this->assertSame(302, $res->status);
+        $this->assertSame('rascunho', Container::mealPlans()->find($planId)['status']);
+    }
+
+    public function testResponsibleCannotPreview(): void
+    {
+        $nutri = $this->makeUser('nutricionista');
+        $p = $this->makePatient(['responsible_professional_id' => $nutri['id'], 'created_by' => $nutri['id']]);
+        $resp = $this->makeUser('responsavel');
+        $this->db->insert('guardian_links', ['patient_id' => $p['id'], 'user_id' => $resp['id'], 'relationship' => 'mãe', 'created_by' => $nutri['id']]);
+        $this->loginAs($resp);
+        $this->assertSame(403, $this->post('/planos/previa', ['texto' => 'x'])->status);
+    }
+
+    public function testNoGrantBlocksPlanRoutes(): void
+    {
+        $other = $this->makeUser('medico');
+        $p = $this->makePatient(['responsible_professional_id' => $other['id'], 'created_by' => $other['id']]);
+        $planId = Container::mealPlans()->createDraft((int) $p['id'], 'texto', ['title' => 'Plano', 'body_text' => 'x'], (int) $other['id']);
+        Container::mealPlans()->publish($planId, (int) $other['id']);
+        $this->loginAs($this->makeUser('nutricionista'));
+        $this->assertSame(403, $this->get('/planos/' . $planId)->status);
+        $this->assertSame(403, $this->get('/planos/' . $planId . '/imprimir')->status);
+        $this->assertSame(403, $this->post('/planos/' . $planId . '/publicar', [])->status);
+    }
+
+    public function testNewDraftFromCurrentCopiesAndSetsSource(): void
+    {
+        [$nutri, $p] = $this->setup2();
+        $repo = Container::mealPlans();
+        $cur = $repo->createDraft((int) $p['id'], 'texto', ['title' => 'Vigente', 'body_text' => "ALMOÇO\n• arroz"], (int) $nutri['id']);
+        $repo->publish($cur, (int) $nutri['id']);
+        $id = $this->planIdFrom($this->newDraft((int) $p['id'], ['origem' => 'vigente']));
+        $row = $repo->find($id);
+        $this->assertSame($cur, (int) $row['source_plan_id']);
+        $this->assertSame("ALMOÇO\n• arroz", $row['body_text']);
+    }
+
+    public function testDiscardAndNewDraftActions(): void
+    {
+        [$nutri, $p] = $this->setup2();
+        $repo = Container::mealPlans();
+        $d = $this->planIdFrom($this->newDraft((int) $p['id']));
+        $this->assertSame(302, $this->post('/planos/' . $d . '/descartar', [])->status);
+        $this->assertNotNull($repo->find($d)['discarded_at']);
+        $cur = $repo->createDraft((int) $p['id'], 'texto', ['title' => 'Vigente', 'body_text' => 'x'], (int) $nutri['id']);
+        $repo->publish($cur, (int) $nutri['id']);
+        $new = $this->planIdFrom($this->post('/planos/' . $cur . '/novo-rascunho', []));
+        $this->assertSame('rascunho', $repo->find($new)['status']);
+    }
+
+    public function testPrintTotalsOnlyWithFlag(): void
+    {
+        [$nutri, $p] = $this->setup2();
+        $repo = Container::mealPlans();
+        $item = [
+            'food_id' => 1, 'food_name' => 'Arroz', 'qty' => 100.0, 'measure_id' => null, 'measure_name' => null,
+            'measure_plural' => null, 'grams' => 100.0, 'note' => '', 'subs' => [],
+            'per100' => ['kcal' => 130.0, 'protein' => 2.5, 'carb' => 28.0, 'fat' => 0.2, 'fiber' => 1.6],
+        ];
+        $structure = ['v' => 1, 'meals' => [['name' => 'Almoço', 'time' => '', 'note' => '', 'options' => [['items' => [$item]]]]]];
+        $id = $repo->createDraft((int) $p['id'], 'estruturado', ['title' => 'Estruturado', 'structure' => $structure], (int) $nutri['id']);
+        $repo->publish($id, (int) $nutri['id']);
+        $this->assertStringNotContainsString('Totais do dia', $this->get('/planos/' . $id . '/imprimir')->body);
+        $with = $this->get('/planos/' . $id . '/imprimir', ['totais' => '1']);
+        $this->assertSame(200, $with->status);
+        $this->assertStringContainsString('Totais do dia', $with->body);
     }
 
     public function testNutritionistWithoutGrant403(): void
