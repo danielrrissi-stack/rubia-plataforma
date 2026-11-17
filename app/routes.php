@@ -16,6 +16,7 @@ use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
 use App\Patients\PatientController;
 use App\Install\InstallController;
+use App\Labs\LabCatalogController;
 use App\Labs\LabController;
 use App\Portal\PortalController;
 use App\Records\RecordController;
@@ -144,6 +145,12 @@ $router->post('/exames/{collectionId:\d+}/excluir', [LabController::class, 'dele
 $router->post('/exames/{collectionId:\d+}/liberar', [LabController::class, 'release'], $authMw);
 $router->post('/exames/{collectionId:\d+}/recolher', [LabController::class, 'unrelease'], $authMw);
 $router->post('/exames/{collectionId:\d+}/anexos', [LabController::class, 'addAttachments'], $authMw);
+$router->get('/catalogo-exames', [LabCatalogController::class, 'index'], $authMw);
+$router->get('/catalogo-exames/novo', [LabCatalogController::class, 'createForm'], $authMw);
+$router->post('/catalogo-exames/novo', [LabCatalogController::class, 'create'], $authMw);
+$router->get('/catalogo-exames/{testId:\d+}/editar', [LabCatalogController::class, 'editForm'], $authMw);
+$router->post('/catalogo-exames/{testId:\d+}/editar', [LabCatalogController::class, 'update'], $authMw);
+$router->post('/catalogo-exames/{testId:\d+}/confirmar', [LabCatalogController::class, 'confirm'], $authMw);
 
 $router->get('/portal', [PortalController::class, 'index'], $authMw);
 $router->get('/portal/p/{id:\d+}', [PortalController::class, 'home'], $authMw);

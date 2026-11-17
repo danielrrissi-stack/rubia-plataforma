@@ -74,6 +74,9 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/exames/nova'              => [200, 403, 403, 403, 403],
         '/exames/{collectionId}'                   => [200, 403, 403, 403, 403],
         '/exames/{collectionId}/editar'            => [200, 403, 403, 403, 403],
+        '/catalogo-exames'                         => [200, 403, 403, 403, 403],
+        '/catalogo-exames/novo'                    => [200, 403, 403, 403, 403],
+        '/catalogo-exames/{testId}/editar'         => [200, 403, 403, 403, 403],
         '/exames/anexos/{attachmentId}'            => [404, 403, 403, 403, 403], // registro sem arquivo no disco: 404 so depois da permissao
         '/portal'                                  => [302, 302, 302, 302, 302], // equipe volta a /; 1 filho vai direto a ele
         '/portal/p/{id}'                           => [302, 302, 302, 200, 200], // portal e so da familia
@@ -177,6 +180,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'templateId' => (string) $this->fx['template'],
                 'snippetId' => (string) $this->fx['snippet'],
                 'entryId' => (string) $this->fx['entry'][$role],
+                'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],
                 'attachmentId' => (string) $this->fx['attachment'],
                 'id' => match (true) {

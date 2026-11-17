@@ -12,6 +12,9 @@ if (!isset($nav)) {
         $nav[] = ['Alimentos', '/alimentos'];
         $nav[] = ['Modelos', '/modelos-plano'];
     }
+    if ($navUser !== null && \App\Labs\Clinician::is($navUser)) {
+        $nav[] = ['Exames', '/catalogo-exames'];
+    }
     if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'view', \App\Access\Policy::USUARIOS, null)) {
         $nav[] = ['Equipe', '/equipe'];
     }
