@@ -17,6 +17,7 @@ use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
+use App\Nutrition\FoodRepository;
 use App\Patients\AccessGrantRepository;
 use App\Patients\ConsentService;
 use App\Patients\GuardianRepository;
@@ -158,5 +159,10 @@ final class Container
     public static function bp(): BloodPressure
     {
         return self::$items['bp'] ??= new BloodPressure();
+    }
+
+    public static function foods(): FoodRepository
+    {
+        return self::$items['foods'] ??= new FoodRepository(self::db());
     }
 }

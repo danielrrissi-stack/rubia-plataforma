@@ -216,6 +216,8 @@ Registros clínicos nunca são apagados: correções criam nova versão e a ante
   em `data/who/`. Origem, commits e somas SHA-256 de cada arquivo estão em `data/who/SOURCES.md`.
 - **AAP 2017** (pressão arterial de crianças e adolescentes): Flynn et al., *Pediatrics* 2017;140(3):e20171904, em `data/bp/`.
   Origem e SHA-256 em `data/bp/SOURCES.md`. Para adultos usam-se os limites habituais de pressão arterial.
+- **TACO 4ª edição** (composição de alimentos, por 100 g): NEPA/UNICAMP, 2011, em `data/taco/`.
+  Origem, commit e SHA-256 em `data/taco/SOURCES.md`.
 - **Gasto energético (TMB)**: Mifflin-St Jeor (1990), Harris-Benedict (1919, revisada em 1984) e FAO/OMS 1985 (Schofield).
   A fórmula usada e as metas ficam registradas para cada paciente.
 - **IMC e circunferências em adultos**: classificação da OMS (IMC) e pontos de corte da OMS para cintura e relação cintura/quadril.
@@ -247,5 +249,6 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    nem o `config/` do servidor.
 3. Se a versão trouxe mudanças em `public/` (visual, JavaScript), copie de novo o conteúdo de `rubia_app/public/` para a raiz do domínio (ex.: `public_html/rubia.med.br/`)
    e refaça o ajuste da linha `// AJUSTE NO DEPLOY` do `index.php`.
-4. Se a versão trouxe novas tabelas, elas estão em `database/migrations/`; aplique-as com `php /home/USUARIO/rubia_app/tools/migrate.php`
-   (se o cPanel tiver terminal) ou importe os arquivos novos pelo phpMyAdmin. Faça um backup antes de atualizar.
+4. Se a versão trouxe novas tabelas, elas estão em `database/migrations/`; rode `php /home/USUARIO/rubia_app/tools/migrate.php`
+   (aplica as tabelas novas e recarrega os dados de referência) se o cPanel tiver terminal; sem terminal, importe no phpMyAdmin
+   os arquivos novos de `database/migrations/` **e depois** os de `database/seeds/`. Faça um backup antes de atualizar.
