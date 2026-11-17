@@ -135,3 +135,21 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .instalador { max-width: 40rem; margin: 1.5rem auto; }
 .chave-pem { width: 100%; font-family: monospace; }
 .termo { max-height: 20rem; overflow: auto; border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }
+
+/* Plano alimentar */
+.editor-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.editor-duplo textarea { width: 100%; font-family: inherit; }
+.previa-plano { border: 1px solid var(--linha); border-radius: var(--raio); padding: .5rem 1rem; min-height: 8rem; background: var(--papel); }
+.barra-editor { display: flex; flex-wrap: wrap; gap: .4rem; }
+.acoes-plano { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.plano-corpo h3 { margin-top: 1rem; }
+.plano-refeicao h4 { margin: .6rem 0 .2rem; }
+.impressao { background: #fff; }
+.impressao .nao-imprimir { margin: 1rem; }
+.impressao .plano-corpo, .impressao .impressao-cabecalho, .impressao .plano-totais { max-width: 48rem; margin: 0 auto; padding: 0 1rem; }
+@media (max-width: 48rem) { .editor-duplo { grid-template-columns: 1fr; } }
+@media print {
+  .topbar, .nao-imprimir, .skip { display: none !important; }
+  body, .impressao { background: #fff; color: #000; }
+  .plano-refeicao { break-inside: avoid; }
+}

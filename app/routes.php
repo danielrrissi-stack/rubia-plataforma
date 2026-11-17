@@ -8,6 +8,7 @@ use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
 use App\Dashboard\DashboardController;
 use App\Energy\EnergyController;
+use App\Nutrition\MealPlanController;
 use App\Growth\GrowthController;
 use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
@@ -84,7 +85,19 @@ $router->get('/medidas/{id:\d+}/versoes', [GrowthController::class, 'versions'],
 $router->get('/pacientes/{id:\d+}/energia', [EnergyController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/energia', [EnergyController::class, 'store'], $authMw);
 
-$router->get('/pacientes/{id:\d+}/prontuario', [RecordController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/plano', [MealPlanController::class, 'index'], $authMw);
+$router->post('/pacientes/{id:\d+}/plano/novo', [MealPlanController::class, 'create'], $authMw);
+$router->post('/planos/previa', [MealPlanController::class, 'preview'], $authMw);
+$router->get('/planos/{planId:\d+}', [MealPlanController::class, 'show'], $authMw);
+$router->get('/planos/{planId:\d+}/imprimir', [MealPlanController::class, 'print'], $authMw);
+$router->get('/planos/{planId:\d+}/editar', [MealPlanController::class, 'edit'], $authMw);
+$router->post('/planos/{planId:\d+}/editar', [MealPlanController::class, 'save'], $authMw);
+$router->post('/planos/{planId:\d+}/publicar', [MealPlanController::class, 'publish'], $authMw);
+$router->post('/planos/{planId:\d+}/encerrar', [MealPlanController::class, 'end'], $authMw);
+$router->post('/planos/{planId:\d+}/descartar', [MealPlanController::class, 'discard'], $authMw);
+$router->post('/planos/{planId:\d+}/novo-rascunho', [MealPlanController::class, 'newDraft'], $authMw);
+
+$router->get('/pacientes/{id:\d+}/prontuario',[RecordController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/prontuario/{kind}', [RecordController::class, 'form'], $authMw);
 $router->post('/pacientes/{id:\d+}/prontuario/{kind}', [RecordController::class, 'save'], $authMw);
 $router->get('/prontuario/{entryId:\d+}/revisar', [RecordController::class, 'reviseForm'], $authMw);

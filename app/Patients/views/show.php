@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var bool $canCadastro @var bool $canEdit @var bool $canCrescimento
- * @var bool $canProntuario @var array $evolutions @var bool $canEnergia @var bool $canAcessoProf @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
+ * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canEnergia @var bool $canAcessoProf @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
  */
 $pid = (int) $patient['id'];
 ?>
@@ -68,4 +68,9 @@ $pid = (int) $patient['id'];
       <p><strong><?= e($energy['get_kcal']) ?> kcal/dia</strong> — <?= e(\App\Energy\EnergyCalculator::FORMULAS[$energy['formula']]) ?> · <?= e(fmt_date(substr((string) $energy['created_at'], 0, 10))) ?></p>
     <?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/energia')) ?>">Ver energia</a></p></section><?php endif; ?>
+  <?php if ($canPlano): ?><section class="cartao" id="cartao-plano"><h2>Plano alimentar</h2>
+    <?php if ($currentPlan === null): ?><p class="ajuda">Nenhum plano vigente.</p><?php else: ?>
+      <p><strong><?= e($currentPlan['title']) ?></strong> · publicado em <?= e(fmt_date(substr((string) $currentPlan['published_at'], 0, 10))) ?></p>
+    <?php endif; ?>
+    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/plano')) ?>">Ver plano alimentar</a></p></section><?php endif; ?>
 </div>

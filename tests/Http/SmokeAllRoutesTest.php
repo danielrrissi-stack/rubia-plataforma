@@ -50,6 +50,10 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/medidas/{id}/corrigir'                   => [200, 200, 403, 403, 403],
         '/medidas/{id}/versoes'                    => [200, 200, 403, 403, 403],
         '/pacientes/{id}/energia'                  => [200, 200, 403, 403, 403],
+        '/pacientes/{id}/plano'                    => [200, 200, 403, 403, 403],
+        '/planos/{planId}'                         => [200, 200, 403, 403, 403],
+        '/planos/{planId}/imprimir'                => [200, 200, 403, 403, 403],
+        '/planos/{planId}/editar'                  => [302, 302, 403, 403, 403], // publicado redireciona para show
         '/pacientes/{id}/prontuario'               => [200, 403, 403, 403, 403],
         '/pacientes/{id}/prontuario/{kind}'        => [200, 403, 403, 403, 403],
         '/prontuario/{entryId}/revisar'            => [200, 403, 403, 403, 403],
@@ -113,11 +117,17 @@ final class SmokeAllRoutesTest extends DbTestCase
             }
         }
 
+        $planId = Container::mealPlans()->createDraft((int) $child['id'], 'texto', [
+            'title' => 'Plano fumaca', 'body_text' => "CAFE\n• pao", 'guidance_text' => null, 'structure' => null,
+        ], (int) $admin['id']);
+        Container::mealPlans()->publish($planId, (int) $admin['id']);
+
         $this->fx = [
             'users' => ['M' => $admin, 'N' => $nutri, 'S' => $sec, 'R' => $resp, 'P' => $pac],
             'patient' => ['M' => $child, 'N' => $child, 'S' => $child, 'R' => $child, 'P' => $adult],
             'measure' => ['M' => $mChild, 'N' => $mChild, 'S' => $mChild, 'R' => $mChild, 'P' => $mAdult],
             'entry' => ['M' => $eChild, 'N' => $eChild, 'S' => $eChild, 'R' => $eChild, 'P' => $eAdult],
+            'plan' => $planId,
             'secretaria_id' => (int) $sec['id'],
         ];
     }
@@ -131,6 +141,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'token' => 'token-inexistente',
                 'nome' => 'backup-20200101-000000.rbk',
                 'kind' => 'evolucao',
+                'planId' => (string) $this->fx['plan'],
                 'entryId' => (string) $this->fx['entry'][$role],
                 'id' => match (true) {
                     str_starts_with($pattern, '/equipe/') => (string) $this->fx['secretaria_id'],

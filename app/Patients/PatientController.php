@@ -66,6 +66,7 @@ final class PatientController
         Container::audit()->record((int) $user['id'], 'view', 'patients', $id, $id, null, null, $r);
         $today = date('Y-m-d');
         $gate = Container::gate();
+        $canPlano = \App\Nutrition\Staff::is($user) && $gate->check($user, 'view', Policy::NUTRICAO, $id);
         return $this->page('Patients/views/show.php', 'Paciente', $r, [
             'patient' => $patient,
             'today' => $today,
@@ -78,6 +79,8 @@ final class PatientController
             'canAcessoProf' => $gate->check($user, 'edit', Policy::CLINICO, $id),
             'canEnergia' => $gate->check($user, 'view', Policy::ENERGIA, $id),
             'energy' => $gate->check($user, 'view', Policy::ENERGIA, $id) ? Container::energyGoals()->current($id) : null,
+            'canPlano' => $canPlano,
+            'currentPlan' => $canPlano ? Container::mealPlans()->current($id) : null,
             'adult' => Age::years((string) $patient['birth_date'], $today) >= 18,
             'professional' => Container::users()->find((int) $patient['responsible_professional_id']),
             'guardians' => $gate->check($user, 'view', Policy::CADASTRO, $id) ? Container::guardians()->forPatient($id) : [],
