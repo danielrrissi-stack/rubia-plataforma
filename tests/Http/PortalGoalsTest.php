@@ -293,4 +293,105 @@ final class PortalGoalsTest extends DbTestCase
         $this->assertSame('1 de 3', json_decode($res->body, true)['count']);
         $this->assertStringContainsString('Beber água nas refeições', $this->get('/portal/p/' . $pid . '/metas')->body);
     }
+
+    public function test_secret_goal_is_404_like_a_missing_id(): void
+    {
+        [$g, $p] = $this->family();
+        $pid = (int) $p['id'];
+        $this->childAccount($p);
+        $secret = $this->goal($pid, ['family_text' => 'Secreta', 'secret' => 1]);
+        $deleted = $this->goal($pid, ['family_text' => 'Excluida']);
+        $this->db->run('UPDATE patient_goals SET deleted_at = NOW() WHERE id = ?', [$deleted]);
+        $this->loginAs($g);
+        $json = ['HTTP_ACCEPT' => 'application/json'];
+        foreach ([$secret, $deleted, $secret + 999] as $id) {
+            foreach (['marcar', 'desmarcar'] as $acao) {
+                $url = '/portal/p/' . $pid . '/metas/' . $id . '/' . $acao;
+                $this->assertSame(404, $this->post($url, ['dia' => $this->day(0)])->status, $url);
+                $this->assertSame(404, $this->post($url, ['dia' => $this->day(0)], $json)->status, $url . ' json');
+            }
+        }
+        $this->assertSame(0, $this->checkCount($secret));
+    }
+
+    public function test_hidden_child_check_and_guardian_check_coexist(): void
+    {
+        [$g, $p] = $this->family();
+        $pid = (int) $p['id'];
+        $kid = $this->childAccount($p);
+        $goal = $this->goal($pid);
+        $this->db->run('UPDATE patients SET guardians_see_child_checks = 0 WHERE id = ?', [$pid]);
+        $url = '/portal/p/' . $pid . '/metas/' . $goal;
+        $json = ['HTTP_ACCEPT' => 'application/json'];
+
+        $this->loginAs($kid);
+        $this->post($url . '/marcar', ['dia' => $this->day(0)]);
+
+        // Responsavel nao enxerga a marcacao da crianca: o toque marca a dele (+1 estrela), sem tocar na da crianca.
+        $this->loginAs($g);
+        $this->assertSame(0, $this->stars($this->get('/portal/p/' . $pid . '/metas')));
+        $res = json_decode($this->post($url . '/marcar', ['dia' => $this->day(0)], $json)->body, true);
+        $this->assertTrue($res['ok']);
+        $this->assertSame(1, $res['stars']);
+        $this->assertSame(2, $this->checkCount($goal));
+        $this->assertSame(1, (int) $this->db->one('SELECT COUNT(*) c FROM goal_checks WHERE goal_id = ? AND checked_by = ?', [$goal, $kid['id']])['c']);
+
+        // Crianca ve o dia uma vez so (sem estrela em dobro).
+        $this->loginAs($kid);
+        $this->assertSame(1, $this->stars($this->get('/portal/p/' . $pid . '/metas')));
+
+        // Responsavel desmarca: so a linha dele sai; a crianca continua vendo o dia marcado.
+        $this->loginAs($g);
+        $res = json_decode($this->post($url . '/desmarcar', ['dia' => $this->day(0)], $json)->body, true);
+        $this->assertSame(0, $res['stars']);
+        $this->assertSame(1, $this->checkCount($goal));
+        $this->loginAs($kid);
+        $body = $this->get('/portal/p/' . $pid . '/metas')->body;
+        $this->assertSame(1, $this->stars($this->get('/portal/p/' . $pid . '/metas')));
+        $this->assertStringContainsString('aria-pressed="true"', $body);
+    }
+
+    public function test_unchecking_with_visible_child_checks_clears_the_day(): void
+    {
+        [$g, $p] = $this->family();
+        $pid = (int) $p['id'];
+        $kid = $this->childAccount($p);
+        $goal = $this->goal($pid);
+        $this->db->run('UPDATE patients SET guardians_see_child_checks = 0 WHERE id = ?', [$pid]);
+        $url = '/portal/p/' . $pid . '/metas/' . $goal;
+        $this->loginAs($kid);
+        $this->post($url . '/marcar', ['dia' => $this->day(0)]);
+        $this->loginAs($g);
+        $this->post($url . '/marcar', ['dia' => $this->day(0)]);
+        $this->assertSame(2, $this->checkCount($goal));
+
+        // Com o sigilo desligado, o responsavel ve as duas e desmarcar limpa o dia.
+        $this->db->run('UPDATE patients SET guardians_see_child_checks = 1 WHERE id = ?', [$pid]);
+        $this->assertSame(1, $this->stars($this->get('/portal/p/' . $pid . '/metas')));
+        $this->post($url . '/desmarcar', ['dia' => $this->day(0)]);
+        $this->assertSame(0, $this->checkCount($goal));
+
+        // A crianca (ve tudo) tambem limpa o dia inteiro.
+        $this->db->run('UPDATE patients SET guardians_see_child_checks = 0 WHERE id = ?', [$pid]);
+        $this->loginAs($kid);
+        $this->post($url . '/marcar', ['dia' => $this->day(-1)]);
+        $this->loginAs($g);
+        $this->post($url . '/marcar', ['dia' => $this->day(-1)]);
+        $this->assertSame(2, $this->checkCount($goal));
+        $this->loginAs($kid);
+        $this->post($url . '/desmarcar', ['dia' => $this->day(-1)]);
+        $this->assertSame(0, $this->checkCount($goal));
+    }
+
+    public function test_portal_shows_at_most_six_cards(): void
+    {
+        [$g, $p] = $this->family(); // 8 anos: faixa 7-10 tem 10 cartoes no seed
+        $pid = (int) $p['id'];
+        $this->goal($pid);
+        $this->db->run("UPDATE edu_cards SET status = 'publicado' WHERE FIND_IN_SET('7-10', bands)");
+        $this->assertGreaterThan(6, (int) $this->db->one("SELECT COUNT(*) c FROM edu_cards WHERE status = 'publicado' AND FIND_IN_SET('7-10', bands)")['c']);
+        $this->loginAs($g);
+        $body = $this->get('/portal/p/' . $pid . '/metas')->body;
+        $this->assertSame(6, substr_count($body, 'class="portal-cartao"'));
+    }
 }

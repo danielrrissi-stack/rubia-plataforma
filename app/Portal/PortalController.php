@@ -223,6 +223,7 @@ final class PortalController
         Container::users()->setPassword((int) $user['id'], $new);
         Container::audit()->record((int) $user['id'], 'update', 'users', (int) $user['id'], null, null, ['campo' => 'senha'], $r);
         Session::regenerate();
+        $auth->refreshPasswordStamp($uid);
         Session::flash('ok', 'Senha alterada com sucesso.');
         return Response::redirect('/portal/conta');
     }

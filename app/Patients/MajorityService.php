@@ -61,6 +61,12 @@ final class MajorityService
         // Com conta de crianca (e sem conta 'paciente'), transferir converte esse mesmo usuario em 'paciente'.
         $childId = $decision === 'transferir' && $patient['user_id'] === null && $patient['child_user_id'] !== null
             ? (int) $patient['child_user_id'] : null;
+        if ($childId !== null) {
+            $child = $this->users->find($childId);
+            if ($child === null || (int) $child['active'] !== 1) {
+                throw new \InvalidArgumentException('A conta da criança está desativada. Reative-a na tela "Conta da criança" antes de transferir o acesso.');
+            }
+        }
         $email = null;
         if ($decision === 'transferir' && $patient['user_id'] === null) {
             $email = UserRepository::normalizeEmail((string) $patientEmail);

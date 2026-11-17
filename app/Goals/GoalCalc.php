@@ -77,13 +77,14 @@ final class GoalCalc
         foreach ($goals as $g) {
             $byId[$g['id']] = $g;
         }
-        $n = 0;
+        // Uma estrela por (meta, dia): duas pessoas marcando o mesmo dia nao contam em dobro.
+        $seen = [];
         foreach ($checks as $c) {
             if (isset($byId[$c['goal_id']]) && self::inPeriod($byId[$c['goal_id']], $c['day'])) {
-                $n++;
+                $seen[$c['goal_id'] . '|' . $c['day']] = true;
             }
         }
-        return $n;
+        return count($seen);
     }
 
     /** @return list<string> */

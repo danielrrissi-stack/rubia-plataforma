@@ -68,7 +68,7 @@ final class GoalRepository
     public function update(int $goalId, array $data, int $uid, Request $r): void
     {
         $before = $this->active($goalId);
-        $row = $this->clean((int) $before['patient_id'], $data);
+        $row = $this->clean((int) $before['patient_id'], $data, (string) $before['start_date']);
         $sets = implode(', ', array_map(fn (string $c): string => $c . ' = ?', array_keys($row)));
         $this->db->run(
             'UPDATE patient_goals SET ' . $sets . ', updated_by = ?, updated_at = NOW() WHERE id = ?',
@@ -82,6 +82,9 @@ final class GoalRepository
         $before = $this->active($goalId);
         if (!$this->isDate($endDate) || $endDate < $before['start_date']) {
             throw new InvalidGoalException(['A data de término deve ser igual ou posterior ao início.']);
+        }
+        if ($endDate > $this->maxEnd((string) $before['start_date'])) {
+            throw new InvalidGoalException(['A meta pode durar no máximo 5 anos.']);
         }
         $this->db->run(
             'UPDATE patient_goals SET end_date = ?, updated_by = ?, updated_at = NOW() WHERE id = ?',
@@ -120,32 +123,56 @@ final class GoalRepository
         return $this->load($patientId, $viewer, null, null);
     }
 
+    /**
+     * Marca o dia para quem marcou: cada usuario tem a propria linha (UNIQUE goal_id, day, checked_by).
+     * Se o usuario ja enxerga o dia marcado (por ele ou por outro visivel), nada muda.
+     */
     public function check(int $goalId, string $day, array $user, string $today, Request $r): void
     {
         [$goal, $visible] = $this->markable($goalId, $day, $user, $today);
         if ($visible !== []) {
-            return; // ja marcado (ou marcacao que este usuario nao enxerga): nada a fazer
+            return; // ja marcado para este usuario
         }
+        $uid = (int) $user['id'];
         $stmt = $this->db->run(
             'INSERT IGNORE INTO goal_checks (goal_id, day, checked_by, checked_by_role) VALUES (?, ?, ?, ?)',
-            [$goalId, $day, (int) $user['id'], (string) $user['role']],
+            [$goalId, $day, $uid, (string) $user['role']],
         );
         if ($stmt->rowCount() === 0) {
             return; // ja marcado (duplo clique / outra aba)
         }
-        $row = $this->db->one('SELECT * FROM goal_checks WHERE goal_id = ? AND day = ?', [$goalId, $day]);
-        $this->audit->record((int) $user['id'], 'check', 'goal_checks', (int) $row['id'], (int) $goal['patient_id'], null, $row, $r);
+        $row = $this->db->one('SELECT * FROM goal_checks WHERE goal_id = ? AND day = ? AND checked_by = ?', [$goalId, $day, $uid]);
+        $this->audit->record($uid, 'check', 'goal_checks', (int) $row['id'], (int) $goal['patient_id'], null, $row, $r);
     }
 
+    /** Desmarca o dia apagando so as linhas que o usuario enxerga (marcacao oculta da crianca fica intacta). */
     public function uncheck(int $goalId, string $day, array $user, string $today, Request $r): void
     {
         [$goal, $visible] = $this->markable($goalId, $day, $user, $today);
-        $row = $visible === [] ? null : $this->db->one('SELECT * FROM goal_checks WHERE goal_id = ? AND day = ?', [$goalId, $day]);
-        if ($row === null) {
-            return;
+        foreach (array_unique(array_column($visible, 'checked_by')) as $by) {
+            $row = $this->db->one('SELECT * FROM goal_checks WHERE goal_id = ? AND day = ? AND checked_by = ?', [$goalId, $day, $by]);
+            if ($row === null) {
+                continue;
+            }
+            $this->db->run('DELETE FROM goal_checks WHERE id = ?', [$row['id']]);
+            $this->audit->record((int) $user['id'], 'uncheck', 'goal_checks', (int) $row['id'], (int) $goal['patient_id'], $row, null, $r);
         }
-        $this->db->run('DELETE FROM goal_checks WHERE id = ?', [$row['id']]);
-        $this->audit->record((int) $user['id'], 'uncheck', 'goal_checks', (int) $row['id'], (int) $goal['patient_id'], $row, null, $r);
+    }
+
+    /** Meta que o usuario pode ver (nao excluida; sigilo e categorias como em load()); null = "nao encontrada". */
+    public function visibleGoal(int $goalId, array $viewer): ?array
+    {
+        $goal = $this->find($goalId);
+        if ($goal === null || $goal['deleted_at'] !== null) {
+            return null;
+        }
+        $visible = match ((string) $viewer['role']) {
+            'medico', 'crianca', 'paciente' => true,
+            'nutricionista' => in_array($goal['category'], self::NUTRITIONAL, true),
+            'responsavel' => (int) $goal['secret'] === 0,
+            default => false,
+        };
+        return $visible ? $goal : null;
     }
 
     /** @return array{0:array, 1:list<array>} meta e marcacoes do dia que o usuario enxerga */
@@ -154,17 +181,17 @@ final class GoalRepository
         if (!in_array((string) $user['role'], ['responsavel', 'paciente', 'crianca'], true)) {
             throw new InvalidGoalException(['Só a família pode marcar as metas.']);
         }
-        $goal = $this->find($goalId);
-        if ($goal === null || $goal['deleted_at'] !== null || !$this->isDate($day)) {
+        $goal = $this->visibleGoal($goalId, $user);
+        if ($goal === null) {
             throw new InvalidGoalException(['Meta não encontrada.']);
         }
-        $view = $this->load((int) $goal['patient_id'], $user, $day, $day);
-        if (!in_array($goalId, array_map(fn (array $g): int => (int) $g['id'], $view['goals']), true)) {
-            throw new InvalidGoalException(['Meta não encontrada.']);
+        if (!$this->isDate($day)) {
+            throw new InvalidGoalException(['Dia inválido.']);
         }
         if (!GoalCalc::canMark($goal, $day, $today)) {
             throw new InvalidGoalException(['Só é possível marcar os últimos 7 dias, dentro do período da meta.']);
         }
+        $view = $this->load((int) $goal['patient_id'], $user, $day, $day);
         $checks = array_values(array_filter($view['checks'], fn (array $c): bool => $c['goal_id'] === $goalId));
         return [$goal, $checks];
     }
@@ -220,6 +247,11 @@ final class GoalRepository
             throw new InvalidGoalException(['Meta não encontrada.']);
         }
         return $goal;
+    }
+
+    private function maxEnd(string $start): string
+    {
+        return (new \DateTimeImmutable($start))->modify('+5 years')->format('Y-m-d');
     }
 
     private function isDate(mixed $v): bool
@@ -286,14 +318,24 @@ final class GoalRepository
         ];
     }
 
-    /** @return array<string,mixed> colunas validadas de patient_goals */
-    private function clean(int $patientId, array $data): array
+    /**
+     * Colunas validadas de patient_goals. Inicio entre hoje - 2 anos e hoje + 1 ano (exceto se nao mudou
+     * numa edicao: $currentStart) e duracao de ate 5 anos.
+     *
+     * @return array<string,mixed>
+     */
+    private function clean(int $patientId, array $data, ?string $currentStart = null): array
     {
         $errors = [];
         $common = $this->validateCommon($data, $errors);
         $start = (string) ($data['start_date'] ?? '');
         if (!$this->isDate($start)) {
             $errors[] = 'Informe a data de início.';
+        } elseif ($start !== $currentStart) {
+            $today = new \DateTimeImmutable(date('Y-m-d'));
+            if ($start < $today->modify('-2 years')->format('Y-m-d') || $start > $today->modify('+1 year')->format('Y-m-d')) {
+                $errors[] = 'A data de início deve estar entre 2 anos atrás e 1 ano à frente.';
+            }
         }
         $endRaw = $data['end_date'] ?? null;
         $end = ($endRaw === null || $endRaw === '') ? null : (string) $endRaw;
@@ -301,6 +343,8 @@ final class GoalRepository
             $errors[] = 'Data de término inválida.';
         } elseif ($end !== null && $this->isDate($start) && $end < $start) {
             $errors[] = 'A data de término deve ser igual ou posterior ao início.';
+        } elseif ($end !== null && $this->isDate($start) && $end > $this->maxEnd($start)) {
+            $errors[] = 'A meta pode durar no máximo 5 anos.';
         }
         $secret = !empty($data['secret']) ? 1 : 0;
         if ($secret === 1) {

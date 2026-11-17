@@ -38,6 +38,18 @@ final class GoalCalcTest extends TestCase
         $this->assertSame(1, GoalCalc::stars([$g], $checks));
     }
 
+    public function testStarsCountEachGoalDayOnceEvenWithTwoChecks(): void
+    {
+        $g = ['id' => 1, 'times_per_week' => 7, 'start_date' => '2026-11-10', 'end_date' => null];
+        $h = ['id' => 2, 'times_per_week' => 7, 'start_date' => '2026-11-10', 'end_date' => null];
+        $checks = [
+            ['goal_id' => 1, 'day' => '2026-11-10', 'checked_by' => 5], ['goal_id' => 1, 'day' => '2026-11-10', 'checked_by' => 6],
+            ['goal_id' => 2, 'day' => '2026-11-10', 'checked_by' => 5], ['goal_id' => 1, 'day' => '2026-11-11', 'checked_by' => 6],
+        ];
+        $this->assertSame(3, GoalCalc::stars([$g, $h], $checks));
+        $this->assertSame(['primeira_estrela'], GoalCalc::badges([$g, $h], $checks, '2026-11-12'));
+    }
+
     public function testBadgesOnlyForFinishedWeeksAndStreaks(): void
     {
         $g = ['id' => 1, 'times_per_week' => 7, 'start_date' => '2026-10-26', 'end_date' => null];

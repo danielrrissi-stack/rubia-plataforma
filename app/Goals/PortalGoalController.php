@@ -130,7 +130,8 @@ final class PortalGoalController
         }
         $pid = (int) $patient['id'];
         $goalId = (int) $r->params['goalId'];
-        $goal = Container::goals()->find($goalId);
+        // Meta secreta/excluida para este usuario e "nao encontrada" (404), igual a um id inexistente.
+        $goal = Container::goals()->visibleGoal($goalId, $user);
         if ($goal === null || (int) $goal['patient_id'] !== $pid) {
             throw new HttpException(404);
         }

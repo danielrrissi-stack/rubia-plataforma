@@ -110,6 +110,7 @@ final class AuthService
         Session::forget('totp_attempts');
         $this->db->run('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = ?', [$userId]);
         Session::set('uid', $userId);
+        $this->refreshPasswordStamp($userId);
         Session::set('last_activity', $this->now());
         $this->db->run('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$userId]);
         $this->audit->record($userId, 'login', 'users', $userId, null, null, null, $r);
@@ -127,6 +128,12 @@ final class AuthService
             $this->logout($r);
             return null;
         }
+        // Senha trocada (ex.: redefinida pela medica) derruba as sessoes abertas antes da troca.
+        if (!hash_equals(self::passwordStamp($user['password_hash'] ?? null), (string) Session::get('pw_stamp', ''))) {
+            $this->logout($r);
+            Session::flash('erro', 'Sua senha foi alterada. Entre de novo.');
+            return null;
+        }
         $minutes = in_array($user['role'], self::STAFF_ROLES, true)
             ? (int) Config::get('session.staff_idle_minutes', 30)
             : (int) Config::get('session.family_idle_minutes', 120);
@@ -140,6 +147,18 @@ final class AuthService
         return $user;
     }
 
+    /** Guarda na sessao a impressao da senha atual; chamar apos o proprio usuario trocar a senha. */
+    public function refreshPasswordStamp(int $userId): void
+    {
+        $user = $this->users->find($userId);
+        Session::set('pw_stamp', self::passwordStamp($user['password_hash'] ?? null));
+    }
+
+    private static function passwordStamp(mixed $hash): string
+    {
+        return substr(hash('sha256', (string) $hash), 0, 16);
+    }
+
     public function logout(?Request $r = null): void
     {
         $uid = Session::get('uid');
@@ -147,6 +166,7 @@ final class AuthService
             $this->audit->record($uid, 'logout', 'users', $uid, null, null, null, $r);
         }
         Session::forget('uid');
+        Session::forget('pw_stamp');
         Session::forget('last_activity');
         Session::forget('pending_2fa_user');
         Session::forget('totp_setup_secret');

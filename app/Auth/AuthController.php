@@ -126,6 +126,7 @@ final class AuthController
         Container::users()->setPassword($uid, $new);
         Container::audit()->record($uid, 'update', 'users', $uid, null, null, ['campo' => 'senha', 'motivo' => 'senha_provisoria'], $r);
         \App\Core\Session::regenerate();
+        Container::auth()->refreshPasswordStamp($uid);
         \App\Core\Session::flash('ok', 'Senha alterada. Pronto!');
         return Response::redirect('/');
     }

@@ -33,7 +33,7 @@ $grid = static function (array $panel, bool $canEnd): void {
           <?php if ($canEnd): ?>
           <form method="post" action="<?= e(url('/metas/' . (int) $g['id'] . '/encerrar')) ?>" class="form-inline"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Encerrar</button></form>
           <?php endif; ?>
-          <form method="post" action="<?= e(url('/metas/' . (int) $g['id'] . '/excluir')) ?>" class="form-inline"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir</button></form>
+          <form method="post" action="<?= e(url('/metas/' . (int) $g['id'] . '/excluir')) ?>" class="form-inline" data-confirm="Excluir esta meta? As estrelas dela deixam de contar."><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir</button></form>
         </td>
       </tr>
     <?php endforeach; ?>
@@ -56,3 +56,4 @@ $grid = static function (array $panel, bool $canEnd): void {
 <h2>Encerradas</h2>
 <?php $grid($endedPanel, false); ?>
 <?php endif; ?>
+<script src="<?= e(url('/assets/js/confirm-submit.js')) ?>" defer></script>

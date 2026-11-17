@@ -132,6 +132,8 @@ final class GoalPagesTest extends DbTestCase
         $this->assertSame(200, $grid->status);
         $this->assertStringContainsString('Beber água em todas as refeições', $grid->body);
         $this->assertStringContainsString('3/5', $grid->body);
+        $this->assertStringContainsString('data-confirm="Excluir esta meta? As estrelas dela deixam de contar."', $grid->body);
+        $this->assertStringContainsString('/assets/js/confirm-submit.js', $grid->body);
         $this->assertNotNull($this->db->one(
             "SELECT id FROM audit_log WHERE action = 'view' AND entity = 'patient_goals' AND patient_id = ?", [$pid]
         ));

@@ -174,11 +174,47 @@ final class GoalRepositoryTest extends DbTestCase
         $this->db->run('UPDATE patients SET guardians_see_child_checks = 0 WHERE id = ?', [$this->patient['id']]);
         $id = $this->goal();
         $resp = $this->makeUser('responsavel');
-        Container::goals()->check($id, '2026-11-17', $child, self::TODAY, $this->r());
-        Container::goals()->uncheck($id, '2026-11-17', $resp, self::TODAY, $this->r());
-        Container::goals()->check($id, '2026-11-17', $resp, self::TODAY, $this->r());
+        $goals = Container::goals();
+        $goals->check($id, '2026-11-17', $child, self::TODAY, $this->r());
+        $goals->uncheck($id, '2026-11-17', $resp, self::TODAY, $this->r()); // nao enxerga: nada some
+        $this->assertSame(1, $this->countChecks($id));
+
+        // Marca a propria linha (idempotente por usuario); a da crianca fica intacta.
+        $goals->check($id, '2026-11-17', $resp, self::TODAY, $this->r());
+        $goals->check($id, '2026-11-17', $resp, self::TODAY, $this->r());
+        $this->assertSame(2, $this->countChecks($id));
+        $goals->uncheck($id, '2026-11-17', $resp, self::TODAY, $this->r());
         $this->assertSame(1, $this->countChecks($id));
         $this->assertSame((int) $child['id'], (int) $this->db->one('SELECT checked_by c FROM goal_checks WHERE goal_id = ?', [$id])['c']);
+
+        // Medico ve as duas linhas, mas o dia vale uma estrela.
+        $goals->check($id, '2026-11-17', $resp, self::TODAY, $this->r());
+        $all = $goals->allForViewer((int) $this->patient['id'], $this->medico);
+        $this->assertCount(2, $all['checks']);
+        $this->assertSame(1, \App\Goals\GoalCalc::stars($all['goals'], $all['checks']));
+    }
+
+    public function test_goal_dates_are_bounded(): void
+    {
+        $pid = (int) $this->patient['id'];
+        $uid = (int) $this->medico['id'];
+        $goals = Container::goals();
+        $today = new \DateTimeImmutable(date('Y-m-d'));
+        $d = fn (string $mod): string => $today->modify($mod)->format('Y-m-d');
+        $msg = fn (array $over): array => $this->invalid(fn () => $goals->create($pid, $this->data($over), $uid, $this->r()));
+
+        $this->assertContains('A data de início deve estar entre 2 anos atrás e 1 ano à frente.', $msg(['start_date' => $d('-2 years -1 day')]));
+        $this->assertContains('A data de início deve estar entre 2 anos atrás e 1 ano à frente.', $msg(['start_date' => $d('+1 year +1 day')]));
+        $this->assertContains('A meta pode durar no máximo 5 anos.', $msg(['start_date' => $d('+0 days'), 'end_date' => $d('+5 years +1 day')]));
+
+        $id = $goals->create($pid, $this->data(['start_date' => $d('-2 years'), 'end_date' => $d('+3 years')]), $uid, $this->r());
+        $this->assertGreaterThan(0, $goals->create($pid, $this->data(['start_date' => $d('+1 year')]), $uid, $this->r()));
+        $this->assertSame(['A meta pode durar no máximo 5 anos.'], $this->invalid(fn () => $goals->end($id, $d('+3 years +1 day'), $uid, $this->r())));
+
+        // Meta antiga: editar sem mudar o inicio continua possivel.
+        $this->db->run('UPDATE patient_goals SET start_date = ? WHERE id = ?', [$d('-3 years'), $id]);
+        $goals->update($id, $this->data(['family_text' => 'Texto novo', 'start_date' => $d('-3 years'), 'end_date' => '']), $uid, $this->r());
+        $this->assertSame('Texto novo', $goals->find($id)['family_text']);
     }
 
     public function test_staff_cannot_check(): void

@@ -50,7 +50,7 @@ CREATE TABLE goal_checks (
     checked_by INT UNSIGNED NOT NULL,
     checked_by_role VARCHAR(20) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_goal_checks (goal_id, day),
+    UNIQUE KEY uq_goal_checks (goal_id, day, checked_by),
     CONSTRAINT fk_goal_checks_goal FOREIGN KEY (goal_id) REFERENCES patient_goals(id),
     CONSTRAINT fk_goal_checks_user FOREIGN KEY (checked_by) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

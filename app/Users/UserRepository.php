@@ -11,7 +11,7 @@ final class UserRepository
         'name', 'email', 'role', 'is_admin', 'professional_register', 'totp_secret',
         'totp_enabled', 'failed_logins', 'locked_until', 'active', 'last_login_at',
     ];
-    private const USERNAME_PATTERN = '/^[a-z0-9.]{3,40}$/';
+    private const USERNAME_PATTERN = '/^(?=[a-z0-9.]*[a-z0-9])[a-z0-9.]{3,40}\z/';
 
     public function __construct(private Database $db)
     {
@@ -28,7 +28,7 @@ final class UserRepository
         return mb_strtolower((string) preg_replace('/\s+/u', '', $username));
     }
 
-    /** Letras minusculas, numeros e ponto; 3 a 40; nunca '@' (o que tem '@' e e-mail). */
+    /** Letras minusculas, numeros e ponto (ao menos uma letra ou numero); 3 a 40; nunca '@' (o que tem '@' e e-mail). */
     public static function isValidUsername(string $username): bool
     {
         return preg_match(self::USERNAME_PATTERN, $username) === 1;

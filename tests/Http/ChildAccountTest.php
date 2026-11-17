@@ -293,4 +293,64 @@ final class ChildAccountTest extends DbTestCase
         $this->assertNotNull($this->db->one("SELECT 1 FROM audit_log WHERE action = 'update' AND entity = 'users' AND entity_id = ?", [$kid['id']]));
         $this->assertTrue(Container::patientScope()->canAccess($user, $pid));
     }
+
+    public function test_password_reset_ends_open_child_session(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->makePatient(['created_by' => $med['id'], 'responsible_professional_id' => $med['id']]);
+        $pid = (int) $p['id'];
+        $kid = $this->childAccount($p);
+        $home = '/portal/p/' . $pid . '/metas';
+        $this->loginAs($kid);
+        $this->assertSame(200, $this->get($home)->status);
+
+        // A medica redefine a senha (em outra sessao): a sessao aberta da crianca cai na proxima requisicao.
+        Container::users()->setTemporaryPassword((int) $kid['id'], 'provisoria-123');
+        $res = $this->get($home);
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/login', $res->headers['Location']);
+        $this->assertNull(Session::get('uid'));
+        $res = $this->post('/senha/trocar', ['nova' => 'tomada-de-conta-1', 'confirmacao' => 'tomada-de-conta-1']);
+        $this->assertSame('/login', $res->headers['Location']);
+        $this->assertSame(1, (int) $this->db->one('SELECT must_change_password m FROM users WHERE id = ?', [$kid['id']])['m']);
+
+        // Com a provisoria: troca obrigatoria e a sessao segue valida depois da propria troca.
+        Session::reset();
+        $this->post('/login', ['email' => $kid['username'], 'senha' => 'provisoria-123']);
+        $this->assertSame((int) $kid['id'], Session::get('uid'));
+        $res = $this->post('/senha/trocar', ['nova' => 'senha-nova-da-ana', 'confirmacao' => 'senha-nova-da-ana']);
+        $this->assertSame('/', $res->headers['Location']);
+        $this->assertSame(200, $this->get($home)->status);
+    }
+
+    public function test_majority_transfer_refused_while_child_account_deactivated(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->makePatient(['birth_date' => ((int) date('Y') - 19) . '-01-01', 'created_by' => $med['id'], 'responsible_professional_id' => $med['id']]);
+        $pid = (int) $p['id'];
+        $kid = $this->childAccount($p);
+        $this->db->run('UPDATE users SET active = 0 WHERE id = ?', [$kid['id']]);
+        try {
+            Container::majority()->decide($pid, 'transferir', null, (int) $med['id'], 'ana.adulta@example.test');
+            $this->fail('conta desativada deveria recusar');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertStringContainsString('Reative-a na tela "Conta da criança"', $e->getMessage());
+        }
+        $this->assertSame('crianca', $this->db->one('SELECT role FROM users WHERE id = ?', [$kid['id']])['role']);
+        $this->assertNull($this->db->one('SELECT 1 FROM majority_decisions WHERE patient_id = ?', [$pid]));
+
+        $this->db->run('UPDATE users SET active = 1 WHERE id = ?', [$kid['id']]);
+        Container::majority()->decide($pid, 'transferir', null, (int) $med['id'], 'ana.adulta@example.test');
+        $this->assertSame('paciente', $this->db->one('SELECT role FROM users WHERE id = ?', [$kid['id']])['role']);
+    }
+
+    public function test_username_rules(): void
+    {
+        foreach (['ana', 'ana.souza', 'a.1', '123'] as $ok) {
+            $this->assertTrue(\App\Users\UserRepository::isValidUsername($ok), $ok);
+        }
+        foreach (['...', '.....', "ana\n", 'an', 'ana@x', 'Ana', 'ana souza', str_repeat('a', 41)] as $bad) {
+            $this->assertFalse(\App\Users\UserRepository::isValidUsername($bad), json_encode($bad));
+        }
+    }
 }
