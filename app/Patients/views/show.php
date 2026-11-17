@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var bool $canCadastro @var bool $canEdit @var bool $canCrescimento
- * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canEnergia @var bool $canAcessoProf @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
+ * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canExames @var ?array $labSummary @var bool $canEnergia @var bool $canAcessoProf @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
  */
 $pid = (int) $patient['id'];
 ?>
@@ -73,4 +73,9 @@ $pid = (int) $patient['id'];
       <p><strong><?= e($currentPlan['title']) ?></strong> · publicado em <?= e(fmt_date(substr((string) $currentPlan['published_at'], 0, 10))) ?></p>
     <?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/plano')) ?>">Ver plano alimentar</a></p></section><?php endif; ?>
+  <?php if ($canExames): ?><section class="cartao" id="cartao-exames"><h2>Exames</h2>
+    <?php if ($labSummary === null): ?><p class="ajuda">Nenhuma coleta registrada.</p><?php else: $n = $labSummary['altered']; ?>
+      <p>Última coleta: <?= e(fmt_date($labSummary['date'])) ?> · <?= $n === 0 ? 'nenhum valor alterado' : e($n) . ($n === 1 ? ' valor alterado' : ' valores alterados') ?></p>
+    <?php endif; ?>
+    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/exames')) ?>">Ver exames</a></p></section><?php endif; ?>
 </div>

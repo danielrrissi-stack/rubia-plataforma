@@ -56,6 +56,16 @@ final class AttachmentStore
         );
     }
 
+    /** Anexos ativos de uma coleta, na ordem de envio. @return list<array> */
+    public function forCollection(int $collectionId): array
+    {
+        return $this->db->all(
+            'SELECT id, collection_id, original_name, mime, size_bytes, uploaded_at FROM lab_attachments
+              WHERE collection_id = ? AND deleted_at IS NULL ORDER BY id',
+            [$collectionId],
+        );
+    }
+
     /** Caminho real do arquivo, garantidamente dentro da pasta de uploads. */
     public function absolutePath(array $att): string
     {

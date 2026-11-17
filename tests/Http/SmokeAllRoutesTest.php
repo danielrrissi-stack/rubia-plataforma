@@ -69,6 +69,11 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/prontuario/{kind}'        => [200, 403, 403, 403, 403],
         '/prontuario/{entryId}/revisar'            => [200, 403, 403, 403, 403],
         '/prontuario/{entryId}/versoes'            => [200, 403, 403, 403, 403],
+        '/pacientes/{id}/exames'                   => [200, 403, 403, 403, 403], // so medico (Clinician antes do Gate)
+        '/pacientes/{id}/exames/nova'              => [200, 403, 403, 403, 403],
+        '/exames/{collectionId}'                   => [200, 403, 403, 403, 403],
+        '/exames/{collectionId}/editar'            => [200, 403, 403, 403, 403],
+        '/exames/anexos/{attachmentId}'            => [404, 403, 403, 403, 403], // registro sem arquivo no disco: 404 so depois da permissao
         '/portal'                                  => [302, 302, 302, 302, 302], // equipe volta a /; 1 filho vai direto a ele
         '/portal/p/{id}'                           => [302, 302, 302, 200, 200], // portal e so da familia
         '/portal/p/{id}/crescimento'               => [302, 302, 302, 200, 200],
@@ -135,12 +140,22 @@ final class SmokeAllRoutesTest extends DbTestCase
         ], (int) $admin['id']);
         Container::mealPlans()->publish($planId, (int) $admin['id']);
 
+        $collectionId = Container::labs()->create((int) $child['id'], ['collected_on' => $today], [
+            (int) Container::labCatalog()->findByCode('glicemia')['id'] => '98',
+        ], (int) $admin['id'], new Request('POST', '/'));
+        $attachmentId = $this->db->insert('lab_attachments', [
+            'collection_id' => $collectionId, 'stored_path' => 'exames/fumaca/inexistente.pdf', 'original_name' => 'laudo.pdf',
+            'mime' => 'application/pdf', 'size_bytes' => 10, 'sha256' => str_repeat('0', 64), 'uploaded_by' => $admin['id'],
+        ]);
+
         $this->fx = [
             'users' => ['M' => $admin, 'N' => $nutri, 'S' => $sec, 'R' => $resp, 'P' => $pac],
             'patient' => ['M' => $child, 'N' => $child, 'S' => $child, 'R' => $child, 'P' => $adult],
             'measure' => ['M' => $mChild, 'N' => $mChild, 'S' => $mChild, 'R' => $mChild, 'P' => $mAdult],
             'entry' => ['M' => $eChild, 'N' => $eChild, 'S' => $eChild, 'R' => $eChild, 'P' => $eAdult],
             'plan' => $planId,
+            'collection' => $collectionId,
+            'attachment' => $attachmentId,
             'template' => Container::mealPlanTemplates()->fromPlan($planId, 'Modelo fumaca', (int) $admin['id']),
             'snippet' => Container::textSnippets()->create('Trecho fumaca', 'Beber agua', (int) $admin['id']),
             'secretaria_id' => (int) $sec['id'],
@@ -161,6 +176,8 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'templateId' => (string) $this->fx['template'],
                 'snippetId' => (string) $this->fx['snippet'],
                 'entryId' => (string) $this->fx['entry'][$role],
+                'collectionId' => (string) $this->fx['collection'],
+                'attachmentId' => (string) $this->fx['attachment'],
                 'id' => match (true) {
                     str_starts_with($pattern, '/equipe/') => (string) $this->fx['secretaria_id'],
                     str_starts_with($pattern, '/medidas/') => (string) $this->fx['measure'][$role],

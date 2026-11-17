@@ -16,6 +16,7 @@ use App\Patients\AccessGrantController;
 use App\Patients\GuardianController;
 use App\Patients\PatientController;
 use App\Install\InstallController;
+use App\Labs\LabController;
 use App\Portal\PortalController;
 use App\Records\RecordController;
 use App\Users\UserController;
@@ -129,6 +130,19 @@ $router->get('/prontuario/{entryId:\d+}/revisar', [RecordController::class, 'rev
 $router->post('/prontuario/{entryId:\d+}/revisar', [RecordController::class, 'revise'], $authMw);
 $router->post('/prontuario/{entryId:\d+}/remover', [RecordController::class, 'remove'], $authMw);
 $router->get('/prontuario/{entryId:\d+}/versoes', [RecordController::class, 'versions'], $authMw);
+
+$router->get('/pacientes/{id:\d+}/exames', [LabController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/exames/nova', [LabController::class, 'createForm'], $authMw);
+$router->post('/pacientes/{id:\d+}/exames/nova', [LabController::class, 'create'], $authMw);
+$router->get('/exames/anexos/{attachmentId:\d+}', [LabController::class, 'download'], $authMw);
+$router->post('/exames/anexos/{attachmentId:\d+}/excluir', [LabController::class, 'deleteAttachment'], $authMw);
+$router->get('/exames/{collectionId:\d+}', [LabController::class, 'show'], $authMw);
+$router->get('/exames/{collectionId:\d+}/editar', [LabController::class, 'editForm'], $authMw);
+$router->post('/exames/{collectionId:\d+}/editar', [LabController::class, 'update'], $authMw);
+$router->post('/exames/{collectionId:\d+}/excluir', [LabController::class, 'delete'], $authMw);
+$router->post('/exames/{collectionId:\d+}/liberar', [LabController::class, 'release'], $authMw);
+$router->post('/exames/{collectionId:\d+}/recolher', [LabController::class, 'unrelease'], $authMw);
+$router->post('/exames/{collectionId:\d+}/anexos', [LabController::class, 'addAttachments'], $authMw);
 
 $router->get('/portal', [PortalController::class, 'index'], $authMw);
 $router->get('/portal/p/{id:\d+}', [PortalController::class, 'home'], $authMw);

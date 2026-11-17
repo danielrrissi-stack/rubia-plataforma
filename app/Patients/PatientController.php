@@ -67,6 +67,7 @@ final class PatientController
         $today = date('Y-m-d');
         $gate = Container::gate();
         $canPlano = \App\Nutrition\Staff::is($user) && $gate->check($user, 'view', Policy::NUTRICAO, $id);
+        $canExames = \App\Labs\Clinician::is($user) && $gate->check($user, 'view', Policy::EXAMES, $id);
         return $this->page('Patients/views/show.php', 'Paciente', $r, [
             'patient' => $patient,
             'today' => $today,
@@ -81,11 +82,30 @@ final class PatientController
             'energy' => $gate->check($user, 'view', Policy::ENERGIA, $id) ? Container::energyGoals()->current($id) : null,
             'canPlano' => $canPlano,
             'currentPlan' => $canPlano ? Container::mealPlans()->current($id) : null,
+            'canExames' => $canExames,
+            'labSummary' => $canExames ? self::labSummary($id) : null,
             'adult' => Age::years((string) $patient['birth_date'], $today) >= 18,
             'professional' => Container::users()->find((int) $patient['responsible_professional_id']),
             'guardians' => $gate->check($user, 'view', Policy::CADASTRO, $id) ? Container::guardians()->forPatient($id) : [],
             'active' => '/pacientes',
         ]);
+    }
+
+    /** Ultima coleta e quantos valores alterados nela (cartao Exames da ficha). @return ?array{date:string,altered:int} */
+    private static function labSummary(int $patientId): ?array
+    {
+        $evo = Container::labs()->evolution($patientId, 1);
+        if ($evo['collections'] === []) {
+            return null;
+        }
+        $cid = $evo['collections'][0]['id'];
+        $altered = 0;
+        foreach ($evo['rows'] as $row) {
+            if (str_starts_with((string) ($row['cells'][$cid]['class'] ?? ''), 'alterado_')) {
+                $altered++;
+            }
+        }
+        return ['date' => $evo['collections'][0]['collected_on'], 'altered' => $altered];
     }
 
     public function edit(Request $r): Response
