@@ -55,6 +55,13 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/alimentos'                               => [200, 200, 403, 403, 403],
         '/alimentos/novo'                          => [200, 200, 403, 403, 403],
         '/alimentos/{foodId}/editar'               => [200, 200, 403, 403, 403],
+        '/modelos-plano'                           => [200, 200, 403, 403, 403],
+        '/modelos-plano/novo'                      => [200, 200, 403, 403, 403],
+        '/modelos-plano/{templateId}/editar'       => [200, 403, 403, 403, 403], // nutricionista nao e a autora
+        '/trechos'                                 => [200, 200, 403, 403, 403],
+        '/trechos/novo'                            => [200, 200, 403, 403, 403],
+        '/trechos/{snippetId}/editar'              => [200, 403, 403, 403, 403],
+        '/trechos.json'                            => [200, 200, 403, 403, 403],
         '/planos/{planId}'                         => [200, 200, 403, 403, 403],
         '/planos/{planId}/imprimir'                => [200, 200, 403, 403, 403],
         '/planos/{planId}/editar'                  => [302, 302, 403, 403, 403], // publicado redireciona para show
@@ -134,6 +141,8 @@ final class SmokeAllRoutesTest extends DbTestCase
             'measure' => ['M' => $mChild, 'N' => $mChild, 'S' => $mChild, 'R' => $mChild, 'P' => $mAdult],
             'entry' => ['M' => $eChild, 'N' => $eChild, 'S' => $eChild, 'R' => $eChild, 'P' => $eAdult],
             'plan' => $planId,
+            'template' => Container::mealPlanTemplates()->fromPlan($planId, 'Modelo fumaca', (int) $admin['id']),
+            'snippet' => Container::textSnippets()->create('Trecho fumaca', 'Beber agua', (int) $admin['id']),
             'secretaria_id' => (int) $sec['id'],
         ];
     }
@@ -149,6 +158,8 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'kind' => 'evolucao',
                 'planId' => (string) $this->fx['plan'],
                 'foodId' => '53',
+                'templateId' => (string) $this->fx['template'],
+                'snippetId' => (string) $this->fx['snippet'],
                 'entryId' => (string) $this->fx['entry'][$role],
                 'id' => match (true) {
                     str_starts_with($pattern, '/equipe/') => (string) $this->fx['secretaria_id'],

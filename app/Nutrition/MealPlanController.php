@@ -60,17 +60,26 @@ final class MealPlanController
                 }
                 $planId = $repo->draftFrom((int) $current['id'], (int) $user['id'], $r);
             } elseif ($origin === 'modelo') {
-                $tpl = Container::db()->one('SELECT * FROM meal_plan_templates WHERE id = ? AND deleted_at IS NULL', [$templateId]);
+                $tpl = Container::mealPlanTemplates()->find($templateId);
                 if ($tpl === null) {
                     Session::flash('erro', 'Escolha um modelo válido.');
                     return Response::redirect('/pacientes/' . $id . '/plano');
                 }
-                $structure = $tpl['structure_json'] === null ? null : json_decode((string) $tpl['structure_json'], true);
+                $structure = null;
+                if ($tpl['mode'] === 'estruturado') {
+                    // Re-resolve com os valores atuais dos alimentos (alimento inativo e aceito; refeicao vazia tambem).
+                    try {
+                        $structure = (new MealPlanResolver(Container::foods()))->resolve(is_array($tpl['structure']) ? $tpl['structure'] : [], true);
+                    } catch (InvalidPlanException $e) {
+                        Session::flash('erro', 'Não foi possível usar este modelo: ' . implode(' ', $e->errors));
+                        return Response::redirect('/pacientes/' . $id . '/plano');
+                    }
+                }
                 $planId = $repo->createDraft($id, (string) $tpl['mode'], [
                     'title' => (string) $tpl['title'],
                     'body_text' => $tpl['body_text'],
                     'guidance_text' => $tpl['guidance_text'],
-                    'structure' => is_array($structure) ? $structure : null,
+                    'structure' => $structure,
                 ], (int) $user['id'], $r, (int) $tpl['id']);
             } else {
                 $planId = $repo->createDraft($id, $mode, [
@@ -190,29 +199,7 @@ final class MealPlanController
             return Response::json(['ok' => false, 'errors' => ['Este plano já foi publicado; não é mais um rascunho.']], 409);
         }
         $post = $r->post;
-        $errors = [];
-        $titleRaw = $post['titulo'] ?? null;
-        $title = is_string($titleRaw) ? trim(mb_scrub($titleRaw, 'UTF-8')) : '';
-        $len = mb_strlen($title, 'UTF-8');
-        if ($len < 2 || $len > 150) {
-            $errors[] = 'Informe o título do plano (2 a 150 caracteres).';
-        }
-        if (isset($post['orientacoes']) && !is_string($post['orientacoes'])) {
-            $errors[] = 'As orientações são inválidas.';
-        }
-        $guidance = self::clean($post['orientacoes'] ?? '');
-        $raw = $post['estrutura'] ?? null;
-        $input = is_string($raw) ? json_decode($raw, true, 32) : null;
-        $structure = null;
-        if (!is_array($input)) {
-            $errors[] = 'Não foi possível ler as refeições do plano. Recarregue a página e tente de novo.';
-        } else {
-            try {
-                $structure = (new MealPlanResolver(Container::foods()))->resolve($input, true);
-            } catch (InvalidPlanException $e) {
-                $errors = array_merge($errors, $e->errors);
-            }
-        }
+        [$title, $guidance, $structure, $errors] = self::readStructuredPost($post, 'do plano');
         if ($errors !== [] || $structure === null) {
             return Response::json(['ok' => false, 'errors' => $errors], 422);
         }
@@ -227,6 +214,45 @@ final class MealPlanController
         } catch (\RuntimeException $e) {
             return Response::json(['ok' => false, 'errors' => [$e->getMessage()]], 409);
         }
+        return Response::json(['ok' => true, 'revision' => $res['revision'], 'conflict' => $res['conflict']] + self::totalsPayload($structure));
+    }
+
+    /**
+     * Le e valida o POST do editor estruturado (titulo, orientacoes, estrutura JSON) e resolve a estrutura.
+     * Compartilhado com o editor de modelos. $what: 'do plano' | 'do modelo'.
+     * @return array{0:string,1:string,2:?array,3:list<string>} titulo, orientacoes, estrutura resolvida, erros
+     */
+    public static function readStructuredPost(array $post, string $what): array
+    {
+        $errors = [];
+        $titleRaw = $post['titulo'] ?? null;
+        $title = is_string($titleRaw) ? trim(mb_scrub($titleRaw, 'UTF-8')) : '';
+        $len = mb_strlen($title, 'UTF-8');
+        if ($len < 2 || $len > 150) {
+            $errors[] = 'Informe o título ' . $what . ' (2 a 150 caracteres).';
+        }
+        if (isset($post['orientacoes']) && !is_string($post['orientacoes'])) {
+            $errors[] = 'As orientações são inválidas.';
+        }
+        $guidance = self::clean($post['orientacoes'] ?? '');
+        $raw = $post['estrutura'] ?? null;
+        $input = is_string($raw) ? json_decode($raw, true, 32) : null;
+        $structure = null;
+        if (!is_array($input)) {
+            $errors[] = 'Não foi possível ler as refeições ' . $what . '. Recarregue a página e tente de novo.';
+        } else {
+            try {
+                $structure = (new MealPlanResolver(Container::foods()))->resolve($input, true);
+            } catch (InvalidPlanException $e) {
+                $errors = array_merge($errors, $e->errors);
+            }
+        }
+        return [$title, $guidance, $structure, $errors];
+    }
+
+    /** Totais por opcao, do dia e percentuais de macros (resposta JSON do editor estruturado). */
+    public static function totalsPayload(array $structure): array
+    {
         $options = [];
         foreach ($structure['meals'] as $mi => $meal) {
             $options[$mi] = [];
@@ -235,13 +261,7 @@ final class MealPlanController
             }
         }
         $day = MealPlanCalculator::day($structure);
-        return Response::json([
-            'ok' => true,
-            'revision' => $res['revision'],
-            'conflict' => $res['conflict'],
-            'totals' => ['day' => $day, 'options' => $options],
-            'percents' => MealPlanCalculator::macroPercents($day),
-        ]);
+        return ['totals' => ['day' => $day, 'options' => $options], 'percents' => MealPlanCalculator::macroPercents($day)];
     }
 
     /**
@@ -309,7 +329,7 @@ final class MealPlanController
     }
 
     /** @return array{v:int,meals:list<array>} */
-    private static function suggestedStructure(): array
+    public static function suggestedStructure(): array
     {
         $meals = [];
         foreach (self::SUGGESTED_MEALS as $name) {
@@ -385,7 +405,7 @@ final class MealPlanController
     }
 
     /** Texto do usuario: so string, UTF-8 valido, normalizado. */
-    private static function clean(mixed $v): string
+    public static function clean(mixed $v): string
     {
         return is_string($v) ? PlanText::normalizePaste(mb_scrub($v, 'UTF-8')) : '';
     }
@@ -434,7 +454,7 @@ final class MealPlanController
             'current' => $repo->current($id),
             'draft' => $repo->draft($id),
             'history' => $repo->history($id),
-            'templates' => Container::db()->all('SELECT id, title, mode FROM meal_plan_templates WHERE deleted_at IS NULL ORDER BY title'),
+            'templates' => Container::mealPlanTemplates()->all(),
             'canEdit' => Container::gate()->check($user, 'edit', Policy::NUTRICAO, $id),
             'askDraft' => null,
             'posted' => ['modo' => 'texto', 'origem' => 'branco', 'modelo_id' => 0],

@@ -19,6 +19,8 @@ use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
 use App\Nutrition\FoodRepository;
 use App\Nutrition\MealPlanRepository;
+use App\Nutrition\SnippetRepository;
+use App\Nutrition\TemplateRepository;
 use App\Patients\AccessGrantRepository;
 use App\Patients\ConsentService;
 use App\Patients\GuardianRepository;
@@ -170,5 +172,15 @@ final class Container
     public static function mealPlans(): MealPlanRepository
     {
         return self::$items['mealPlans'] ??= new MealPlanRepository(self::db(), self::audit());
+    }
+
+    public static function mealPlanTemplates(): TemplateRepository
+    {
+        return self::$items['mealPlanTemplates'] ??= new TemplateRepository(self::db(), self::audit());
+    }
+
+    public static function textSnippets(): SnippetRepository
+    {
+        return self::$items['textSnippets'] ??= new SnippetRepository(self::db(), self::audit());
     }
 }

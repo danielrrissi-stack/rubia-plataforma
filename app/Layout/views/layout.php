@@ -10,6 +10,7 @@ if (!isset($nav)) {
     $navUser = is_int($uid) ? \App\Core\Container::users()->find($uid) : null;
     if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'edit', \App\Access\Policy::NUTRICAO, null)) {
         $nav[] = ['Alimentos', '/alimentos'];
+        $nav[] = ['Modelos', '/modelos-plano'];
     }
     if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'view', \App\Access\Policy::USUARIOS, null)) {
         $nav[] = ['Equipe', '/equipe'];

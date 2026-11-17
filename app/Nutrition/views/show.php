@@ -29,6 +29,16 @@ $family = false;
 <?php endif; ?>
 <section class="cartao plano-leitura"><?php require __DIR__ . '/_plan_body.php'; ?></section>
 
+<?php if ($canEdit): ?>
+<section class="cartao"><h2>Salvar como modelo</h2>
+  <p class="ajuda">Cria um modelo da equipe com o conteúdo deste plano (sem dados do paciente).</p>
+  <form method="post" action="<?= e(url('/planos/' . $plan['id'] . '/salvar-como-modelo')) ?>"><?= csrf_field() ?>
+    <label>Título do modelo <input name="titulo" value="<?= e($plan['title']) ?>" maxlength="150" required></label>
+    <button type="submit" class="btn btn-quiet">Salvar como modelo</button>
+  </form>
+</section>
+<?php endif; ?>
+
 <?php if ($canEdit && $plan['status'] === 'publicado'): ?>
 <section class="cartao"><h2>Ações</h2>
   <form method="post" action="<?= e(url('/planos/' . $plan['id'] . '/novo-rascunho')) ?>"><?= csrf_field() ?>
