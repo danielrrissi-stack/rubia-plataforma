@@ -228,10 +228,14 @@ final class GoalRepository
         return $d !== false && $d->format('Y-m-d') === $v;
     }
 
-    /** @return array<string,mixed> colunas validadas de goal_templates */
-    private function cleanTemplate(array $data): array
+    /**
+     * Validacao comum a metas e modelos: textos, emoji, categoria e frequencia. Acrescenta mensagens a $errors.
+     *
+     * @param list<string> $errors
+     * @return array{family_text:string, child_text:?string, emoji:string, category:string, times_per_week:int}
+     */
+    private function validateCommon(array $data, array &$errors): array
     {
-        $errors = [];
         $family = trim((string) ($data['family_text'] ?? ''));
         if (mb_strlen($family) < 3 || mb_strlen($family) > 160) {
             $errors[] = 'O texto da meta deve ter de 3 a 160 caracteres.';
@@ -253,6 +257,20 @@ final class GoalRepository
         if ($tpw < 1 || $tpw > 7) {
             $errors[] = 'A frequência deve ser de 1 a 7 dias por semana.';
         }
+        return [
+            'family_text' => $family,
+            'child_text' => $child === '' ? null : $child,
+            'emoji' => $emoji,
+            'category' => $category,
+            'times_per_week' => $tpw,
+        ];
+    }
+
+    /** @return array<string,mixed> colunas validadas de goal_templates */
+    private function cleanTemplate(array $data): array
+    {
+        $errors = [];
+        $common = $this->validateCommon($data, $errors);
         $orderRaw = $data['sort_order'] ?? 0;
         $order = filter_var($orderRaw === '' ? 0 : $orderRaw, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 9999]]);
         if ($order === false) {
@@ -262,11 +280,7 @@ final class GoalRepository
             throw new InvalidGoalException($errors);
         }
         return [
-            'family_text' => $family,
-            'child_text' => $child === '' ? null : $child,
-            'emoji' => $emoji,
-            'category' => $category,
-            'times_per_week' => $tpw,
+            ...$common,
             'active' => !empty($data['active']) ? 1 : 0,
             'sort_order' => (int) $order,
         ];
@@ -276,28 +290,7 @@ final class GoalRepository
     private function clean(int $patientId, array $data): array
     {
         $errors = [];
-        $family = trim((string) ($data['family_text'] ?? ''));
-        $len = mb_strlen($family);
-        if ($len < 3 || $len > 160) {
-            $errors[] = 'O texto da meta deve ter de 3 a 160 caracteres.';
-        }
-        $child = trim((string) ($data['child_text'] ?? ''));
-        if ($child !== '' && mb_strlen($child) > 160) {
-            $errors[] = 'O texto da criança deve ter até 160 caracteres.';
-        }
-        $emoji = trim((string) ($data['emoji'] ?? ''));
-        if ($emoji === '' || mb_strlen($emoji) > 16) {
-            $errors[] = 'Escolha um emoji para a meta.';
-        }
-        $category = (string) ($data['category'] ?? '');
-        if (!in_array($category, self::CATEGORIES, true)) {
-            $errors[] = 'Escolha uma categoria válida.';
-        }
-        $tpwRaw = $data['times_per_week'] ?? null;
-        $tpw = is_int($tpwRaw) || (is_string($tpwRaw) && ctype_digit($tpwRaw)) ? (int) $tpwRaw : 0;
-        if ($tpw < 1 || $tpw > 7) {
-            $errors[] = 'A frequência deve ser de 1 a 7 dias por semana.';
-        }
+        $common = $this->validateCommon($data, $errors);
         $start = (string) ($data['start_date'] ?? '');
         if (!$this->isDate($start)) {
             $errors[] = 'Informe a data de início.';
@@ -325,11 +318,7 @@ final class GoalRepository
         }
         return [
             'template_id' => ($tid === null || $tid === '') ? null : (int) $tid,
-            'family_text' => $family,
-            'child_text' => $child === '' ? null : $child,
-            'emoji' => $emoji,
-            'category' => $category,
-            'times_per_week' => $tpw,
+            ...$common,
             'start_date' => $start,
             'end_date' => $end,
             'secret' => $secret,

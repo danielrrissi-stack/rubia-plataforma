@@ -60,16 +60,18 @@ final class GoalController
     /** GET /metas-modelo/{goalTemplateId}/editar */
     public function templateEditForm(Request $r): Response
     {
+        $t = $this->findTemplate($r);
         $user = $this->staff($r, null);
-        $t = $this->template($r, $user);
+        $this->assertTemplateCategory($user, $r, $t);
         return $this->templateForm($r, $user, $t, $t, []);
     }
 
     /** POST /metas-modelo/{goalTemplateId}/editar */
     public function templateUpdate(Request $r): Response
     {
+        $t = $this->findTemplate($r);
         $user = $this->staff($r, null);
-        $t = $this->template($r, $user);
+        $this->assertTemplateCategory($user, $r, $t);
         $data = $this->templateInput($r);
         if ($user['role'] === 'nutricionista') {
             $data['category'] = $t['category']; // so a medica muda a categoria
@@ -144,7 +146,7 @@ final class GoalController
         $user = $this->staff($r, $pid);
         $this->authorizePatient($user, $r, $pid, 'edit');
         $data = $this->goalInput($r);
-        $data['template_id'] = (string) $r->input('template_id', '');
+        $data['template_id'] = $this->usableTemplateId($user, (string) $r->input('template_id', ''));
         if (!$this->mayTouchCategory($user, (string) $data['category'])) {
             $this->deny($user, $r, $pid);
         }
@@ -307,16 +309,30 @@ final class GoalController
         return [$user, $goal, $patient];
     }
 
-    private function template(Request $r, array $user): array
+    /** template_id vindo do POST so vale se o modelo existe, esta ativo e a categoria e permitida ao usuario; senao e ignorado. */
+    private function usableTemplateId(array $user, string $raw): string
+    {
+        if ($raw === '' || !ctype_digit($raw)) {
+            return '';
+        }
+        $t = Container::goals()->findTemplate((int) $raw);
+        return $t !== null && (int) $t['active'] === 1 && $this->mayTouchCategory($user, (string) $t['category']) ? $raw : '';
+    }
+
+    private function findTemplate(Request $r): array
     {
         $t = Container::goals()->findTemplate((int) $r->params['goalTemplateId']);
         if ($t === null) {
             throw new HttpException(404);
         }
+        return $t;
+    }
+
+    private function assertTemplateCategory(array $user, Request $r, array $t): void
+    {
         if (!$this->mayTouchCategory($user, (string) $t['category'])) {
             $this->deny($user, $r, null);
         }
-        return $t;
     }
 
     private function templateInput(Request $r): array

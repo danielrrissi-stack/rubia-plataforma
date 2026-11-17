@@ -194,7 +194,7 @@ final class GoalPagesTest extends DbTestCase
         $this->assertSame(403, $this->get('/metas-modelo/' . $tSono . '/editar')->status);
         $this->assertSame(200, $this->get('/metas-modelo/' . $tAli . '/editar')->status);
         $this->assertSame(403, $this->post('/metas-modelo/novo', ['family_text' => 'Novo sono', 'emoji' => '🌙', 'category' => 'sono', 'times_per_week' => '7', 'active' => '1'])->status);
-        $this->post('/metas-modelo/' . $tAli . '/editar', ['family_text' => 'Modelo de fruta', 'emoji' => '🍎', 'category' => 'sono', 'times_per_week' => '7', 'active' => '1']);
+        $this->assertSame(302, $this->post('/metas-modelo/' . $tAli . '/editar', ['family_text' => 'Modelo de fruta', 'emoji' => '🍎', 'category' => 'sono', 'times_per_week' => '7', 'active' => '1'])->status);
         $this->assertSame('alimentacao', $this->db->one('SELECT category FROM goal_templates WHERE id = ?', [$tAli])['category']);
     }
 
@@ -277,5 +277,19 @@ final class GoalPagesTest extends DbTestCase
         $this->assertStringContainsString('2/2', $body);
         $this->assertStringContainsString('Estrelas', $body);
         $this->assertStringContainsString('/pacientes/' . $pid . '/metas', $body);
+    }
+
+    public function test_inactive_template_id_is_ignored_and_unknown_template_is_404_first(): void
+    {
+        [$med, $p] = $this->fixture();
+        $pid = (int) $p['id'];
+        $off = $this->template('Modelo desativado', 'hidratacao', 0);
+        $this->loginAs($med);
+        $this->assertSame(302, $this->post('/pacientes/' . $pid . '/metas/nova', $this->form(['template_id' => (string) $off]))->status);
+        $this->assertNull($this->db->one('SELECT template_id t FROM patient_goals WHERE patient_id = ?', [$pid])['t']);
+
+        $this->loginAs($this->makeUser('secretaria'));
+        $this->assertSame(404, $this->get('/metas-modelo/999999/editar')->status);
+        $this->assertSame(404, $this->post('/metas-modelo/999999/editar', [])->status);
     }
 }

@@ -6,7 +6,7 @@ use App\Goals\GoalPanel;
 
 $pid = (int) $patient['id'];
 $name = $patient['social_name'] ?: $patient['full_name'];
-$grid = static function (array $panel, bool $canEnd) use ($today): void {
+$grid = static function (array $panel, bool $canEnd): void {
     ?>
   <div class="tabela-rolagem">
   <table class="grade-metas">
