@@ -17,6 +17,7 @@ use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
+use App\Labs\LabCatalogRepository;
 use App\Nutrition\FoodRepository;
 use App\Nutrition\MealPlanRepository;
 use App\Nutrition\SnippetRepository;
@@ -182,5 +183,10 @@ final class Container
     public static function textSnippets(): SnippetRepository
     {
         return self::$items['textSnippets'] ??= new SnippetRepository(self::db(), self::audit());
+    }
+
+    public static function labCatalog(): LabCatalogRepository
+    {
+        return self::$items['labCatalog'] ??= new LabCatalogRepository(self::db(), self::audit());
     }
 }
