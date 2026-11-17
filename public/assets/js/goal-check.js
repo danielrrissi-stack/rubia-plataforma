@@ -39,6 +39,10 @@ document.addEventListener('submit', function (ev) {
     if (stars && typeof data.stars === 'number') {
       stars.textContent = String(data.stars);
     }
+    var count = document.querySelector('[data-goal-count="' + form.getAttribute('data-goal') + '"]');
+    if (count && typeof data.count === 'string') {
+      count.textContent = data.count;
+    }
     btn.disabled = false;
   }).catch(function () {
     form.submit();

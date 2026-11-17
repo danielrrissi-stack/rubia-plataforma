@@ -54,9 +54,9 @@ final class PortalGoalController
             $rows[] = [
                 'id' => $gid,
                 'emoji' => (string) $g['emoji'],
-                'text' => $kid ? (string) ($g['child_text'] ?? $g['family_text']) : (string) $g['family_text'],
+                'text' => $kid ? (string) ($g['child_text'] ?: $g['family_text']) : (string) $g['family_text'],
                 'days' => $this->days($g, $week, $checked[$gid] ?? [], $today),
-                'count' => ((int) $g['times_per_week'] < 7 && $status['applicable']) ? $status['done'] . ' de ' . $status['target'] : null,
+                'count' => $this->countLabel($g, $status),
             ];
         }
         $first = $this->firstName($patient);
@@ -122,7 +122,14 @@ final class PortalGoalController
                 return Response::json(['ok' => false, 'error' => $error], 422);
             }
             $all = Container::goals()->allForViewer($pid, $user);
-            return Response::json(['ok' => true, 'checked' => $on, 'stars' => GoalCalc::stars($all['goals'], $all['checks'])]);
+            $week = GoalCalc::weekStart(preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) === 1 ? $day : $today);
+            $days = array_column(array_filter($all['checks'], static fn (array $c): bool => $c['goal_id'] === $goalId), 'day');
+            return Response::json([
+                'ok' => true,
+                'checked' => $on,
+                'stars' => GoalCalc::stars($all['goals'], $all['checks']),
+                'count' => $this->countLabel($goal, GoalCalc::weekStatus($goal, $days, $week)),
+            ]);
         }
         if ($error !== null) {
             Session::flash('erro', $error);
@@ -133,6 +140,12 @@ final class PortalGoalController
             $back .= '?semana=' . $week;
         }
         return Response::redirect($back);
+    }
+
+    /** "N de M" para metas nao diarias com dias ativos na semana; null caso contrario. */
+    private function countLabel(array $goal, array $status): ?string
+    {
+        return ((int) $goal['times_per_week'] < 7 && $status['applicable']) ? $status['done'] . ' de ' . $status['target'] : null;
     }
 
     /** @return list<array{ymd:string,short:string,label:string,checked:bool,enabled:bool}> */
@@ -148,6 +161,8 @@ final class PortalGoalController
                 'short' => self::DAY_SHORT[$n],
                 'label' => self::DAY_LONG[$n] . ' ' . $d->format('d/m'),
                 'checked' => isset($checked[$ymd]),
+                // Janela de 7 dias manda (decisao): semanas anteriores sao so leitura, exceto os dias
+                // ainda dentro de [hoje-6, hoje] (ex.: na segunda, o domingo anterior ainda pode ser marcado).
                 'enabled' => GoalCalc::canMark($goal, $ymd, $today),
             ];
         }
@@ -160,11 +175,7 @@ final class PortalGoalController
         if ($d === false || $d->format('Y-m-d') !== $raw) {
             return $thisWeek;
         }
-        $ws = GoalCalc::weekStart($raw);
-        if ($ws > $thisWeek) {
-            return $thisWeek;
-        }
-        return $ws < $earliest ? $earliest : $ws;
+        return min($thisWeek, max($earliest, GoalCalc::weekStart($raw)));
     }
 
     /** @return array{0:array,1:array,2:?Response} usuario, paciente, redirecionamento */

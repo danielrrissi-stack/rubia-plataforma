@@ -104,7 +104,7 @@ final class PortalGoalsTest extends DbTestCase
         $this->assertSame(0, $this->checkCount($goal));
 
         $json = $this->post($base . '/marcar', ['dia' => $this->day(0)], ['HTTP_ACCEPT' => 'application/json']);
-        $this->assertSame(['ok' => true, 'checked' => true, 'stars' => 1], json_decode($json->body, true));
+        $this->assertSame(['ok' => true, 'checked' => true, 'stars' => 1, 'count' => null], json_decode($json->body, true));
     }
 
     public function test_guardian_counts_exclude_secret_goal(): void
@@ -233,5 +233,64 @@ final class PortalGoalsTest extends DbTestCase
         $this->assertSame(302, $res->status);
         $this->assertSame(1, $this->checkCount($goal));
         $this->assertSame(1, $this->stars($this->get('/portal/p/' . $pid . '/metas')));
+    }
+
+    public function test_previous_week_is_read_only_except_days_inside_window(): void
+    {
+        [$g, $p] = $this->family();
+        $pid = (int) $p['id'];
+        $this->goal($pid);
+        $this->loginAs($g);
+        $prevWeek = date('Y-m-d', strtotime('monday this week -7 days'));
+        $body = $this->get('/portal/p/' . $pid . '/metas', ['semana' => $prevWeek])->body;
+        $min = $this->day(-6);
+        $enabled = 0;
+        for ($i = 0; $i < 7; $i++) {
+            $d = date('Y-m-d', strtotime($prevWeek . ' +' . $i . ' days'));
+            $has = str_contains($body, 'name="dia" value="' . $d . '"');
+            $this->assertSame($d >= $min, $has, 'dia ' . $d);
+            $enabled += $has ? 1 : 0;
+        }
+        // A segunda da semana anterior esta sempre a 7 dias ou mais: desabilitada; os dias dentro da janela seguem marcaveis.
+        $this->assertStringNotContainsString('name="dia" value="' . $prevWeek . '"', $body);
+        $this->assertSame(7 - (int) date('N'), $enabled); // segunda: 6 dias (do domingo ate a terca anterior); domingo: 0
+    }
+
+    public function test_child_marks_own_goal_with_child_role(): void
+    {
+        [, $p] = $this->family();
+        $pid = (int) $p['id'];
+        $kid = $this->childAccount($p);
+        $goal = $this->goal($pid);
+        $this->loginAs($kid);
+        $res = $this->post('/portal/p/' . $pid . '/metas/' . $goal . '/marcar', ['dia' => $this->day(0)]);
+        $this->assertSame(302, $res->status);
+        $row = $this->db->one('SELECT checked_by, checked_by_role FROM goal_checks WHERE goal_id = ?', [$goal]);
+        $this->assertSame('crianca', $row['checked_by_role']);
+        $this->assertSame((int) $kid['id'], (int) $row['checked_by']);
+    }
+
+    public function test_future_goal_week_is_clamped_and_empty_child_text_falls_back(): void
+    {
+        [, $p] = $this->family();
+        $pid = (int) $p['id'];
+        $kid = $this->childAccount($p);
+        $this->goal($pid, ['family_text' => 'Meta futura', 'child_text' => '', 'start_date' => $this->day(21)]);
+        $this->loginAs($kid);
+        $res = $this->get('/portal/p/' . $pid . '/metas', ['semana' => $this->day(60)]);
+        $this->assertSame(200, $res->status);
+        $this->assertStringNotContainsString('Semana seguinte', $res->body);
+        $this->assertStringContainsString('Ainda não há metas', $res->body);
+    }
+
+    public function test_json_returns_weekly_count_for_non_daily_goal(): void
+    {
+        [$g, $p] = $this->family();
+        $pid = (int) $p['id'];
+        $goal = $this->goal($pid, ['times_per_week' => 3, 'child_text' => '']);
+        $this->loginAs($g);
+        $res = $this->post('/portal/p/' . $pid . '/metas/' . $goal . '/marcar', ['dia' => $this->day(0)], ['HTTP_ACCEPT' => 'application/json']);
+        $this->assertSame('1 de 3', json_decode($res->body, true)['count']);
+        $this->assertStringContainsString('Beber água nas refeições', $this->get('/portal/p/' . $pid . '/metas')->body);
     }
 }

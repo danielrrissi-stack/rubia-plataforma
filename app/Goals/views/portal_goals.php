@@ -22,12 +22,12 @@ $base = '/portal/p/' . $pid . '/metas';
   <?php foreach ($rows as $row): ?>
   <li class="metas-meta">
     <p class="metas-texto"><span aria-hidden="true"><?= e($row['emoji']) ?></span> <?= e($row['text']) ?>
-      <?php if ($row['count'] !== null): ?><span class="selo"><?= e($row['count']) ?></span><?php endif; ?></p>
+      <?php if ($row['count'] !== null): ?><span class="selo" data-goal-count="<?= e($row['id']) ?>"><?= e($row['count']) ?></span><?php endif; ?></p>
     <div class="metas-dias">
       <?php foreach ($row['days'] as $d): ?>
         <?php $aria = 'Marcar ' . $row['text'] . ' em ' . $d['label']; ?>
         <?php if ($d['enabled']): ?>
-        <form method="post" class="metas-form" data-goal-check
+        <form method="post" class="metas-form" data-goal-check data-goal="<?= e($row['id']) ?>"
               action="<?= e(url($base . '/' . $row['id'] . ($d['checked'] ? '/desmarcar' : '/marcar'))) ?>"
               data-base="<?= e(url($base . '/' . $row['id'])) ?>">
           <?= csrf_field() ?>
