@@ -10,6 +10,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
+use App\Pdf\PdfFilename;
 
 final class MealPlanController
 {
@@ -126,6 +127,21 @@ final class MealPlanController
             'withTotals' => ($r->query['totais'] ?? '') === '1',
             'title' => 'Plano alimentar',
         ], null));
+    }
+
+    /** GET /planos/{planId}/pdf (versao para a familia, sem totais; so plano publicado ou historico) */
+    public function pdf(Request $r): Response
+    {
+        $plan = $this->authPlan($r, 'view');
+        if ($plan['status'] === 'rascunho') {
+            return Response::redirect('/planos/' . $plan['id']);
+        }
+        $user = $r->attributes['user'];
+        Container::audit()->record((int) $user['id'], 'view', 'meal_plans', (int) $plan['id'], (int) $plan['patient_id'], null, ['section' => 'nutricao', 'pdf' => true], $r);
+        $patient = $this->patient((int) $plan['patient_id']);
+        $body = View::render('Nutrition/views/_plan_doc.php', ['plan' => $plan, 'patient' => $patient], null);
+        $bytes = Container::pdf()->render((string) $plan['title'], $body);
+        return Response::pdf($bytes, PdfFilename::make('Plano alimentar', (string) ($patient['social_name'] ?: $patient['full_name']), date('Y-m-d')));
     }
 
     /** GET /planos/{planId}/editar */

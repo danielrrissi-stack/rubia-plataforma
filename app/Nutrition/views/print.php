@@ -4,7 +4,6 @@ use App\Nutrition\MealPlanCalculator;
 
 // Sem o quadro de totais a impressao pode ser entregue a familia: nenhum numero de calorias (nem por opcao).
 $family = !$withTotals;
-$name = $patient['social_name'] ?: $patient['full_name'];
 ?><!doctype html>
 <html lang="pt-BR">
 <head>
@@ -16,12 +15,9 @@ $name = $patient['social_name'] ?: $patient['full_name'];
 </head>
 <body class="impressao">
 <p class="nao-imprimir"><button type="button" class="btn" data-print>Imprimir</button>
+  <?php if ($plan['status'] !== 'rascunho'): ?><a class="btn" href="<?= e(url('/planos/' . $plan['id'] . '/pdf')) ?>">Baixar PDF</a><?php endif; ?>
   <a href="<?= e(url('/planos/' . $plan['id'])) ?>">Voltar</a></p>
-<header class="impressao-cabecalho">
-  <h1><?= e($plan['title']) ?></h1>
-  <p><?= e($name) ?><?= $plan['published_at'] !== null ? ' · publicado em ' . e(fmt_date(substr((string) $plan['published_at'], 0, 10))) : ' · rascunho' ?></p>
-</header>
-<?php require __DIR__ . '/_plan_body.php'; ?>
+<?php require __DIR__ . '/_plan_doc.php'; ?>
 <?php if ($withTotals && $plan['mode'] === 'estruturado'): $day = MealPlanCalculator::day((array) $plan['structure']); $pc = MealPlanCalculator::macroPercents($day); ?>
 <section class="plano-totais"><h3>Totais do dia (Opção 1 de cada refeição)</h3>
   <table class="tabela"><tbody>

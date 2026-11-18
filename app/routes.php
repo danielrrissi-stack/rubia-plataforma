@@ -190,6 +190,7 @@ $router->post('/trechos/{snippetId:\d+}/excluir', [TemplateController::class, 's
 $router->post('/planos/previa',[MealPlanController::class, 'preview'], $authMw);
 $router->get('/planos/{planId:\d+}', [MealPlanController::class, 'show'], $authMw);
 $router->get('/planos/{planId:\d+}/imprimir', [MealPlanController::class, 'print'], $authMw);
+$router->get('/planos/{planId:\d+}/pdf', [MealPlanController::class, 'pdf'], $authMw);
 $router->get('/planos/{planId:\d+}/editar', [MealPlanController::class, 'edit'], $authMw);
 $router->post('/planos/{planId:\d+}/editar', [MealPlanController::class, 'save'], $authMw);
 $router->post('/planos/{planId:\d+}/publicar', [MealPlanController::class, 'publish'], $authMw);

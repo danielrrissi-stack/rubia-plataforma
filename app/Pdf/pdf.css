@@ -14,3 +14,11 @@ th, td { border: 0.3mm solid #999; padding: 1mm 1.5mm; text-align: left; vertica
 .receita-nome { font-weight: bold; }
 .receita-rodape { margin-top: 14mm; text-align: center; page-break-inside: avoid; }
 .receita-assinatura { margin-top: 12mm; }
+.impressao-cabecalho { border-bottom: 0.3mm solid #000; padding-bottom: 2mm; margin-bottom: 3mm; }
+.impressao-cabecalho p { color: #333; }
+.plano-refeicao { page-break-inside: avoid; }
+.plano-refeicao h4 { font-size: 10.5pt; margin: 2mm 0 1mm; }
+ul { margin: 1mm 0 2mm; padding-left: 6mm; }
+li { margin: 0.6mm 0; }
+.ajuda { color: #444; font-size: 9.5pt; }
+.plano-orientacoes { margin-top: 5mm; }
