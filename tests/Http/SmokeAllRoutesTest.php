@@ -84,6 +84,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/tratamento/nova'          => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/receita'                  => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/receita/imprimir'         => [302, 403, 403, 403, 403, 302], // sem p[] volta para a escolha
+        '/pacientes/{id}/receita/pdf'              => [302, 403, 403, 403, 403, 302], // idem
         '/admin/receita'                           => [200, 403, 403, 403, 403, 302], // so is_admin (M e admin no fixture)
         '/admin/agenda'                            => [200, 403, 403, 403, 403, 302], // so medica administradora
         '/pacientes/{id}/efeitos/novo'             => [200, 403, 403, 403, 403, 302],

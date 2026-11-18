@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
 use App\Labs\Clinician;
+use App\Pdf\PdfFilename;
 
 /** Receita simples para imprimir (so medico) e cabecalho configuravel (so administrador). */
 final class PrescriptionPrintController
@@ -38,6 +39,33 @@ final class PrescriptionPrintController
 
     /** GET /pacientes/{id}/receita/imprimir?p[]=.. */
     public function print(Request $r): Response
+    {
+        $data = $this->document($r, 'print');
+        if ($data instanceof Response) {
+            return $data;
+        }
+        $data['pdfUrl'] = url('/pacientes/' . $data['patient']['id'] . '/receita/pdf?' . http_build_query(['p' => array_map('strval', $data['ids'])]));
+        return Response::html(View::render('Medications/views/rx_print.php', $data, null));
+    }
+
+    /** GET /pacientes/{id}/receita/pdf?p[]=.. (mesmo conteudo da impressao, como arquivo) */
+    public function pdf(Request $r): Response
+    {
+        $data = $this->document($r, 'pdf');
+        if ($data instanceof Response) {
+            return $data;
+        }
+        $p = $data['patient'];
+        $body = View::render('Medications/views/_rx_doc.php', $data, null);
+        $bytes = Container::pdf()->render('Receituário', $body);
+        return Response::pdf($bytes, PdfFilename::make('Receita', (string) ($p['social_name'] ?: $p['full_name']), date('Y-m-d')));
+    }
+
+    /**
+     * Dados da receita escolhida (auditado como $mode: 'print' ou 'pdf'), ou o redirect para a escolha.
+     * @return array<string,mixed>|Response
+     */
+    private function document(Request $r, string $mode): array|Response
     {
         $id = $this->authPatient($r);
         $user = $r->attributes['user'];
@@ -69,13 +97,13 @@ final class PrescriptionPrintController
             }
         }
         Container::audit()->record((int) $user['id'], 'view', 'prescriptions', null, $id, null,
-            ['section' => 'medicamentos', 'print' => true, 'ids' => $ids], $r);
+            ['section' => 'medicamentos', $mode => true, 'ids' => $ids], $r);
         $doc = Container::db()->one('SELECT professional_register FROM users WHERE id = ?', [(int) $user['id']]);
-        return Response::html(View::render('Medications/views/rx_print.php', [
-            'patient' => $patient, 'groups' => $ordered, 'head' => $this->settings(),
+        return [
+            'patient' => $patient, 'groups' => $ordered, 'head' => $this->settings(), 'ids' => $ids,
             'doctorName' => (string) $user['name'], 'register' => trim((string) ($doc['professional_register'] ?? '')),
             'dateText' => self::longDate($today),
-        ], null));
+        ];
     }
 
     /** GET /admin/receita */

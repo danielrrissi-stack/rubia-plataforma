@@ -6,3 +6,11 @@ h3 { font-size: 11pt; margin: 4mm 0 1.5mm; }
 p { margin: 0.8mm 0; }
 table { border-collapse: collapse; width: 100%; }
 th, td { border: 0.3mm solid #999; padding: 1mm 1.5mm; text-align: left; vertical-align: top; }
+.receita-cabecalho { text-align: center; border-bottom: 0.3mm solid #000; padding-bottom: 2mm; margin-bottom: 4mm; }
+.receita-cabecalho h1 { margin: 0; }
+.receita-titulo { text-align: center; text-transform: uppercase; letter-spacing: 0.15em; }
+.receita-grupo h3 { text-decoration: underline; }
+.receita-item { margin-bottom: 3mm; page-break-inside: avoid; }
+.receita-nome { font-weight: bold; }
+.receita-rodape { margin-top: 14mm; text-align: center; page-break-inside: avoid; }
+.receita-assinatura { margin-top: 12mm; }

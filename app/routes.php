@@ -223,6 +223,7 @@ $router->get('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::cla
 $router->post('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'create'], $authMw);
 $router->get('/pacientes/{id:\d+}/receita', [PrescriptionPrintController::class, 'choose'], $authMw);
 $router->get('/pacientes/{id:\d+}/receita/imprimir', [PrescriptionPrintController::class, 'print'], $authMw);
+$router->get('/pacientes/{id:\d+}/receita/pdf', [PrescriptionPrintController::class, 'pdf'], $authMw);
 $router->get('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'create'], $authMw);
 $router->post('/efeitos/{eventId:\d+}/ciente', [AdverseEventController::class, 'review'], $authMw);
