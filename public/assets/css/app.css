@@ -243,3 +243,4 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .diario-foto { max-width: 14rem; max-height: 14rem; border-radius: var(--raio); }
 .diario-registro { border-bottom: 1px solid var(--linha); padding-bottom: .6rem; margin-bottom: .6rem; }
 .diario-comentario { margin: .4rem 0 .4rem 1rem; padding-left: .6rem; border-left: 3px solid var(--salvia); }
+.portal-dias { list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1rem; padding: 0; margin: 0 0 1rem; }

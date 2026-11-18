@@ -89,7 +89,7 @@ final class DiaryWeek
     }
 
     /** @return array<string, true> dias com medida enviada pela familia */
-    private function measuredDays(int $patientId, string $from, string $to): array
+    public function measuredDays(int $patientId, string $from, string $to): array
     {
         $rows = $this->db->all(
             "SELECT DISTINCT measured_on FROM measurements

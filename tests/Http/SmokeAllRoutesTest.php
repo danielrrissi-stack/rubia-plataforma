@@ -99,6 +99,11 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/portal/p/{id}/metas'                     => [302, 302, 302, 200, 200, 200], // equipe volta a /; familia e crianca veem a area de metas
         '/portal/p/{id}/tratamento'                => [302, 302, 302, 200, 200, 302], // equipe volta a /; crianca fora do tratamento
         '/portal/p/{id}/tratamento/relato'         => [302, 302, 302, 200, 200, 302],
+        '/portal/p/{id}/diario'                    => [302, 302, 302, 200, 200, 302], // equipe volta a /; crianca fora do diario
+        // Os ids de pedido/registro das fixtures sao do paciente crianca (responsavel R e autor do registro): para o adulto P, 404 (outro paciente).
+        '/portal/p/{id}/diario/{requestId}/anotar' => [302, 302, 302, 200, 404, 302],
+        '/portal/p/{id}/diario/registros/{diaryEntryId}/editar' => [302, 302, 302, 200, 404, 302],
+        '/portal/p/{id}/diario/fotos/{diaryEntryId}'   => [302, 302, 302, 200, 404, 302],
         '/portal/conta'                          => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
         '/senha/trocar'                            => [302, 302, 302, 302, 302, 302], // sem senha provisoria volta para /
         '/pacientes/{id}/acesso-crianca'           => [200, 403, 403, 403, 403, 302], // so medico; C vai para a area dele
