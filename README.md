@@ -362,6 +362,38 @@ A família pode **relatar um efeito indesejado** (até 90 dias para trás); a te
 
 Preencha o **cabeçalho** uma única vez em **Receita (cabeçalho)** (`/admin/receita`, médica administradora). Depois, na ficha, escolha os itens da receita e clique em **Imprimir**; na janela de impressão do navegador, escolha **Salvar como PDF** se preferir um arquivo. A assinatura é **à mão**. Receitas de **controle especial** (duas vias) **não** são cobertas.
 
+## Diário de hábitos
+
+Aqui a equipe pede à família que anote hábitos do dia a dia (alimentação, água, sono, atividade, tempo de tela, peso e medidas), e a família registra pelo portal. **O diário apenas guarda o que foi anotado: não calcula, não compara com metas e não julga nada.**
+
+### Criar um pedido de registro
+
+Na ficha da paciente, abra o cartão **Diário** (`/pacientes/ID/diario`) e use **Novo pedido**. Escolha o **tipo** (o que registrar), os **dias da semana** (o botão **Todo dia** marca todos), o **início**, o **término** (se houver) e uma **orientação** curta, que a família vê junto do pedido. O tipo não muda depois que já há registros. **Encerrar** termina o pedido e mantém o que já foi anotado; **Excluir** só funciona se ainda não há registros.
+
+A **nutricionista** só pode pedir **alimentação** e **água**. A médica pede qualquer tipo.
+
+### Pedido sigiloso
+
+A marca **Sigiloso** só vale para pacientes **menores de 18 anos** e só a médica pode ligá-la. Os responsáveis e a nutricionista não veem o pedido nem os registros dele; só o paciente e a médica.
+
+### A grade da semana
+
+A tela do diário mostra uma **grade da semana** (segunda a domingo), com uma linha por pedido e um quadradinho por dia, e botões para navegar entre as semanas. Cada quadradinho mostra um resumo do que a família anotou (por exemplo, quantidade de água ou horas de sono). O sinal **—** significa que o dia **foi pedido, mas nada foi anotado**. Quadradinho vazio quer dizer que o pedido não vale naquele dia.
+
+Abaixo da grade, cada dia com registros mostra o que a família anotou e quem anotou. Nos dias com **alimentação**, as refeições aparecem **ao lado do plano alimentar** publicado naquele dia, para comparar com o olho.
+
+### Comentar
+
+Em cada registro a equipe pode **comentar** (até 500 caracteres) e depois editar ou excluir o próprio comentário. A família vê os comentários no portal.
+
+### A família anota
+
+No portal, o cartão **Diário** lista os pedidos de hoje. A família anota **o dia de hoje e até 7 dias para trás**, e pode corrigir ou remover um registro dentro desse prazo. Nos pedidos de alimentação dá para anexar uma **foto do prato** (só do prato, nunca de pessoas). Os comentários da equipe aparecem junto de cada registro.
+
+### Peso e medidas
+
+O pedido "pesar toda segunda" (tipo **Peso e medidas**) não tem formulário próprio: o botão **Pesar hoje** leva à tela de medidas já existente, e o valor entra na curva de crescimento como qualquer outra medida.
+
 ## 6. Limites legais
 
 - O sistema foi feito **seguindo os requisitos** da Resolução CFM 1.821/2007 e da LGPD: identificação do profissional,
@@ -455,3 +487,12 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site),
    e mantenha o `$APP_ROOT` do `index.php` apontando para `rubia_app`. Depois de instalar, a médica administradora preenche o cabeçalho da receita em
    **Receita (cabeçalho)** (`/admin/receita`).
+10. **A atualização do diário de hábitos (Fase 3c)** traz a migração `012_diary.sql`. Não há seeds nesta versão.
+   Faça **backup do banco** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
+   `database/migrations/012_diary.sql` e logo depois, na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('012_diary.sql');`
+   Extraia o zip **dentro de `rubia_app`** (ex.: `/home2/USUARIO/rubia_app/`), nunca na pasta do site. Esta versão **muda `public/`** (CSS e JavaScript):
+   a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site).
+   **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.
+   **Fotos do prato:** para reduzir e endireitar as fotos (celulares gravam fotos "deitadas"), a hospedagem precisa das extensões **GD** e **exif** do PHP:
+   cPanel → "Selecionar versão do PHP" → Extensões → marque `gd` e `exif`. Sem elas o diário funciona normalmente, mas a foto é guardada **como foi enviada** (até 10 MB).
