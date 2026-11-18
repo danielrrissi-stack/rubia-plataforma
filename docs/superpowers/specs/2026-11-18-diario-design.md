@@ -120,7 +120,8 @@ limite 10 MB). A extensão GD **não está disponível no ambiente de desenvolvi
 | paciente (próprio login) | — | tudo do próprio diário, inclusive sigiloso |
 | criança (login próprio) | — | nada (guarda `childarea` já prende nas metas) |
 
-Nova seção `Policy::DIARIO`: médico e nutricionista veem e editam; paciente e responsável veem (o registro é regra do
+Nova seção `Policy::DIARIO`: médico vê e edita; paciente e responsável veem; a nutricionista entra pelo acesso de
+`NUTRICAO` ao paciente liberado, como nas metas (o registro é regra do
 repositório, como as marcações de metas). A restrição por tipo para a nutricionista e o sigilo são regras do
 repositório, num único ponto (como `PrescriptionRepository::visibleTo`). As telas da equipe exigem papel `medico` ou
 `nutricionista` **antes** do Gate, porque a família ganha `view DIARIO` para o portal.
