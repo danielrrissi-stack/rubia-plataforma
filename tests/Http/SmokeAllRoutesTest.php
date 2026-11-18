@@ -108,6 +108,9 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/metas'                    => [200, 200, 403, 403, 403, 302],
         '/pacientes/{id}/metas/nova'               => [200, 200, 403, 403, 403, 302],
         '/metas/{goalId}/editar'                   => [200, 200, 403, 403, 403, 302], // meta de alimentacao do paciente liberado
+        '/pacientes/{id}/diario'                   => [200, 200, 403, 403, 403, 302], // medico e nutricionista; C vai para a area dele
+        '/pacientes/{id}/diario/pedidos/novo'      => [200, 200, 403, 403, 403, 302],
+        '/diario/pedidos/{requestId}/editar'       => [200, 200, 403, 403, 403, 302], // pedido de agua nao sigiloso do paciente liberado
         '/cartoes'                                 => [200, 403, 403, 403, 403, 302], // so a medica; C vai para a area dele
         '/cartoes/novo'                            => [200, 403, 403, 403, 403, 302],
         '/cartoes/{cardId}/editar'                 => [200, 403, 403, 403, 403, 302],
@@ -203,6 +206,9 @@ final class SmokeAllRoutesTest extends DbTestCase
             'goal' => Container::goals()->create((int) $child['id'], [
                 'family_text' => 'Meta fumaca', 'emoji' => '💧', 'category' => 'alimentacao', 'times_per_week' => 7, 'start_date' => $today,
             ], (int) $admin['id'], new Request('POST', '/')),
+            'diaryRequest' => Container::diaryRequests()->create((int) $child['id'], [
+                'type' => 'agua', 'weekdays' => [1, 2, 3, 4, 5, 6, 7], 'start_date' => $today,
+            ], $admin, $today, new Request('POST', '/')),
             'card' => $this->publishedCard((int) $admin['id']),
             'secretaria_id' => (int) $sec['id'],
         ];
@@ -234,6 +240,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'entryId' => (string) $this->fx['entry'][$role],
                 'goalTemplateId' => (string) $this->fx['goalTemplate'],
                 'goalId' => (string) $this->fx['goal'],
+                'requestId' => (string) $this->fx['diaryRequest'],
                 'cardId' => (string) $this->fx['card'],
                 'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],

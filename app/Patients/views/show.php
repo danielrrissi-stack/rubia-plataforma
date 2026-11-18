@@ -101,4 +101,12 @@ $pid = (int) $patient['id'];
     <?php endif; ?>
     <?php if ($goalsCard['stars'] !== null): ?><p>Estrelas: <strong><?= e($goalsCard['stars']) ?></strong><?= $goalsCard['lastCheck'] !== null ? ' · último registro da família em ' . e(fmt_date($goalsCard['lastCheck'])) : '' ?></p><?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/metas')) ?>">Ver metas</a></p></section><?php endif; ?>
+  <?php if ($diaryCard !== null): ?><section class="cartao" id="cartao-diario"><h2>Diário</h2>
+    <?php if ($diaryCard['requests'] === []): ?>
+      <p class="ajuda">Nenhum pedido de registro.</p>
+      <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/diario')) ?>">Pedir registros</a></p>
+    <?php else: ?>
+      <ul><?php foreach ($diaryCard['requests'] as $dr): ?><li><?= e(\App\Diary\DiaryType::LABELS[$dr['type']] ?? $dr['type']) ?> — <?= e(\App\Diary\DiaryType::weekdaysLabel((int) $dr['weekdays'])) ?></li><?php endforeach; ?></ul>
+      <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/diario')) ?>">Abrir diário</a></p>
+    <?php endif; ?></section><?php endif; ?>
 </div>
