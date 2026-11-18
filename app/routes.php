@@ -22,6 +22,7 @@ use App\Patients\PatientController;
 use App\Install\InstallController;
 use App\Labs\LabCatalogController;
 use App\Labs\LabController;
+use App\Medications\AdverseEventController;
 use App\Medications\PrescriptionController;
 use App\Portal\PortalController;
 use App\Records\RecordController;
@@ -180,6 +181,9 @@ $router->post('/exames/{collectionId:\d+}/anexos', [LabController::class, 'addAt
 $router->get('/pacientes/{id:\d+}/tratamento', [PrescriptionController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'create'], $authMw);
+$router->get('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'createForm'], $authMw);
+$router->post('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'create'], $authMw);
+$router->post('/efeitos/{eventId:\d+}/ciente', [AdverseEventController::class, 'review'], $authMw);
 $router->get('/prescricoes/{prescriptionId:\d+}', [PrescriptionController::class, 'show'], $authMw);
 $router->get('/prescricoes/{prescriptionId:\d+}/editar', [PrescriptionController::class, 'editForm'], $authMw);
 $router->post('/prescricoes/{prescriptionId:\d+}/editar', [PrescriptionController::class, 'update'], $authMw);

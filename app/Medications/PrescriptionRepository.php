@@ -158,6 +158,23 @@ final class PrescriptionRepository
         return $p['end_date'] !== null && $p['end_date'] < $today ? 'encerrada' : 'ativa';
     }
 
+    /**
+     * Prescricoes ativas com reavaliacao ate hoje + $days (as vencidas inclusas), da mais antiga a mais proxima.
+     * @return list<array>
+     */
+    public function reviewsDue(string $today, int $days = 7): array
+    {
+        $limit = (new \DateTimeImmutable($today))->modify('+' . $days . ' days')->format('Y-m-d');
+        return $this->db->all(
+            'SELECT p.*, pt.full_name AS patient_name FROM prescriptions p
+             JOIN patients pt ON pt.id = p.patient_id AND pt.deleted_at IS NULL
+             WHERE p.deleted_at IS NULL AND p.start_date <= ? AND (p.end_date IS NULL OR p.end_date >= ?)
+               AND p.next_review_date IS NOT NULL AND p.next_review_date <= ?
+             ORDER BY p.next_review_date, p.id',
+            [$today, $today, $limit],
+        );
+    }
+
     /** Prescricao nao excluida visivel ao papel; null = "nao encontrada". */
     public function visibleTo(int $id, array $viewer): ?array
     {

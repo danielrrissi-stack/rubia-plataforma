@@ -22,7 +22,8 @@ $head = '<thead><tr><th scope="col">Medicamento</th><th scope="col">Via</th><th 
 ?>
 <h1>Tratamento — <?= e($name) ?></h1>
 <p><a href="<?= e(url('/pacientes/' . $pid)) ?>">Voltar à ficha</a></p>
-<p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/tratamento/nova')) ?>">Nova prescrição</a></p>
+<p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/tratamento/nova')) ?>">Nova prescrição</a>
+  <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/efeitos/novo')) ?>">Registrar efeito</a></p>
 
 <section class="cartao" aria-labelledby="h-ativas">
   <h2 id="h-ativas">Ativas e futuras</h2>
@@ -53,7 +54,17 @@ $head = '<thead><tr><th scope="col">Medicamento</th><th scope="col">Via</th><th 
         <?php if ($ev['severity'] !== null): ?><span class="selo"><?= e($ev['severity']) ?></span><?php endif; ?>
         <br><?= nl2br(e($ev['description'])) ?>
         <br><span class="ajuda">Relatado por <?= e($ev['reporter_name']) ?><?= $ev['source'] === 'familia' ? ' (família)' : ' (equipe)' ?></span>
-        <?php if ($ev['conduct'] !== null): ?><br>Conduta: <?= nl2br(e($ev['conduct'])) ?><?php endif; ?></li>
+        <?php if ($ev['conduct'] !== null): ?><br>Conduta: <?= nl2br(e($ev['conduct'])) ?><?php endif; ?>
+        <?php if ($ev['source'] === 'familia' && $ev['reviewed_by'] === null): ?>
+          <form method="post" action="<?= e(url('/efeitos/' . (int) $ev['id'] . '/ciente')) ?>">
+            <?= csrf_field() ?>
+            <div class="campo"><label for="sev-<?= e($ev['id']) ?>">Gravidade (opcional)</label>
+              <select id="sev-<?= e($ev['id']) ?>" name="severity"><option value="">—</option><?php foreach (['leve', 'moderada', 'grave'] as $sv): ?><option value="<?= e($sv) ?>"><?= e($sv) ?></option><?php endforeach; ?></select></div>
+            <div class="campo"><label for="con-<?= e($ev['id']) ?>">Conduta (opcional)</label>
+              <textarea id="con-<?= e($ev['id']) ?>" name="conduct" rows="2" maxlength="2000"></textarea></div>
+            <button type="submit" class="btn btn-quiet">Ciente</button>
+          </form>
+        <?php endif; ?></li>
     <?php endforeach; ?>
     </ul>
   <?php endif; ?>
