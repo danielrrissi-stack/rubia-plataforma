@@ -133,6 +133,12 @@ final class ScheduleRepository
         return $this->insertException($professionalId, 'extra', $date, $date, $this->hms($startTime), $this->hms($endTime), null, $uid, $r);
     }
 
+    /** Fechamento ou horario extra nao excluido, ou null. */
+    public function findException(int $id): ?array
+    {
+        return $this->db->one('SELECT * FROM schedule_exceptions WHERE id = ? AND deleted_at IS NULL', [$id]);
+    }
+
     /** Exclusao logica de um fechamento ou horario extra. */
     public function removeException(int $id, int $uid, Request $r): void
     {

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 /** @var \App\Core\Router $router */
 
+use App\Agenda\AgendaController;
+use App\Agenda\ScheduleController;
 use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
 use App\Backup\BackupController;
@@ -76,6 +78,23 @@ $router->get('/admin/backups', [BackupController::class, 'index'], $staffMw);
 $router->post('/admin/backups/gerar', [BackupController::class, 'generate'], $staffMw);
 $router->get('/admin/backups/chave-privada', [BackupController::class, 'privateKey'], $staffMw);
 $router->get('/admin/backups/{nome}', [BackupController::class, 'download'], $staffMw);
+
+// Agenda (so equipe; papel checado no controller antes de tudo). Familia ve as consultas no portal.
+$router->get('/agenda', [AgendaController::class, 'index'], $staffMw);
+$router->get('/agenda/marcar', [AgendaController::class, 'bookForm'], $staffMw);
+$router->post('/agenda/marcar', [AgendaController::class, 'book'], $staffMw);
+$router->get('/agenda/consultas/{apptId:\d+}', [AgendaController::class, 'show'], $staffMw);
+$router->post('/agenda/consultas/{apptId:\d+}/situacao', [AgendaController::class, 'status'], $staffMw);
+$router->post('/agenda/consultas/{apptId:\d+}/cancelar', [AgendaController::class, 'cancel'], $staffMw);
+$router->get('/agenda/consultas/{apptId:\d+}/remarcar', [AgendaController::class, 'rescheduleForm'], $staffMw);
+$router->post('/agenda/consultas/{apptId:\d+}/remarcar', [AgendaController::class, 'reschedule'], $staffMw);
+$router->get('/pacientes/{id:\d+}/agendar', [AgendaController::class, 'patientSlots'], $staffMw);
+$router->get('/agenda/horarios', [ScheduleController::class, 'show'], $staffMw);
+$router->post('/agenda/horarios', [ScheduleController::class, 'save'], $staffMw);
+$router->post('/agenda/horarios/padrao', [ScheduleController::class, 'applyDefault'], $staffMw);
+$router->post('/agenda/horarios/fechamento', [ScheduleController::class, 'addClosure'], $staffMw);
+$router->post('/agenda/horarios/extra', [ScheduleController::class, 'addExtra'], $staffMw);
+$router->post('/agenda/horarios/excecao/{exceptionId:\d+}/remover', [ScheduleController::class, 'removeException'], $staffMw);
 
 $router->get('/pacientes', [PatientController::class, 'index'], $authMw);
 $router->get('/pacientes/novo', [PatientController::class, 'create'], $authMw);
