@@ -394,6 +394,32 @@ No portal, o cartão **Diário** lista os pedidos de hoje. A família anota **o 
 
 O pedido "pesar toda segunda" (tipo **Peso e medidas**) não tem formulário próprio: o botão **Pesar hoje** leva à tela de medidas já existente, e o valor entra na curva de crescimento como qualquer outra medida.
 
+## Agenda
+
+A agenda marca as consultas de cada profissional, avisa a família e lembra a profissional na véspera. A **nutricionista** só agenda e vê pacientes que já foram **liberados** para ela.
+
+### Meus horários
+
+Cada profissional monta a própria agenda em **Meus horários**: as **faixas da semana** (dia, hora de início e de fim), a **duração** da consulta e o **endereço de atendimento**. O botão **Usar horário padrão da clínica** preenche de uma vez: segunda a sexta, 07:30 às 11:30 e 12:30 às 20:00; sábado, 07:30 às 12:30; consultas de 30 minutos. Depois é possível ajustar o que for diferente. Preencha também o endereço, que aparece nos avisos.
+
+### Fechamentos e horários extras
+
+Um **fechamento** bloqueia um dia ou período (feriado, viagem, férias); a **secretária também pode cadastrar** fechamentos. Um **horário extra** abre um horário fora das faixas da semana, só naquele dia.
+
+### Marcar e acompanhar a consulta
+
+Na tela da agenda, escolha o horário livre e a paciente para **marcar**. A consulta passa por estes estados: **marcada**, **confirmada**, **realizada**, **faltou**, **cancelada** e **remarcada** (a remarcação cria a nova consulta e guarda a data anterior). A ficha da paciente e o portal da família mostram **cartões de Consultas** com as próximas e as passadas.
+
+### Aviso por WhatsApp
+
+O botão do **WhatsApp** copia a mensagem e abre a conversa com o texto já pronto, no **celular do responsável** (cadastre-o na ficha). Basta conferir e enviar.
+
+### E-mails
+
+- **Para a família:** e-mails automáticos quando a consulta é marcada, remarcada ou cancelada.
+- **Para a profissional:** na **véspera, às 08:00**, cada profissional recebe por e-mail as consultas do dia seguinte. Esse envio depende do **Cron de 5 minutos** (`cron/run.php`) na hospedagem.
+- Os **textos** dos avisos (WhatsApp e e-mails) são configurados pela médica administradora em `/admin/agenda`.
+
 ## 6. Limites legais
 
 - O sistema foi feito **seguindo os requisitos** da Resolução CFM 1.821/2007 e da LGPD: identificação do profissional,
@@ -496,3 +522,12 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.
    **Fotos do prato:** para reduzir e endireitar as fotos (celulares gravam fotos "deitadas"), a hospedagem precisa das extensões **GD** e **exif** do PHP:
    cPanel → "Selecionar versão do PHP" → Extensões → marque `gd` e `exif`. Sem a `gd` o diário funciona normalmente, mas a foto é guardada **como foi enviada** (até 10 MB, com seus metadados). Com a `gd` e sem a `exif`, a foto é reduzida mas não é endireitada. Fotos muito grandes (acima de ~25 megapixels) também são guardadas como foram enviadas.
+11. **A atualização da agenda (Fase 4a)** traz a migração `013_agenda.sql`. Não há seeds nesta versão.
+   Faça **backup do banco** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
+   `database/migrations/013_agenda.sql` e logo depois, na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('013_agenda.sql');`
+   Extraia o zip **dentro de `rubia_app`** (ex.: `/home2/USUARIO/rubia_app/`), nunca na pasta do site. Esta versão **muda `public/`** (CSS e JavaScript, incluindo `agenda-whatsapp.js`):
+   a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site).
+   **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.
+   **Cron:** confira que o Cron de 5 minutos (`cron/run.php`) existe no cPanel, pois o e-mail da véspera depende dele.
+   **Depois de instalar:** cada profissional entra em **Meus horários** e clica em **Usar horário padrão da clínica** (ou monta os horários dela) e preenche o endereço de atendimento.
