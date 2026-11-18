@@ -525,7 +525,7 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    **Fotos do prato:** para reduzir e endireitar as fotos (celulares gravam fotos "deitadas"), a hospedagem precisa das extensões **GD** e **exif** do PHP:
    cPanel → "Selecionar versão do PHP" → Extensões → marque `gd` e `exif`. Sem a `gd` o diário funciona normalmente, mas a foto é guardada **como foi enviada** (até 10 MB, com seus metadados). Com a `gd` e sem a `exif`, a foto é reduzida mas não é endireitada. Fotos muito grandes (acima de ~25 megapixels) também são guardadas como foram enviadas.
 11. **A atualização da agenda (Fase 4a)** traz a migração `013_agenda.sql`. Não há seeds nesta versão.
-   Requer MariaDB 10.2 ou mais nova (o cPanel mostra a versão em 'Bancos de dados MySQL' / phpMyAdmin).
+   Requer MySQL 5.7 ou mais novo (ou MariaDB 10.2+); a versão aparece no phpMyAdmin, quadro "Servidor de banco de dados" → "Versão do servidor".
    Faça **backup do banco** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
    `database/migrations/013_agenda.sql` e logo depois, na aba "SQL":
    `INSERT INTO schema_migrations (name) VALUES ('013_agenda.sql');`

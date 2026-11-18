@@ -58,7 +58,7 @@ CREATE TABLE appointments (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by INT UNSIGNED NULL,
     updated_at DATETIME NULL,
-    occupies TINYINT AS (IF(status IN ('cancelada','remarcada'), NULL, 1)) PERSISTENT,
+    occupies TINYINT AS (IF(status IN ('cancelada','remarcada'), NULL, 1)) STORED,
     UNIQUE KEY uq_appt_slot (professional_id, starts_at, occupies),
     KEY idx_appointments_patient_start (patient_id, starts_at),
     KEY idx_appointments_prof_start (professional_id, starts_at),
