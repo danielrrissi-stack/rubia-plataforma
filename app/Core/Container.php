@@ -17,6 +17,7 @@ use App\Goals\GoalRepository;
 use App\Growth\BloodPressure;
 use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
+use App\Diary\DiaryRequestRepository;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
 use App\Labs\AttachmentStore;
@@ -214,6 +215,11 @@ final class Container
     public static function goals(): GoalRepository
     {
         return self::$items['goals'] ??= new GoalRepository(self::db(), self::audit());
+    }
+
+    public static function diaryRequests(): DiaryRequestRepository
+    {
+        return self::$items['diaryRequests'] ??= new DiaryRequestRepository(self::db(), self::audit());
     }
 
     public static function prescriptions(): PrescriptionRepository
