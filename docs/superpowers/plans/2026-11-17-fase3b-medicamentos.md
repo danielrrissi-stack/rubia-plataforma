@@ -50,7 +50,7 @@
   - `prescription_doses`: `id`, `prescription_id`, `effective_date DATE`, `dose VARCHAR(60)`, `frequency VARCHAR(120)`, `instructions TEXT NULL`, `reason VARCHAR(200) NULL`, `created_by`, `created_at`.
   - `medication_logs`: `id`, `prescription_id`, `given_at DATETIME` (minuto, segundos = 00), `dose VARCHAR(60)`, `note VARCHAR(200) NULL`, `recorded_by`, `recorded_by_role VARCHAR(20)`, `created_at`, `deleted_at NULL`, `deleted_by NULL`, `KEY (prescription_id, given_at)`.
   - `adverse_events`: `id`, `patient_id`, `prescription_id NULL`, `occurred_on DATE`, `description TEXT`, `source ENUM('equipe','familia')`, `severity ENUM('leve','moderada','grave') NULL`, `conduct TEXT NULL`, `reported_by`, `reported_by_role VARCHAR(20)`, `created_at`, `reviewed_by NULL`, `reviewed_at NULL`, `deleted_at NULL`, `deleted_by NULL`.
-- `App\Medications\Routes` (final, só constantes): `ROUTES` (lista das vias na ordem), `LABELS` (via → rótulo), `RX_HEADINGS` (via → "Uso oral"…).
+- `App\Medications\Via` (final, só constantes): `ROUTES` (lista das vias na ordem), `LABELS` (via → rótulo), `RX_HEADINGS` (via → "Uso oral"…).
 - `App\Medications\InvalidMedicationException extends \RuntimeException` com `errors(): list<string>` (mesmo formato de `InvalidGoalException`).
 - `App\Medications\PrescriptionRepository(Database, AuditLog)`, exposto por `Container::prescriptions()`:
   - `create(int $patientId, array $data, array $user, string $today, Request $r): int`. `$data` traz `drug_name, route, start_date, end_date, next_review_date, family_logs, secret, notes, dose, frequency, instructions`. Cria a prescrição e a primeira linha de dose com `effective_date = start_date`.
