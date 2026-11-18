@@ -408,17 +408,17 @@ Um **fechamento** bloqueia um dia ou período (feriado, viagem, férias); a **se
 
 ### Marcar e acompanhar a consulta
 
-Na tela da agenda, escolha o horário livre e a paciente para **marcar**. A consulta passa por estes estados: **marcada**, **confirmada**, **realizada**, **faltou**, **cancelada** e **remarcada** (a remarcação cria a nova consulta e guarda a data anterior). A ficha da paciente e o portal da família mostram **cartões de Consultas** com as próximas e as passadas.
+Na tela da agenda, escolha o horário livre e a paciente para **marcar**. A consulta passa por estas situações: **Agendada**, **Confirmada**, **Realizada**, **Faltou**, **Cancelada** e **Remarcada** (a remarcação cria a nova consulta e guarda a data anterior). A ficha da paciente e o portal da família mostram **cartões de Consultas** com as próximas e as passadas.
 
 ### Aviso por WhatsApp
 
-O botão do **WhatsApp** copia a mensagem e abre a conversa com o texto já pronto, no **celular do responsável** (cadastre-o na ficha). Basta conferir e enviar.
+O botão do **WhatsApp** copia a mensagem e abre a conversa com o texto já pronto. Há **um botão para cada número disponível**: o **telefone da paciente** (ficha) e o **celular de cada responsável ativo** (cadastre-o na ficha). Basta conferir e enviar.
 
 ### E-mails
 
-- **Para a família:** e-mails automáticos quando a consulta é marcada, remarcada ou cancelada.
+- **Para a família:** e-mails automáticos quando a consulta é marcada, remarcada ou cancelada (com texto fixo) e, na véspera às 08:00, o **lembrete** "Lembrete: consulta amanhã às HH:MM", com o mesmo texto do aviso.
 - **Para a profissional:** na **véspera, às 08:00**, cada profissional recebe por e-mail as consultas do dia seguinte. Esse envio depende do **Cron de 5 minutos** (`cron/run.php`) na hospedagem.
-- Os **textos** dos avisos (WhatsApp e e-mails) são configurados pela médica administradora em `/admin/agenda`.
+- Os **textos** do aviso de WhatsApp (também usado no e-mail da véspera da profissional e no lembrete da família) são configurados pela médica administradora em `/admin/agenda`. Os e-mails de marcada, cancelada e remarcada têm redação fixa (só o endereço vem das configurações).
 
 ## 6. Limites legais
 
