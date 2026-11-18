@@ -89,7 +89,7 @@ final class ReminderRoundTest extends DbTestCase
         $adultText = Container::reminderText()->render(Container::appointments()->remindable('2026-11-17')[0], '2026-11-16');
         $this->assertStringContainsString(e($adultText), $q[1]['body_html']);
 
-        $this->assertSame(0, (new \App\Agenda\ReminderRound($this->db, Container::appointments(), Container::reminderText(), Container::agendaMailer(), Container::mailer()))->runIfDue('2026-11-16 08:05'));
+        $this->assertSame(0, (new \App\Agenda\ReminderRound($this->db, Container::appointments(), Container::reminderText(), Container::agendaMailer(), Container::mailer(), Container::agendaAccess()))->runIfDue('2026-11-16 08:05'));
         $this->assertCount(3, $this->queued());
         $this->assertSame(0, $round->runIfDue('2026-11-16 23:59'));
         $this->assertSame(0, $round->runIfDue('2026-11-17 07:59'));
@@ -123,6 +123,24 @@ final class ReminderRoundTest extends DbTestCase
         $this->db->run('UPDATE users SET active = 0 WHERE id = ?', [(int) $this->doc['id']]);
         $this->assertSame(1, Container::reminderRound()->runIfDue('2026-11-16 08:00'));
         $this->assertSame(['ana@example.test'], array_column($this->queued(), 'to_email'));
+    }
+
+    public function test_nutritionist_unreleased_patient_is_hidden(): void
+    {
+        Container::accessGrants()->grant((int) $this->adult['id'], (int) $this->nutri['id'], (int) $this->doc['id']);
+        $this->insertAppointment($this->nutri, $this->adult, '2026-11-17 08:00');
+        $this->insertAppointment($this->nutri, $this->child, '2026-11-17 09:00');
+        $this->assertSame(3, Container::reminderRound()->runIfDue('2026-11-16 08:00'));
+        $q = $this->queued();
+        $this->assertSame(['nutri@example.test', 'ana@example.test', 'mae@example.test'], array_column($q, 'to_email'));
+        $body = $q[0]['body_html'];
+        $this->assertStringContainsString('Ana Paciente Souza', $body);
+        $this->assertStringContainsString('09:00 — Paciente sem liberação', $body);
+        $this->assertStringNotContainsString('Caio', $body);
+        $this->assertStringNotContainsString('551134567890', $body);
+        $this->assertStringNotContainsString('Mãe Teste', $body);
+        $this->assertSame(1, substr_count($body, '<pre>'), 'so o aviso do paciente liberado');
+        $this->assertStringContainsString('Caio', $q[2]['body_html'], 'lembrete da familia nao muda');
     }
 
     public function test_professional_email_contains_text_and_numbers(): void

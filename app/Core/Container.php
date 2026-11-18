@@ -301,6 +301,6 @@ final class Container
 
     public static function reminderRound(): ReminderRound
     {
-        return self::$items['reminderRound'] ??= new ReminderRound(self::db(), self::appointments(), self::reminderText(), self::agendaMailer(), self::mailer());
+        return self::$items['reminderRound'] ??= new ReminderRound(self::db(), self::appointments(), self::reminderText(), self::agendaMailer(), self::mailer(), self::agendaAccess());
     }
 }

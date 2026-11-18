@@ -11,6 +11,7 @@ use App\Core\Mailer;
  * agendada/confirmada de amanha, um e-mail "Avisos das consultas de {data}" por profissional ativa com e-mail e o
  * lembrete da familia de cada consulta. Uma transacao cobre a fila e a chave settings.agenda_reminder_day
  * (linha travada com FOR UPDATE: duas rodadas sobrepostas nao enviam duas vezes). Dias perdidos nao sao reenviados.
+ * Na agenda de nutricionista, paciente sem liberacao aparece so como "HH:MM — Paciente sem liberação".
  */
 final class ReminderRound
 {
@@ -23,6 +24,7 @@ final class ReminderRound
         private ReminderText $text,
         private AgendaMailer $agendaMailer,
         private Mailer $mailer,
+        private AgendaAccess $access,
     ) {
     }
 
@@ -70,7 +72,12 @@ final class ReminderRound
         }
         $html = '<p>' . e('Avisos das consultas de ' . fmt_date($day) . ', para enviar pelo WhatsApp:') . '</p>';
         foreach ($list as $a) {
-            $html .= '<hr><h3>' . e(substr((string) $a['starts_at'], 11, 5) . ' — ' . $a['patient_name']) . '</h3>';
+            $time = substr((string) $a['starts_at'], 11, 5);
+            if (!$this->access->patientVisibleOnAgenda($professionalId, (int) $a['patient_id'])) {
+                $html .= '<hr><h3>' . e($time . ' — Paciente sem liberação') . '</h3>';
+                continue;
+            }
+            $html .= '<hr><h3>' . e($time . ' — ' . $a['patient_name']) . '</h3>';
             $contacts = $this->text->contacts($a);
             if ($contacts === []) {
                 $html .= '<p>' . e('Sem telefone cadastrado.') . '</p>';

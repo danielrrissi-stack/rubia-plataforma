@@ -42,7 +42,7 @@ try {
     $audit = new AuditLog($db);
     $access = new AgendaAccess($db, new PatientScope($db));
     $appointments = new AppointmentRepository($db, $audit, new ScheduleRepository($db, $audit), $access);
-    (new ReminderRound($db, $appointments, $reminderText, new AgendaMailer($db, $mailer, $reminderText), $mailer))->runIfDue(date('Y-m-d H:i'));
+    (new ReminderRound($db, $appointments, $reminderText, new AgendaMailer($db, $mailer, $reminderText), $mailer, $access))->runIfDue(date('Y-m-d H:i'));
 } catch (Throwable $e) {
     fwrite(STDERR, '[cron] agenda: ' . $e->getMessage() . PHP_EOL);
     $failed = true;

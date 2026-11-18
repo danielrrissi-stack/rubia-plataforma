@@ -9,7 +9,7 @@ use App\Growth\Age;
 
 /**
  * E-mails da agenda para a familia (marcada, cancelada, remarcada, lembrete da vespera), pela fila mail_queue.
- * Destinatarios: adulto -> patients.email, senao e-mail da conta (patients.user_id); menor (< 18 na data da consulta)
+ * Destinatarios: adulto -> patients.email, senao e-mail da conta ativa (patients.user_id); menor (< 18 na data da consulta)
  * -> cada responsavel ativo (vinculo e conta ativos) com e-mail; repetidos (sem diferenca de maiusculas) uma vez so.
  * Nunca leva a observacao interna nem o motivo de cancelamento.
  */
@@ -25,7 +25,7 @@ final class AgendaMailer
         if (!$this->isMinor($appointment)) {
             $email = trim((string) ($appointment['patient_email'] ?? ''));
             if ($email === '' && !empty($appointment['patient_user_id'])) {
-                $row = $this->db->one('SELECT email FROM users WHERE id = ?', [(int) $appointment['patient_user_id']]);
+                $row = $this->db->one('SELECT email FROM users WHERE id = ? AND active = 1', [(int) $appointment['patient_user_id']]);
                 $email = trim((string) ($row['email'] ?? ''));
             }
             return $email === '' ? [] : [$email];
@@ -65,9 +65,12 @@ final class AgendaMailer
     public function rescheduled(int $oldId, int $newId, string $today): void
     {
         $a = $this->find($newId);
-        if ($a !== null) {
-            $this->send($a, 'Consulta remarcada — ' . self::when($a), $this->bookedBody($a));
+        if ($a === null) {
+            return;
         }
+        $old = $this->find($oldId);
+        $before = $old === null ? '' : '<p>' . e('(Antes: ' . self::longDate($old) . '.)') . '</p>';
+        $this->send($a, 'Consulta remarcada — ' . self::when($a), $this->bookedBody($a, $before));
     }
 
     /** Lembrete da vespera (rodada das 08:00): o mesmo texto do aviso. Devolve quantos e-mails foram para a fila. */
@@ -77,15 +80,18 @@ final class AgendaMailer
         return $this->send($appointment, $subject, '<p>' . e($this->text->render($appointment, $today)) . '</p>');
     }
 
-    private function bookedBody(array $a): string
+    /** Frase principal, $extra (HTML pronto, ex.: "(Antes: …)") e o endereco. */
+    private function bookedBody(array $a, string $extra = ''): string
     {
         $intro = $this->isMinor($a) ? 'A consulta de ' . ReminderText::callName($a) . ' com ' : 'Sua consulta com ';
-        $html = '<p>' . e($intro . $a['professional_name'] . ' está marcada para ' . self::longDate($a) . '.') . '</p>';
+        return '<p>' . e($intro . $a['professional_name'] . ' está marcada para ' . self::longDate($a) . '.') . '</p>'
+            . $extra . $this->addressLine($a);
+    }
+
+    private function addressLine(array $a): string
+    {
         $address = $this->text->address($a);
-        if ($address !== '') {
-            $html .= '<p>' . e('Endereço: ' . $address . '.') . '</p>';
-        }
-        return $html;
+        return $address === '' ? '' : '<p>' . e('Endereço: ' . $address . '.') . '</p>';
     }
 
     /** "a consulta com {profissional}" / "a consulta de {nome} com {profissional}" */

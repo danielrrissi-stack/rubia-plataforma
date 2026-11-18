@@ -72,6 +72,10 @@ final class AgendaMailerTest extends DbTestCase
         $mailer->booked($a3, self::TODAY);
         $this->assertSame([], $this->queued(), 'sem e-mail: nada na fila');
 
+        // conta do paciente desativada: nao serve de alternativa
+        $this->db->run('UPDATE users SET active = 0 WHERE id = ?', [(int) $account2['id']]);
+        $this->assertSame([], $mailer->familyRecipients(Container::appointments()->find($a2)));
+
         // adulto com e-mail de responsavel vinculado nao usa o responsavel
         $this->guardian($withEmail, ['email' => 'mae@example.test']);
         $this->assertSame(['ficha@example.test'], $mailer->familyRecipients(Container::appointments()->find($a1)));
@@ -136,6 +140,7 @@ final class AgendaMailerTest extends DbTestCase
         $this->assertStringContainsString('Endereço: Rua A, 10 &lt;sala 2&gt;.', $q[0]['body_html']);
         $this->assertStringContainsString('A consulta com Dra. Teste de terça-feira, 17/11/2026, às 08:00 foi cancelada. Para marcar outro horário, fale com a clínica.', $q[1]['body_html']);
         $this->assertStringContainsString('Sua consulta com Dra. Teste está marcada para quinta-feira, 19/11/2026, às 14:30.', $q[2]['body_html']);
+        $this->assertStringContainsString('(Antes: quarta-feira, 18/11/2026, às 09:00.)', $q[2]['body_html']);
         foreach ($q as $m) {
             $this->assertStringNotContainsString('pagar', $m['body_html']);
             $this->assertStringNotContainsString('motivo secreto', $m['body_html']);
