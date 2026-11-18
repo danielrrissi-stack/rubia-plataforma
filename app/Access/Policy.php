@@ -13,6 +13,8 @@ namespace App\Access;
  * A familia pode ver NUTRICAO (plano alimentar vigente, via portal), nunca editar.
  * A familia pode ver EXAMES so pelo portal (coletas liberadas, valor + frase); as telas da equipe
  * exigem papel medico via App\Labs\Clinician::assert() antes do Gate.
+ * A familia ve MEDICAMENTOS (so o proprio tratamento, sem prescricao sigilosa: regra do PrescriptionRepository);
+ * as telas da equipe exigem papel medico via App\Labs\Clinician::assert() antes do Gate.
  * A familia e a crianca com conta propria veem METAS (e marcam, regra do GoalRepository); nunca editam.
  */
 final class Policy
@@ -48,11 +50,11 @@ final class Policy
             'edit' => [self::CADASTRO, self::AGENDA],
         ],
         'paciente' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::METAS],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::MEDICAMENTOS, self::METAS],
             'edit' => [self::ANTROPOMETRIA],
         ],
         'responsavel' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::METAS],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::MEDICAMENTOS, self::METAS],
             'edit' => [self::ANTROPOMETRIA],
         ],
         // Conta propria da crianca: so a area de metas (e a guarda global 'childarea' a prende nela).

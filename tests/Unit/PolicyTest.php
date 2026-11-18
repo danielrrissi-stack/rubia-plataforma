@@ -33,6 +33,7 @@ final class PolicyTest extends TestCase
         $this->assertTrue($p->allows($u, 'edit', Policy::CADASTRO));
         $this->assertTrue($p->allows($u, 'view', Policy::AGENDA));
         $this->assertFalse($p->allows($u, 'view', Policy::CLINICO));
+        $this->assertFalse($p->allows($u, 'view', Policy::MEDICAMENTOS));
     }
 
     public function testPacienteResponsavelCrianca(): void
@@ -50,6 +51,8 @@ final class PolicyTest extends TestCase
             $this->assertFalse($p->allows($u, 'edit', Policy::EXAMES));
             $this->assertTrue($p->allows($u, 'view', Policy::METAS)); // marcar e regra do GoalRepository
             $this->assertFalse($p->allows($u, 'edit', Policy::METAS));
+            $this->assertTrue($p->allows($u, 'view', Policy::MEDICAMENTOS)); // so o proprio tratamento, regra do repositorio
+            $this->assertFalse($p->allows($u, 'edit', Policy::MEDICAMENTOS));
         }
         $c = $this->u('crianca');
         $this->assertTrue($p->allows($c, 'view', Policy::METAS));
@@ -57,6 +60,7 @@ final class PolicyTest extends TestCase
         $this->assertFalse($p->allows($c, 'view', Policy::NUTRICAO));
         $this->assertFalse($p->allows($c, 'edit', Policy::ANTROPOMETRIA));
         $this->assertFalse($p->allows($c, 'view', Policy::EXAMES));
+        $this->assertFalse($p->allows($c, 'view', Policy::MEDICAMENTOS));
         $this->assertFalse($p->allows($c, 'view', Policy::CADASTRO_BASICO));
         $this->assertFalse($p->allows($c, 'view', Policy::ANTROPOMETRIA));
     }

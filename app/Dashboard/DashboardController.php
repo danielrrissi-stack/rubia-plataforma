@@ -47,6 +47,8 @@ final class DashboardController
             'today' => $today,
             'recent' => $recent,
             'pending' => $isDoctor ? Container::majority()->pending($today) : [],
+            'unreviewed' => $isDoctor ? array_slice(Container::adverseEvents()->unreviewed($ids), 0, 10) : [],
+            'reviewsDue' => $isDoctor ? array_slice(Container::prescriptions()->reviewsDue($today), 0, 10) : [],
             'canCreate' => $gate->check($user, 'edit', Policy::CADASTRO, null),
         ]));
     }

@@ -80,6 +80,15 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/catalogo-exames/novo'                    => [200, 403, 403, 403, 403, 302],
         '/catalogo-exames/{testId}/editar'         => [200, 403, 403, 403, 403, 302],
         '/exames/anexos/{attachmentId}'            => [404, 403, 403, 403, 403, 302], // registro sem arquivo no disco: 404 so depois da permissao
+        '/pacientes/{id}/tratamento'               => [200, 403, 403, 403, 403, 302], // so medico (Clinician antes do Gate)
+        '/pacientes/{id}/tratamento/nova'          => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/receita'                  => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/receita/imprimir'         => [302, 403, 403, 403, 403, 302], // sem p[] volta para a escolha
+        '/admin/receita'                           => [200, 403, 403, 403, 403, 302], // so is_admin (M e admin no fixture)
+        '/pacientes/{id}/efeitos/novo'             => [200, 403, 403, 403, 403, 302],
+        '/prescricoes/{prescriptionId}'            => [200, 403, 403, 403, 403, 302],
+        '/prescricoes/{prescriptionId}/editar'     => [200, 403, 403, 403, 403, 302],
+        '/prescricoes/{prescriptionId}/dose'       => [200, 403, 403, 403, 403, 302],
         '/portal'                                  => [302, 302, 302, 302, 302, 302], // equipe volta a /; 1 filho vai direto a ele
         '/portal/p/{id}'                           => [302, 302, 302, 200, 200, 302], // portal e so da familia
         '/portal/p/{id}/crescimento'               => [302, 302, 302, 200, 200, 302],
@@ -88,7 +97,9 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/portal/p/{id}/alimentacao/imprimir'      => [302, 302, 302, 200, 200, 302],
         '/portal/p/{id}/exames'                    => [302, 302, 302, 200, 200, 302],
         '/portal/p/{id}/metas'                     => [302, 302, 302, 200, 200, 200], // equipe volta a /; familia e crianca veem a area de metas
-        '/portal/conta'                            => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
+        '/portal/p/{id}/tratamento'                => [302, 302, 302, 200, 200, 302], // equipe volta a /; crianca fora do tratamento
+        '/portal/p/{id}/tratamento/relato'         => [302, 302, 302, 200, 200, 302],
+        '/portal/conta'                          => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
         '/senha/trocar'                            => [302, 302, 302, 302, 302, 302], // sem senha provisoria volta para /
         '/pacientes/{id}/acesso-crianca'           => [200, 403, 403, 403, 403, 302], // so medico; C vai para a area dele
         '/metas-modelo'                            => [200, 200, 403, 403, 403, 302], // medico e nutricionista; C vai para a area dele
@@ -170,6 +181,11 @@ final class SmokeAllRoutesTest extends DbTestCase
             'mime' => 'application/pdf', 'size_bytes' => 10, 'sha256' => str_repeat('0', 64), 'uploaded_by' => $admin['id'],
         ]);
 
+        $prescriptionId = Container::prescriptions()->create((int) $child['id'], [
+            'drug_name' => 'Medicamento fumaca', 'route' => 'oral', 'start_date' => $today,
+            'dose' => '5 mg', 'frequency' => '1 vez ao dia',
+        ], $admin, $today, new Request('POST', '/'));
+
         $this->fx = [
             'users' => ['M' => $admin, 'N' => $nutri, 'S' => $sec, 'R' => $resp, 'P' => $pac, 'C' => $kid],
             'patient' => ['M' => $child, 'N' => $child, 'S' => $child, 'R' => $child, 'P' => $adult, 'C' => $child],
@@ -178,6 +194,7 @@ final class SmokeAllRoutesTest extends DbTestCase
             'plan' => $planId,
             'collection' => $collectionId,
             'attachment' => $attachmentId,
+            'prescription' => $prescriptionId,
             'template' => Container::mealPlanTemplates()->fromPlan($planId, 'Modelo fumaca', (int) $admin['id']),
             'snippet' => Container::textSnippets()->create('Trecho fumaca', 'Beber agua', (int) $admin['id']),
             'goalTemplate' => Container::goals()->saveTemplate(null, [
@@ -220,6 +237,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'cardId' => (string) $this->fx['card'],
                 'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],
+                'prescriptionId' => (string) $this->fx['prescription'],
                 'attachmentId' => (string) $this->fx['attachment'],
                 'id' => match (true) {
                     str_starts_with($pattern, '/equipe/') => (string) $this->fx['secretaria_id'],

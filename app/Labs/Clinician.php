@@ -19,7 +19,7 @@ final class Clinician
     }
 
     /** @throws HttpException 403 (e audita 'denied', como o Gate) */
-    public static function assert(array $user, Request $r, ?int $patientId = null): void
+    public static function assert(array $user, Request $r, ?int $patientId = null, string $entity = 'lab_collections', string $section = 'exames'): void
     {
         if (self::is($user)) {
             return;
@@ -27,11 +27,11 @@ final class Clinician
         Container::audit()->record(
             isset($user['id']) ? (int) $user['id'] : null,
             'denied',
-            'lab_collections',
+            $entity,
             null,
             $patientId,
             null,
-            ['acao' => 'equipe', 'section' => 'exames'],
+            ['acao' => 'equipe', 'section' => $section],
             $r,
         );
         throw new HttpException(403, 'Acesso negado');

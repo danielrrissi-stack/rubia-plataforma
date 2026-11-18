@@ -195,6 +195,20 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .lab-unidade { color: var(--tinta-suave); min-width: 4rem; }
 .lab-coletas li, .lab-laudos li { margin-bottom: .4rem; }
 
+/* Receita impressa */
+.receita { max-width: 40rem; margin: 0 auto; padding: 1rem; }
+.receita-cabecalho { text-align: center; border-bottom: 1px solid #000; margin-bottom: 1rem; }
+.receita-cabecalho h1 { margin: 0; font-size: 1.4rem; }
+.receita-cabecalho p { margin: .1rem 0; }
+.receita-titulo { text-align: center; text-transform: uppercase; letter-spacing: .1em; }
+.receita-grupo h3 { text-decoration: underline; margin: 1.2rem 0 .4rem; }
+.receita-item { margin-bottom: .8rem; break-inside: avoid; }
+.receita-item p { margin: .1rem 0; }
+.receita-nome { font-weight: 700; }
+.receita-rodape { margin-top: 3rem; text-align: center; break-inside: avoid; }
+.receita-rodape p { margin: .2rem 0; }
+.receita-assinatura { margin-top: 2.5rem !important; }
+
 @media print {
   .topbar, .nao-imprimir, .skip { display: none !important; }
   body, .impressao { background: #fff; color: #000; }

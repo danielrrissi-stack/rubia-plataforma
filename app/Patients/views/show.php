@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var bool $canCadastro @var bool $canEdit @var bool $canCrescimento
- * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canExames @var ?array $labSummary @var bool $canEnergia @var bool $canAcessoProf @var bool $canChildAccount @var ?array $goalsCard @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
+ * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canExames @var ?array $labSummary @var bool $canEnergia @var bool $canAcessoProf @var bool $canChildAccount @var ?array $treatmentCard @var ?array $goalsCard @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
  */
 $pid = (int) $patient['id'];
 ?>
@@ -80,6 +80,13 @@ $pid = (int) $patient['id'];
       <?php if ($labSummary['no_range'] > 0): ?><p class="ajuda"><?= e($labSummary['no_range']) ?> <?= $labSummary['no_range'] === 1 ? 'valor' : 'valores' ?> sem faixa para esta idade (não classificado<?= $labSummary['no_range'] === 1 ? '' : 's' ?>).</p><?php endif; ?>
     <?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/exames')) ?>">Ver exames</a></p></section><?php endif; ?>
+  <?php if ($treatmentCard !== null): ?><section class="cartao" id="cartao-tratamento"><h2>Tratamento</h2>
+    <?php if ($treatmentCard['items'] === []): ?><p class="ajuda">Nenhuma prescrição ativa.</p><?php else: ?>
+      <ul><?php foreach ($treatmentCard['items'] as $it): ?><li><?= e($it['drug_name']) ?> — <?= e($it['current']['dose'] ?? '—') ?></li><?php endforeach; ?></ul>
+    <?php endif; ?>
+    <?php if ($treatmentCard['review'] !== null): ?><p>Próxima avaliação: <?= e(fmt_date($treatmentCard['review'])) ?></p><?php endif; ?>
+    <?php if ($treatmentCard['pending'] > 0): ?><p><strong><?= e($treatmentCard['pending']) ?></strong> <?= $treatmentCard['pending'] === 1 ? 'relato' : 'relatos' ?> da família para ver</p><?php endif; ?>
+    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/tratamento')) ?>">Ver tratamento</a></p></section><?php endif; ?>
   <?php if ($goalsCard !== null): $gp = $goalsCard['panel']; $nw = count($gp['weeks']); ?><section class="cartao" id="cartao-metas"><h2>Metas</h2>
     <?php if ($gp['rows'] === []): ?><p class="ajuda">Nenhuma meta ativa.</p><?php else: ?>
       <table class="grade-metas">

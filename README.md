@@ -332,6 +332,36 @@ No portal, a família e a criança veem **Metas** (`/portal/p/{id}/metas`) e mar
 No menu **Cartões educativos** (`/cartoes`; **somente a médica**) ficam textos curtos de orientação ligados às metas. A instalação traz **40 cartões em rascunho** (seed `goal_2_edu_cards.sql`).
 **Nenhum aparece para a família antes de ser revisado e publicado.** Use **Revisar** para ler e ajustar o texto e depois **Publicar**; **Despublicar** retira o cartão do portal. **Novo cartão** cria os seus.
 
+## Tratamento e medicamentos
+
+Aqui a médica registra os medicamentos em uso de cada paciente, a família anota as doses tomadas e relata efeitos indesejados, e a médica imprime a receita. **O sistema nunca sugere, calcula nem avisa sobre dose: a decisão clínica é sempre sua.** A nutricionista e a secretária não veem medicamentos, e o login da criança também não.
+
+### Criar a prescrição
+
+Na ficha da paciente, abra **Tratamento** e use **Nova prescrição**. Informe o **medicamento**, a **via**, a **dose**, a **frequência**, a **orientação para a família**, o **início**, o **término** (se houver) e a **próxima reavaliação**. O campo de **observações internas** é só da equipe: a família nunca o vê.
+
+### Alterar a dose, encerrar e excluir
+
+- **Alterar dose** cria uma nova linha no histórico, com a data em que passa a valer e o motivo. Nada é apagado: cada mudança fica registrada.
+- **Encerrar** termina o tratamento e o mantém no histórico.
+- **Excluir** serve só para algo registrado por engano.
+
+### Prescrição sigilosa
+
+A marca **Sigilosa** só pode ser ligada para pacientes **menores de 18 anos** e só pela médica. Depois de ligada, ela **nunca some sozinha** (nem quando o paciente faz 18 anos ou a prescrição é editada): só a médica a desmarca, de propósito. Os responsáveis não veem nada dela: nem a prescrição, nem as doses, nem os relatos ligados a ela.
+
+### Família registra as doses
+
+Em cada prescrição há a opção **A família pode registrar doses dadas**. O cartão **Tratamento** do portal aparece sempre que há uma prescrição visível, ativa ou futura; os botões para marcar as doses dos **últimos 7 dias** só aparecem nas prescrições com essa opção ligada.
+
+### Relatos de efeitos e "Ciente"
+
+A família pode **relatar um efeito indesejado** (até 90 dias para trás); a tela mostra um aviso geral de que, em caso de urgência, a família deve procurar atendimento. Na tela inicial, a médica vê os **relatos ainda não vistos** e as **reavaliações vencidas ou a vencer nos próximos 7 dias**. Ao ler um relato, ela clica em **Ciente** e, se quiser, anota a gravidade e a conduta.
+
+### Receita
+
+Preencha o **cabeçalho** uma única vez em **Receita (cabeçalho)** (`/admin/receita`, médica administradora). Depois, na ficha, escolha os itens da receita e clique em **Imprimir**; na janela de impressão do navegador, escolha **Salvar como PDF** se preferir um arquivo. A assinatura é **à mão**. Receitas de **controle especial** (duas vias) **não** são cobertas.
+
 ## 6. Limites legais
 
 - O sistema foi feito **seguindo os requisitos** da Resolução CFM 1.821/2007 e da LGPD: identificação do profissional,
@@ -404,7 +434,7 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
 5. **A atualização do plano alimentar (Fase 2a) muda `public/`** (novos arquivos JavaScript e CSS do editor e do portal): o passo 3 é
    obrigatório nesta versão — copie de novo o conteúdo de `rubia_app/public/` para a raiz do domínio (ex.: `public_html/rubia.med.br/`).
 6. **A atualização de exames laboratoriais (Fase 2b)** traz a migração `009_lab_exams.sql` e o seed `database/seeds/lab_catalog.sql` (catálogo e faixas).
-   Faça **backup** antes. Com terminal: `php /home/USUARIO/rubia_app/tools/migrate.php` aplica os dois. Sem terminal, importe no phpMyAdmin,
+   Faça **backup** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php` aplica os dois. Sem terminal, importe no phpMyAdmin,
    **nesta ordem**: (1) `database/migrations/009_lab_exams.sql`, (2) `database/seeds/lab_catalog.sql`, e logo depois, na aba "SQL":
    `INSERT INTO schema_migrations (name) VALUES ('009_lab_exams.sql');`
    O seed pode ser importado de novo sem duplicar dados. Esta versão **muda `public/`** (gráfico de exames): o passo 3 é obrigatório.
@@ -417,3 +447,11 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    Extraia o zip **dentro de `rubia_app`** (ex.: `/home2/USUARIO/rubia_app/`), nunca na pasta do site. Esta versão **muda `public/`** (novo `goal-check.js` e CSS):
    a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site),
    e mantenha o `$APP_ROOT` do `index.php` apontando para `rubia_app`. Os 40 cartões educativos entram como rascunho; a médica os revisa e publica em **Cartões educativos**.
+9. **A atualização de tratamento e medicamentos (Fase 3b)** traz a migração `011_medications.sql`. Não há seeds nesta versão.
+   Faça **backup** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
+   `database/migrations/011_medications.sql` e logo depois, na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('011_medications.sql');`
+   Extraia o zip **dentro de `rubia_app`** (ex.: `/home2/USUARIO/rubia_app/`), nunca na pasta do site. Esta versão **muda `public/`** (CSS):
+   a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site),
+   e mantenha o `$APP_ROOT` do `index.php` apontando para `rubia_app`. Depois de instalar, a médica administradora preenche o cabeçalho da receita em
+   **Receita (cabeçalho)** (`/admin/receita`).

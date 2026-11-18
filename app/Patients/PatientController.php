@@ -85,6 +85,7 @@ final class PatientController
             'currentPlan' => $canPlano ? Container::mealPlans()->current($id) : null,
             'canExames' => $canExames,
             'labSummary' => $canExames ? self::labSummary($id) : null,
+            'treatmentCard' => \App\Medications\PrescriptionController::card($user, $id, $today),
             'goalsCard' => \App\Goals\GoalController::card($user, $id, $today),
             'adult' => Age::years((string) $patient['birth_date'], $today) >= 18,
             'professional' => Container::users()->find((int) $patient['responsible_professional_id']),
