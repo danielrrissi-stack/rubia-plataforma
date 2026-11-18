@@ -99,6 +99,11 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/portal/p/{id}/metas'                     => [302, 302, 302, 200, 200, 200], // equipe volta a /; familia e crianca veem a area de metas
         '/portal/p/{id}/tratamento'                => [302, 302, 302, 200, 200, 302], // equipe volta a /; crianca fora do tratamento
         '/portal/p/{id}/tratamento/relato'         => [302, 302, 302, 200, 200, 302],
+        '/portal/p/{id}/diario'                    => [302, 302, 302, 200, 200, 302], // equipe volta a /; crianca fora do diario
+        // Os ids de pedido/registro das fixtures sao do paciente crianca (responsavel R e autor do registro): para o adulto P, 404 (outro paciente).
+        '/portal/p/{id}/diario/{requestId}/anotar' => [302, 302, 302, 200, 404, 302],
+        '/portal/p/{id}/diario/registros/{diaryEntryId}/editar' => [302, 302, 302, 200, 404, 302],
+        '/portal/p/{id}/diario/fotos/{diaryEntryId}'   => [302, 302, 302, 200, 404, 302],
         '/portal/conta'                          => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
         '/senha/trocar'                            => [302, 302, 302, 302, 302, 302], // sem senha provisoria volta para /
         '/pacientes/{id}/acesso-crianca'           => [200, 403, 403, 403, 403, 302], // so medico; C vai para a area dele
@@ -108,6 +113,10 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/metas'                    => [200, 200, 403, 403, 403, 302],
         '/pacientes/{id}/metas/nova'               => [200, 200, 403, 403, 403, 302],
         '/metas/{goalId}/editar'                   => [200, 200, 403, 403, 403, 302], // meta de alimentacao do paciente liberado
+        '/pacientes/{id}/diario'                   => [200, 200, 403, 403, 403, 302], // medico e nutricionista; C vai para a area dele
+        '/pacientes/{id}/diario/pedidos/novo'      => [200, 200, 403, 403, 403, 302],
+        '/diario/pedidos/{requestId}/editar'       => [200, 200, 403, 403, 403, 302], // pedido de agua nao sigiloso do paciente liberado
+        '/diario/registros/{diaryEntryId}/foto'    => [200, 200, 403, 403, 403, 302], // registro de alimentacao do responsavel, com foto, liberado a nutricionista
         '/cartoes'                                 => [200, 403, 403, 403, 403, 302], // so a medica; C vai para a area dele
         '/cartoes/novo'                            => [200, 403, 403, 403, 403, 302],
         '/cartoes/{cardId}/editar'                 => [200, 403, 403, 403, 403, 302],
@@ -115,11 +124,20 @@ final class SmokeAllRoutesTest extends DbTestCase
     ];
 
     private array $fx = [];
+    private ?string $diaryPhotoFile = null;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->buildFixtures();
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->diaryPhotoFile !== null && is_file($this->diaryPhotoFile)) {
+            @unlink($this->diaryPhotoFile);
+        }
+        parent::tearDown();
     }
 
     private function buildFixtures(): void
@@ -203,9 +221,36 @@ final class SmokeAllRoutesTest extends DbTestCase
             'goal' => Container::goals()->create((int) $child['id'], [
                 'family_text' => 'Meta fumaca', 'emoji' => '💧', 'category' => 'alimentacao', 'times_per_week' => 7, 'start_date' => $today,
             ], (int) $admin['id'], new Request('POST', '/')),
+            'diaryRequest' => Container::diaryRequests()->create((int) $child['id'], [
+                'type' => 'agua', 'weekdays' => [1, 2, 3, 4, 5, 6, 7], 'start_date' => $today,
+            ], $admin, $today, new Request('POST', '/')),
+            'diaryEntry' => $this->diaryEntry((int) $child['id'], $admin, $resp, $today),
             'card' => $this->publishedCard((int) $admin['id']),
             'secretaria_id' => (int) $sec['id'],
         ];
+    }
+
+    /** Registro de alimentacao do responsavel (hoje), com foto PNG pequena no armazenamento padrao, em pedido proprio. */
+    private function diaryEntry(int $patientId, array $admin, array $resp, string $today): int
+    {
+        $request = Container::diaryRequests()->create($patientId, [
+            'type' => 'alimentacao', 'weekdays' => [1, 2, 3, 4, 5, 6, 7], 'start_date' => $today,
+        ], $admin, $today, new Request('POST', '/'));
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+        $tmp = tempnam(sys_get_temp_dir(), 'rubia_png');
+        file_put_contents($tmp, $png);
+        $store = new \App\Diary\DiaryPhotoStore(rtrim((string) \App\Core\Config::get('storage_path', APP_ROOT . '/storage'), '/\\') . '/uploads', true);
+        Container::set('diaryPhotos', $store);
+        $id = Container::diaryEntries()->record($request, $today, ['meal' => 'almoco', 'meal_time' => '12:00', 'description' => 'prato fumaca'], [
+            'name' => 'f.png', 'type' => 'image/png', 'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($png),
+        ], $resp, $today, new Request('POST', '/'));
+        $photo = (string) (Container::diaryEntries()->find($id)['photo_path'] ?? '');
+        if ($photo !== '') {
+            $this->diaryPhotoFile = rtrim((string) \App\Core\Config::get('storage_path', APP_ROOT . '/storage'), '/' . chr(92)) . '/uploads/' . $photo;
+        }
+        Container::reset();
+        Container::set('db', $this->db);
+        return $id;
     }
 
     /** Cartao educativo publicado da faixa 7-10 (crianca de fumaca tem 8 anos). */
@@ -234,6 +279,8 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'entryId' => (string) $this->fx['entry'][$role],
                 'goalTemplateId' => (string) $this->fx['goalTemplate'],
                 'goalId' => (string) $this->fx['goal'],
+                'requestId' => (string) $this->fx['diaryRequest'],
+                'diaryEntryId' => (string) $this->fx['diaryEntry'],
                 'cardId' => (string) $this->fx['card'],
                 'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],

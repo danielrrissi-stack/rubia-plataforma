@@ -87,6 +87,7 @@ final class PatientController
             'labSummary' => $canExames ? self::labSummary($id) : null,
             'treatmentCard' => \App\Medications\PrescriptionController::card($user, $id, $today),
             'goalsCard' => \App\Goals\GoalController::card($user, $id, $today),
+            'diaryCard' => \App\Diary\DiaryController::card($user, $id, $today),
             'adult' => Age::years((string) $patient['birth_date'], $today) >= 18,
             'professional' => Container::users()->find((int) $patient['responsible_professional_id']),
             'guardians' => $gate->check($user, 'view', Policy::CADASTRO, $id) ? Container::guardians()->forPatient($id) : [],

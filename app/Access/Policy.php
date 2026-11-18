@@ -16,6 +16,8 @@ namespace App\Access;
  * A familia ve MEDICAMENTOS (so o proprio tratamento, sem prescricao sigilosa: regra do PrescriptionRepository);
  * as telas da equipe exigem papel medico via App\Labs\Clinician::assert() antes do Gate.
  * A familia e a crianca com conta propria veem METAS (e marcam, regra do GoalRepository); nunca editam.
+ * DIARIO: so a medica edita os pedidos; paciente e responsavel veem (o registro da familia e regra do repositorio).
+ * A nutricionista nao tem DIARIO: usa NUTRICAO do paciente liberado e DiaryRequestRepository::canSee().
  */
 final class Policy
 {
@@ -30,12 +32,13 @@ final class Policy
     public const EXAMES = 'exames';
     public const MEDICAMENTOS = 'medicamentos';
     public const METAS = 'metas';
+    public const DIARIO = 'diario';
     public const AUDITORIA = 'auditoria';
     public const USUARIOS = 'usuarios';
 
     private const CLINICAL_ALL = [
         self::CADASTRO_BASICO, self::CADASTRO, self::AGENDA, self::ANTROPOMETRIA, self::ENERGIA,
-        self::NUTRICAO, self::HISTORICO, self::CLINICO, self::EXAMES, self::MEDICAMENTOS, self::METAS,
+        self::NUTRICAO, self::HISTORICO, self::CLINICO, self::EXAMES, self::MEDICAMENTOS, self::METAS, self::DIARIO,
     ];
 
     /** @var array<string,array{view:string[],edit:string[]}> */
@@ -50,11 +53,11 @@ final class Policy
             'edit' => [self::CADASTRO, self::AGENDA],
         ],
         'paciente' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::MEDICAMENTOS, self::METAS],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::MEDICAMENTOS, self::METAS, self::DIARIO],
             'edit' => [self::ANTROPOMETRIA],
         ],
         'responsavel' => [
-            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::MEDICAMENTOS, self::METAS],
+            'view' => [self::CADASTRO_BASICO, self::ANTROPOMETRIA, self::NUTRICAO, self::EXAMES, self::MEDICAMENTOS, self::METAS, self::DIARIO],
             'edit' => [self::ANTROPOMETRIA],
         ],
         // Conta propria da crianca: so a area de metas (e a guarda global 'childarea' a prende nela).

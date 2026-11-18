@@ -234,3 +234,13 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .metas-dia-feito { background: var(--salvia-escura); color: #fff; }
 .metas-dia-feito:disabled { background: var(--salvia); color: #fff; opacity: .85; }
 .metas-selo { font-size: 1rem; padding: .3rem .8rem; margin: 0 .3rem .3rem 0; }
+
+/* Diario de habitos (equipe) */
+.diario-grade { max-width: 100%; overflow-x: auto; }
+.diario-grade table { min-width: 40rem; }
+.diario-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 48rem) { .diario-duplo { grid-template-columns: 1fr; } }
+.diario-foto { max-width: 14rem; max-height: 14rem; border-radius: var(--raio); }
+.diario-registro { border-bottom: 1px solid var(--linha); padding-bottom: .6rem; margin-bottom: .6rem; }
+.diario-comentario { margin: .4rem 0 .4rem 1rem; padding-left: .6rem; border-left: 3px solid var(--salvia); }
+.portal-dias { list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1rem; padding: 0; margin: 0 0 1rem; }

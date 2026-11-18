@@ -17,6 +17,11 @@ use App\Goals\GoalRepository;
 use App\Growth\BloodPressure;
 use App\Growth\BpReferenceRepository;
 use App\Growth\GrowthCalculator;
+use App\Diary\DiaryCommentRepository;
+use App\Diary\DiaryEntryRepository;
+use App\Diary\DiaryPhotoStore;
+use App\Diary\DiaryWeek;
+use App\Diary\DiaryRequestRepository;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
 use App\Labs\AttachmentStore;
@@ -214,6 +219,33 @@ final class Container
     public static function goals(): GoalRepository
     {
         return self::$items['goals'] ??= new GoalRepository(self::db(), self::audit());
+    }
+
+    public static function diaryRequests(): DiaryRequestRepository
+    {
+        return self::$items['diaryRequests'] ??= new DiaryRequestRepository(self::db(), self::audit());
+    }
+
+    public static function diaryPhotos(): DiaryPhotoStore
+    {
+        return self::$items['diaryPhotos'] ??= new DiaryPhotoStore(
+            rtrim((string) Config::get('storage_path', APP_ROOT . '/storage'), '/\\') . '/uploads',
+        );
+    }
+
+    public static function diaryEntries(): DiaryEntryRepository
+    {
+        return self::$items['diaryEntries'] ??= new DiaryEntryRepository(self::db(), self::audit(), self::diaryRequests(), self::diaryPhotos());
+    }
+
+    public static function diaryWeek(): DiaryWeek
+    {
+        return self::$items['diaryWeek'] ??= new DiaryWeek(self::diaryRequests(), self::diaryEntries(), self::db());
+    }
+
+    public static function diaryComments(): DiaryCommentRepository
+    {
+        return self::$items['diaryComments'] ??= new DiaryCommentRepository(self::db(), self::audit(), self::diaryEntries(), self::diaryRequests());
     }
 
     public static function prescriptions(): PrescriptionRepository
