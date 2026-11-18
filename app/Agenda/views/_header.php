@@ -1,7 +1,8 @@
 <?php
 /**
  * Cabecalho da agenda (dia e semana): titulo, seletor, navegacao e fechamentos do periodo.
- * Variaveis: $agendas, $prof, $professional, $date, $today, $view, $prev, $next, $closures.
+ * Variaveis: $agendas, $prof, $professional, $date, $today, $view, $prev, $next, $closures, $canBook (marcar nesta
+ * agenda), $canSchedule (abrir os horarios), $scheduleLabel ("Meus horários" ou "Horários de {nome}").
  */
 $agendaUrl = static fn (array $q): string => url('/agenda') . '?' . http_build_query($q, '', '&', PHP_QUERY_RFC3986);
 $other = $view === 'semana' ? 'dia' : 'semana';
@@ -22,8 +23,11 @@ $other = $view === 'semana' ? 'dia' : 'semana';
     <input id="agenda-data" type="date" name="data" value="<?= e($date) ?>">
     <button type="submit" class="btn btn-quiet">Ir</button>
   </form>
-  <a class="btn btn-quiet" href="<?= e(url('/agenda/horarios') . '?prof=' . (int) $prof) ?>">Horários</a>
+  <?php if ($canSchedule): ?><a class="btn btn-quiet" href="<?= e(url('/agenda/horarios') . '?prof=' . (int) $prof) ?>"><?= e($scheduleLabel) ?></a><?php endif; ?>
 </nav>
+<?php if (!$canBook): ?>
+  <p class="aviso aviso-atencao">Profissional desativada: as consultas já marcadas podem ser canceladas ou remarcadas, mas não dá para marcar novas.</p>
+<?php endif; ?>
 <?php foreach ($closures as $c): ?>
   <p class="aviso aviso-atencao">Fechado <?= e(fmt_date((string) $c['start_date'])) ?><?= $c['end_date'] !== $c['start_date'] ? ' a ' . e(fmt_date((string) $c['end_date'])) : '' ?><?= $c['start_time'] !== null ? ', ' . e(substr((string) $c['start_time'], 0, 5)) . '–' . e(substr((string) $c['end_time'], 0, 5)) : ' (dia inteiro)' ?><?= $c['reason'] !== null ? ' — ' . e($c['reason']) : '' ?></p>
 <?php endforeach; ?>

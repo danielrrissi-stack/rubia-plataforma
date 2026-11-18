@@ -404,11 +404,13 @@ Cada profissional monta a própria agenda em **Meus horários**: as **faixas da 
 
 ### Fechamentos e horários extras
 
-Um **fechamento** bloqueia um dia ou período (feriado, viagem, férias); a **secretária também pode cadastrar** fechamentos. Um **horário extra** abre um horário fora das faixas da semana, só naquele dia.
+Um **fechamento** bloqueia um dia ou período (feriado, viagem, férias); a **secretária também pode cadastrar e remover** fechamentos. Um **horário extra** abre um horário fora das faixas da semana, só naquele dia; horários extras são lançados e removidos só pela própria profissional ou pela médica administradora.
 
 ### Marcar e acompanhar a consulta
 
 Na tela da agenda, escolha o horário livre e a paciente para **marcar**. A consulta passa por estas situações: **Agendada**, **Confirmada**, **Realizada**, **Faltou**, **Cancelada** e **Remarcada** (a remarcação cria a nova consulta e guarda a data anterior). A ficha da paciente e o portal da família mostram **cartões de Consultas** com as próximas e as passadas.
+
+Quando uma profissional é **desativada**, a agenda dela continua aparecendo para a secretária e para a médica administradora, como "(desativada)", enquanto houver consultas futuras: dá para cancelá-las ou remarcá-las para outra profissional, mas não para marcar novas. Essas consultas não geram lembrete da véspera.
 
 ### Aviso por WhatsApp
 
@@ -523,6 +525,7 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    **Fotos do prato:** para reduzir e endireitar as fotos (celulares gravam fotos "deitadas"), a hospedagem precisa das extensões **GD** e **exif** do PHP:
    cPanel → "Selecionar versão do PHP" → Extensões → marque `gd` e `exif`. Sem a `gd` o diário funciona normalmente, mas a foto é guardada **como foi enviada** (até 10 MB, com seus metadados). Com a `gd` e sem a `exif`, a foto é reduzida mas não é endireitada. Fotos muito grandes (acima de ~25 megapixels) também são guardadas como foram enviadas.
 11. **A atualização da agenda (Fase 4a)** traz a migração `013_agenda.sql`. Não há seeds nesta versão.
+   Requer MariaDB 10.2 ou mais nova (o cPanel mostra a versão em 'Bancos de dados MySQL' / phpMyAdmin).
    Faça **backup do banco** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
    `database/migrations/013_agenda.sql` e logo depois, na aba "SQL":
    `INSERT INTO schema_migrations (name) VALUES ('013_agenda.sql');`

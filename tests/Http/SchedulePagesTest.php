@@ -129,6 +129,42 @@ final class SchedulePagesTest extends DbTestCase
         $this->assertSame(404, $this->post('/agenda/horarios/excecao/' . (int) $list[0]['id'] . '/remover', [])->status);
     }
 
+    public function test_secretary_cannot_add_or_remove_extras(): void
+    {
+        $doc = $this->id($this->doc);
+        Container::schedules()->applyClinicDefault($doc, $doc, new Request('POST', '/'));
+        $extra = Container::schedules()->addExtra($doc, $this->mon, '20:00', '21:00', $doc, new Request('POST', '/'), date('Y-m-d'));
+        $closure = Container::schedules()->addClosure($doc, $this->mon, $this->mon, '08:00', '09:00', 'Exame', $doc, new Request('POST', '/'), date('Y-m-d'));
+        $this->loginAs($this->sec);
+        $page = $this->get('/agenda/horarios', ['prof' => (string) $doc]);
+        $this->assertSame(200, $page->status);
+        $this->assertStringContainsString('Horários de Dra. Comum', $page->body);
+        $this->assertStringContainsString('Novo fechamento', $page->body);
+        $this->assertStringNotContainsString('Novo horário extra', $page->body);
+        $this->assertStringNotContainsString('/excecao/' . $extra . '/remover', $page->body);
+        $this->assertStringContainsString('/excecao/' . $closure . '/remover', $page->body);
+
+        $this->assertSame(403, $this->post('/agenda/horarios/extra', ['prof' => (string) $doc, 'date' => $this->mon, 'start_time' => '21:00', 'end_time' => '22:00'])->status);
+        $this->assertSame(403, $this->post('/agenda/horarios/excecao/' . $extra . '/remover', [])->status);
+        $this->assertCount(2, Container::schedules()->exceptions($doc, $this->mon, $this->mon));
+        $this->assertSame(302, $this->post('/agenda/horarios/excecao/' . $closure . '/remover', [])->status);
+        $this->assertSame([$extra], array_map(fn (array $x): int => (int) $x['id'], Container::schedules()->exceptions($doc, $this->mon, $this->mon)));
+    }
+
+    public function test_professional_sees_meus_horarios(): void
+    {
+        $this->loginAs($this->doc);
+        $agenda = $this->get('/agenda');
+        $this->assertStringContainsString('>Meus horários</a>', $agenda->body);
+        $page = $this->get('/agenda/horarios');
+        $this->assertStringContainsString('<h1>Meus horários</h1>', $page->body);
+        $this->assertStringContainsString('<title>Meus horários', $page->body);
+        $this->loginAs($this->admin);
+        $other = $this->get('/agenda/horarios', ['prof' => (string) $this->id($this->nutri)]);
+        $this->assertStringContainsString('<h1>Horários de Nutri Teste</h1>', $other->body);
+        $this->assertStringContainsString('>Horários de Nutri Teste</a>', $this->get('/agenda', ['prof' => (string) $this->id($this->nutri)])->body);
+    }
+
     public function test_closure_warns_about_booked(): void
     {
         Container::schedules()->applyClinicDefault($this->id($this->doc), $this->id($this->doc), new Request('POST', '/'));

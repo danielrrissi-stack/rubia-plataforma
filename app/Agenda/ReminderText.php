@@ -20,7 +20,8 @@ final class ReminderText
         'child' => 'Olá! Lembrando da consulta de {nome} com {profissional} {dia}, às {hora}. Endereço: {endereço}. Por favor, confirme a presença respondendo esta mensagem. Até lá!',
     ];
 
-    private const ADDRESS_SEGMENT = 'Endereço: {endereço}.';
+    /** Trecho do endereco (com o espaco antes e o ponto depois, se houver), removido quando nao ha endereco. */
+    private const ADDRESS_SEGMENT = '/\s*Endereço:\s*\{endereço\}\.?/u';
 
     /** @var array<string,string>|null settings lidos uma vez por instancia */
     private ?array $settings = null;
@@ -51,7 +52,7 @@ final class ReminderText
 
         $address = $this->address($appointment);
         if ($address === '') {
-            $template = str_replace([' ' . self::ADDRESS_SEGMENT, self::ADDRESS_SEGMENT], '', $template);
+            $template = (string) preg_replace(self::ADDRESS_SEGMENT, '', $template);
         }
 
         return strtr($template, [

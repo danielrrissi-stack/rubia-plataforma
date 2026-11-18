@@ -70,6 +70,18 @@ final class ReminderTextTest extends DbTestCase
         $this->assertStringContainsString('Endereço: Rua A, 10.', $fresh->render($this->appt(), '2026-11-18'), 'endereco da profissional vence');
     }
 
+    public function test_custom_text_address_removal_is_tolerant(): void
+    {
+        $this->setting('agenda_text_adult', 'Oi {nome}, consulta {dia} às {hora}. Endereço: {endereço} Até lá!');
+        $this->setting('agenda_text_child', 'Oi, consulta de {nome} às {hora}.  Endereço:{endereço}');
+        $t = new ReminderText($this->db);
+        $noAddress = $this->appt(['professional_address' => null]);
+        $this->assertSame('Oi Ana, consulta amanhã, quinta-feira, 19/11 às 07:30. Até lá!', $t->render($noAddress, '2026-11-18'));
+        $child = $t->render($this->appt(['professional_address' => null, 'birth_date' => '2018-01-01']), '2026-11-18');
+        $this->assertSame('Oi, consulta de Ana às 07:30.', $child);
+        $this->assertStringContainsString('Endereço: Rua A, 10 Até lá!', $t->render($this->appt(), '2026-11-18'), 'com endereco: texto intacto');
+    }
+
     public function test_day_phrase(): void
     {
         $this->assertSame('hoje, quinta-feira, 19/11', ReminderText::dayPhrase('2026-11-19', '2026-11-19'));

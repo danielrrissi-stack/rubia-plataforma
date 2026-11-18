@@ -115,6 +115,63 @@ final class AgendaAccessTest extends DbTestCase
         $this->assertFalse($a->canManage($this->secretaria, $off));
     }
 
+    public function test_first_bookable_agenda(): void
+    {
+        $a = Container::agendaAccess();
+        $patient = $this->makePatient(['created_by' => $this->admin['id'], 'responsible_professional_id' => $this->admin['id']]);
+        $pid = (int) $patient['id'];
+        $this->db->run('UPDATE users SET name = ? WHERE id = ?', ['Aaa Carla Nutri', $this->nutri['id']]);
+        // secretaria: a nutricionista (primeira por nome) nao tem liberacao -> a medica seguinte
+        $this->assertSame((int) $this->admin['id'], $a->firstBookableAgenda($this->secretaria, $pid));
+        $this->assertSame((int) $this->medica['id'], $a->firstBookableAgenda($this->medica, $pid));
+        $this->assertSame((int) $this->admin['id'], $a->firstBookableAgenda($this->admin, $pid), 'a propria agenda primeiro');
+        $this->assertNull($a->firstBookableAgenda($this->nutri, $pid));
+        $this->assertNull($a->firstBookableAgenda($this->responsavel, $pid));
+        $this->db->insert('professional_access', ['patient_id' => $pid, 'professional_id' => $this->nutri['id'], 'granted_by' => $this->admin['id']]);
+        $this->assertSame((int) $this->nutri['id'], $a->firstBookableAgenda($this->secretaria, $pid));
+        $this->assertSame((int) $this->nutri['id'], $a->firstBookableAgenda($this->nutri, $pid));
+    }
+
+    public function test_inactive_professional_with_future_appointments_stays_listed(): void
+    {
+        $a = Container::agendaAccess();
+        $off = (int) $this->inativa['id'];
+        $patient = $this->makePatient(['created_by' => $this->admin['id'], 'responsible_professional_id' => $this->admin['id']]);
+        $this->db->insert('professional_access', ['patient_id' => $patient['id'], 'professional_id' => $off, 'granted_by' => $this->admin['id']]);
+        $insert = function (string $at, string $status) use ($off, $patient): void {
+            $this->db->insert('appointments', [
+                'professional_id' => $off, 'patient_id' => $patient['id'], 'starts_at' => $at,
+                'ends_at' => date('Y-m-d H:i:s', strtotime($at) + 1800), 'kind' => 'primeira', 'status' => $status,
+                'created_by' => $this->secretaria['id'],
+            ]);
+        };
+        $insert(date('Y-m-d', strtotime('-3 days')) . ' 08:00:00', 'agendada');
+        $insert(date('Y-m-d', strtotime('+3 days')) . ' 08:00:00', 'cancelada');
+        $insert(date('Y-m-d', strtotime('+3 days')) . ' 09:00:00', 'remarcada');
+        $this->assertNotContains($off, $this->ids($a->agendasFor($this->secretaria)), 'so passadas ou que nao ocupam: fora');
+        $this->assertFalse($a->canView($this->secretaria, $off));
+
+        $insert(date('Y-m-d', strtotime('+3 days')) . ' 10:00:00', 'confirmada');
+        $all = [(int) $this->admin['id'], (int) $this->medica['id'], (int) $this->nutri['id'], $off];
+        foreach ([$this->secretaria, $this->admin] as $user) {
+            $list = $a->agendasFor($user);
+            $this->assertSame($all, $this->ids($list), 'desativada no fim da lista');
+            $this->assertFalse($list[3]['active']);
+            $this->assertTrue($list[0]['active']);
+            $this->assertTrue($a->canView($user, $off));
+            $this->assertFalse($a->canManage($user, $off), 'nao marca na desativada');
+            $this->assertFalse($a->canEditWeek($user, $off));
+            $this->assertFalse($a->canAddClosure($user, $off));
+            $this->assertTrue($a->canManageExisting($user, $off));
+            $this->assertNotNull($a->mayBookPatient($off, (int) $patient['id'], $user));
+            $this->assertNotSame($off, $a->firstBookableAgenda($user, (int) $patient['id']));
+        }
+        $this->assertSame([(int) $this->medica['id']], $this->ids($a->agendasFor($this->medica)));
+        $this->assertFalse($a->canView($this->medica, $off));
+        // "agora" por parametro: depois da consulta, sai da lista
+        $this->assertNotContains($off, $this->ids($a->agendasFor($this->secretaria, date('Y-m-d', strtotime('+4 days')) . ' 00:00')));
+    }
+
     public function test_nutritionist_booking_requires_release(): void
     {
         $a = Container::agendaAccess();

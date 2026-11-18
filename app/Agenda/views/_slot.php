@@ -1,6 +1,6 @@
 <?php
 /**
- * Uma linha da grade (dayView decorado). Variaveis: $row, $prof (int), $slotDay ('Y-m-d').
+ * Uma linha da grade (dayView decorado). Variaveis: $row, $prof (int), $slotDay ('Y-m-d'), $canBook (link Marcar).
  * Estados: livre (link Marcar), passado (livre que ja passou), marcado (consulta; riscada = cancelada/remarcada,
  * nao ocupa o horario). `hidden` = nutricionista vendo paciente sem liberacao: sem nome, link nem WhatsApp.
  */
@@ -9,7 +9,7 @@ use App\Agenda\AgendaStatus;
 $hora = e($row['start']);
 if ($row['state'] === 'livre'): ?>
   <li class="agenda-slot agenda-livre"><span class="agenda-hora"><?= $hora ?></span> <span class="ajuda">livre</span>
-    <a class="btn btn-quiet" href="<?= e(url('/agenda/marcar') . '?' . http_build_query(['prof' => $prof, 'inicio' => $slotDay . ' ' . $row['start']], '', '&', PHP_QUERY_RFC3986)) ?>">Marcar</a></li>
+    <?php if ($canBook): ?><a class="btn btn-quiet" href="<?= e(url('/agenda/marcar') . '?' . http_build_query(['prof' => $prof, 'inicio' => $slotDay . ' ' . $row['start']], '', '&', PHP_QUERY_RFC3986)) ?>">Marcar</a><?php endif; ?></li>
 <?php elseif ($row['state'] === 'passado'): ?>
   <li class="agenda-slot agenda-passado"><span class="agenda-hora"><?= $hora ?></span> <span class="ajuda">livre (já passou)</span></li>
 <?php else:

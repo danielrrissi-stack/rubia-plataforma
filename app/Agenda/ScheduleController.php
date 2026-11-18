@@ -10,8 +10,8 @@ use App\Core\Response;
 use App\Core\Session;
 
 /**
- * "Meus horarios": semana-modelo, duracao e endereco (a propria profissional ou a medica administradora) e
- * fechamentos/horarios extras (tambem a secretaria). Ordem: papel -> profissional (canView) -> permissao da acao
+ * "Meus horarios": semana-modelo, duracao, endereco e horarios extras (a propria profissional ou a medica
+ * administradora) e fechamentos (tambem a secretaria). Ordem: papel -> profissional (canView) -> permissao da acao
  * (403 auditado). Validacao e auditoria no ScheduleRepository.
  */
 final class ScheduleController
@@ -85,7 +85,7 @@ final class ScheduleController
     /** POST /agenda/horarios/extra */
     public function addExtra(Request $r): Response
     {
-        [$user, $prof] = $this->open($r, 'closure');
+        [$user, $prof] = $this->open($r, 'extra');
         $v = [
             'date' => (string) $r->input('date', ''),
             'start_time' => (string) $r->input('start_time', ''), 'end_time' => (string) $r->input('end_time', ''),
@@ -108,7 +108,9 @@ final class ScheduleController
             throw new HttpException(404);
         }
         $prof = (int) $ex['professional_id'];
-        if (!Container::agendaAccess()->canAddClosure($user, $prof)) {
+        $access = Container::agendaAccess();
+        $allowed = (string) $ex['kind'] === 'fechado' ? $access->canAddClosure($user, $prof) : $access->canAddExtra($user, $prof);
+        if (!$allowed) {
             $this->deny($user, $r);
         }
         try {
@@ -123,7 +125,8 @@ final class ScheduleController
     // ---- helpers ----
 
     /**
-     * Papel -> profissional (canView, 403) -> acao: 'view'/'closure' = canAddClosure, 'week' = canEditWeek.
+     * Papel -> profissional (canView, 403) -> acao: 'view'/'closure' = canAddClosure, 'week' = canEditWeek,
+     * 'extra' = canAddExtra.
      *
      * @return array{0:array,1:int}
      */
@@ -132,7 +135,11 @@ final class ScheduleController
         $user = $this->staff($r);
         $prof = $this->chosenProfessional($r, $user, Container::agendaAccess()->agendasFor($user));
         $access = Container::agendaAccess();
-        $allowed = $prof !== null && ($action === 'week' ? $access->canEditWeek($user, $prof) : $access->canAddClosure($user, $prof));
+        $allowed = $prof !== null && match ($action) {
+            'week' => $access->canEditWeek($user, $prof),
+            'extra' => $access->canAddExtra($user, $prof),
+            default => $access->canAddClosure($user, $prof),
+        };
         if (!$allowed) {
             $this->deny($user, $r);
         }
@@ -168,7 +175,7 @@ final class ScheduleController
     private function schedulePage(Request $r, array $user, int $prof, array $errors, ?string $form, ?array $values): Response
     {
         $access = Container::agendaAccess();
-        $agendas = $access->agendasFor($user);
+        $agendas = $this->activeAgendas($access->agendasFor($user));
         $repo = Container::schedules();
         $today = date('Y-m-d');
         $profile = $repo->profile($prof);
@@ -187,9 +194,11 @@ final class ScheduleController
                 $professional = $a;
             }
         }
-        return $this->page('Agenda/views/schedule.php', 'Horários', $r, [
-            'agendas' => $agendas, 'prof' => $prof, 'professional' => $professional,
-            'canEditWeek' => $access->canEditWeek($user, $prof), 'hasRanges' => $hasRanges,
+        $label = $this->scheduleLabel($user, $prof, $professional);
+        return $this->page('Agenda/views/schedule.php', $label, $r, [
+            'agendas' => $agendas, 'prof' => $prof, 'professional' => $professional, 'label' => $label,
+            'canEditWeek' => $access->canEditWeek($user, $prof), 'canAddExtra' => $access->canAddExtra($user, $prof),
+            'hasRanges' => $hasRanges,
             'ranges' => $ranges,
             'slotMinutes' => $form === 'week' ? $values['slot_minutes'] : (string) $profile['slot_minutes'],
             'address' => $form === 'week' ? $values['address'] : (string) ($profile['address'] ?? ''),

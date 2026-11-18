@@ -1,7 +1,8 @@
 <?php
 /**
- * "Meus horarios": semana-modelo, duracao e endereco (quem edita a semana); fechamentos e horarios extras
- * (tambem a secretaria). Variaveis: $agendas, $prof, $professional (?array), $canEditWeek, $hasRanges, $ranges
+ * "Meus horarios": semana-modelo, duracao, endereco e horarios extras (quem edita a semana); fechamentos
+ * (tambem a secretaria). Variaveis: $agendas, $prof, $professional (?array), $label (titulo), $canEditWeek,
+ * $canAddExtra (lancar/remover horario extra), $hasRanges, $ranges
  * (linhas do formulario, com linhas em branco no fim), $slotMinutes, $address, $exceptions, $errors,
  * $form (formulario com erro: 'week'|'closure'|'extra'|null), $values (valores do formulario com erro).
  */
@@ -12,7 +13,7 @@ $closureVals = $form === 'closure' ? $values : [];
 $extraVals = $form === 'extra' ? $values : [];
 $filled = array_values(array_filter($ranges, fn (array $x): bool => $x['start_time'] !== '' || $x['end_time'] !== ''));
 ?>
-<h1>Horários<?= $professional !== null ? ' — ' . e($professional['name']) : '' ?></h1>
+<h1><?= e($label) ?></h1>
 <?php $selectAction = '/agenda/horarios'; $selectHidden = []; include __DIR__ . '/_prof_select.php'; ?>
 <p><a href="<?= e(url('/agenda') . '?prof=' . (int) $prof) ?>">Ver a agenda</a></p>
 
@@ -89,7 +90,9 @@ $filled = array_values(array_filter($ranges, fn (array $x): bool => $x['start_ti
         <?php else: ?>
           <strong>Horário extra</strong> <?= e(fmt_date((string) $x['start_date'])) ?>, <?= e(substr((string) $x['start_time'], 0, 5)) ?>–<?= e(substr((string) $x['end_time'], 0, 5)) ?>
         <?php endif; ?>
-        <form method="post" action="<?= e(url('/agenda/horarios/excecao/' . (int) $x['id'] . '/remover')) ?>" class="form-inline" data-confirm="Remover?"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Remover</button></form>
+        <?php if ((string) $x['kind'] === 'fechado' || $canAddExtra): ?>
+          <form method="post" action="<?= e(url('/agenda/horarios/excecao/' . (int) $x['id'] . '/remover')) ?>" class="form-inline" data-confirm="Remover?"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Remover</button></form>
+        <?php endif; ?>
       </li>
     <?php endforeach; ?>
   </ul>
@@ -109,6 +112,7 @@ $filled = array_values(array_filter($ranges, fn (array $x): bool => $x['start_ti
   <button type="submit" class="btn">Lançar fechamento</button>
 </form>
 
+<?php if ($canAddExtra): ?>
 <h2>Novo horário extra</h2>
 <form method="post" action="<?= e(url('/agenda/horarios/extra')) ?>" class="agenda-form">
   <?= csrf_field() ?><?= $hidden ?>
@@ -119,4 +123,5 @@ $filled = array_values(array_filter($ranges, fn (array $x): bool => $x['start_ti
   </div>
   <button type="submit" class="btn">Lançar horário extra</button>
 </form>
+<?php endif; ?>
 <script src="<?= e(url('/assets/js/confirm-submit.js')) ?>" defer></script>

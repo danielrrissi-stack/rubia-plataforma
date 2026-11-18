@@ -81,6 +81,23 @@ final class AgendaCardsTest extends DbTestCase
         $this->assertStringNotContainsString('NOTA-SECRETA-X', $body);
     }
 
+    public function test_secretary_agendar_uses_first_bookable_agenda(): void
+    {
+        // primeira agenda por nome = nutricionista sem liberacao; o botao continua, apontando para a medica
+        $this->db->run("UPDATE users SET active = 0 WHERE role IN ('medico','nutricionista') AND id NOT IN (?, ?)", [$this->doc['id'], $this->nutri['id']]);
+        $first = $this->makeUser('nutricionista', ['name' => 'Aaa Nutri Sem Liberacao', 'totp_enabled' => 1]);
+        Container::schedules()->applyClinicDefault((int) $first['id'], (int) $first['id'], new Request('POST', '/'));
+        $this->assertSame((int) $this->doc['id'], Container::agendaAccess()->firstBookableAgenda($this->sec, $this->pid));
+
+        $this->loginAs($this->sec);
+        $body = $this->get('/pacientes/' . $this->pid)->body;
+        $this->assertStringContainsString('/pacientes/' . $this->pid . '/agendar?prof=' . $this->doc['id'], $body);
+        $page = $this->get('/pacientes/' . $this->pid . '/agendar');
+        $this->assertSame(200, $page->status);
+        $this->assertStringContainsString('Próximos horários livres — Dra. Comum', $page->body, 'sem ?prof abre a mesma agenda do botao');
+        $this->assertStringNotContainsString('Peça à médica', $page->body);
+    }
+
     public function test_nutritionist_without_release_has_no_card(): void
     {
         $other = $this->makeUser('nutricionista', ['totp_enabled' => 1]);

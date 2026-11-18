@@ -117,12 +117,18 @@ final class ReminderRoundTest extends DbTestCase
         $this->assertSame([], $this->queued());
     }
 
-    public function test_inactive_professional_gets_no_email_but_family_does(): void
+    public function test_inactive_professional_sends_nothing(): void
     {
+        // profissional desativada: a consulta nao vai acontecer, nem ela nem a familia recebem aviso
         $this->book($this->doc, $this->adult, '2026-11-17 08:00');
+        Container::accessGrants()->grant((int) $this->adult['id'], (int) $this->nutri['id'], (int) $this->doc['id']);
+        $this->book($this->nutri, $this->adult, '2026-11-17 09:00');
         $this->db->run('UPDATE users SET active = 0 WHERE id = ?', [(int) $this->doc['id']]);
-        $this->assertSame(1, Container::reminderRound()->runIfDue('2026-11-16 08:00'));
-        $this->assertSame(['ana@example.test'], array_column($this->queued(), 'to_email'));
+        $this->assertSame(2, Container::reminderRound()->runIfDue('2026-11-16 08:00'));
+        $q = $this->queued();
+        $this->assertSame(['nutri@example.test', 'ana@example.test'], array_column($q, 'to_email'));
+        $this->assertSame('Lembrete: consulta amanhã às 09:00', $q[1]['subject']);
+        $this->assertSame('2026-11-16', $this->processedDay());
     }
 
     public function test_nutritionist_unreleased_patient_is_hidden(): void

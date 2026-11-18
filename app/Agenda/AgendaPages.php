@@ -37,7 +37,7 @@ trait AgendaPages
 
     /**
      * Profissional pedida em ?prof= (ou no formulario), conferida por canView (403 auditado); sem ela, a propria
-     * agenda da profissional ou a primeira da lista. null = nenhuma agenda disponivel.
+     * agenda da profissional ou a primeira ativa da lista. null = nenhuma agenda disponivel.
      *
      * @param list<array{id:int,name:string,role:string}> $agendas
      */
@@ -56,7 +56,29 @@ trait AgendaPages
                 return $a['id'];
             }
         }
-        return $agendas[0]['id'] ?? null;
+        foreach ($agendas as $a) {
+            if ($a['active'] ?? true) {
+                return $a['id'];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * So as agendas ativas (onde se marca).
+     *
+     * @param list<array{id:int,name:string,role:string,active:bool}> $agendas
+     * @return list<array{id:int,name:string,role:string,active:bool}>
+     */
+    private function activeAgendas(array $agendas): array
+    {
+        return array_values(array_filter($agendas, fn (array $a): bool => $a['active']));
+    }
+
+    /** Rotulo do botao/titulo de horarios: "Meus horarios" na propria agenda, senao "Horarios de {nome}". */
+    private function scheduleLabel(array $user, int $prof, ?array $professional): string
+    {
+        return $prof === (int) $user['id'] || $professional === null ? 'Meus horários' : 'Horários de ' . $professional['name'];
     }
 
     /** Data 'Y-m-d' valida do parametro, ou o padrao. */

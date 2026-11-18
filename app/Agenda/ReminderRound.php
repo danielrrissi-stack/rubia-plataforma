@@ -9,7 +9,7 @@ use App\Core\Mailer;
 /**
  * Rodada da vespera (cron/run.php): a partir das 08:00, uma vez por dia, poe na fila, para as consultas
  * agendada/confirmada de amanha, um e-mail "Avisos das consultas de {data}" por profissional ativa com e-mail e o
- * lembrete da familia de cada consulta. Uma transacao cobre a fila e a chave settings.agenda_reminder_day
+ * lembrete da familia de cada consulta (profissional desativada: nada, nem para a familia). Uma transacao cobre a fila e a chave settings.agenda_reminder_day
  * (linha travada com FOR UPDATE: duas rodadas sobrepostas nao enviam duas vezes). Dias perdidos nao sao reenviados.
  * Na agenda de nutricionista, paciente sem liberacao aparece so como "HH:MM — Paciente sem liberação".
  */
@@ -49,7 +49,11 @@ final class ReminderRound
             }
             $count = 0;
             foreach ($byProfessional as $professionalId => $list) {
-                $count += $this->professionalEmail($professionalId, $list, $tomorrow, $today);
+                $prof = $this->db->one('SELECT email, active FROM users WHERE id = ?', [$professionalId]);
+                if ($prof === null || (int) $prof['active'] !== 1) {
+                    continue; // profissional desativada: a consulta nao vai acontecer, ninguem recebe aviso
+                }
+                $count += $this->professionalEmail($professionalId, trim((string) $prof['email']), $list, $tomorrow, $today);
                 foreach ($list as $a) {
                     $count += $this->agendaMailer->reminder($a, $today);
                 }
@@ -63,11 +67,9 @@ final class ReminderRound
     }
 
     /** @param list<array> $list consultas da profissional, em ordem de hora */
-    private function professionalEmail(int $professionalId, array $list, string $day, string $today): int
+    private function professionalEmail(int $professionalId, string $to, array $list, string $day, string $today): int
     {
-        $user = $this->db->one('SELECT email, active FROM users WHERE id = ?', [$professionalId]);
-        $to = trim((string) ($user['email'] ?? ''));
-        if ($user === null || (int) $user['active'] !== 1 || $to === '') {
+        if ($to === '') {
             return 0;
         }
         $html = '<p>' . e('Avisos das consultas de ' . fmt_date($day) . ', para enviar pelo WhatsApp:') . '</p>';

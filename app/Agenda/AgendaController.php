@@ -48,8 +48,13 @@ final class AgendaController
                 fn (array $x): bool => (string) $x['kind'] === 'fechado',
             ));
         }
+        $access = Container::agendaAccess();
+        $professional = $this->professionalOf($agendas, $prof);
         return $this->page('Agenda/views/' . ($view === 'semana' ? 'week' : 'day') . '.php', 'Agenda', $r, [
-            'agendas' => $agendas, 'prof' => $prof, 'professional' => $this->professionalOf($agendas, $prof),
+            'agendas' => $agendas, 'prof' => $prof, 'professional' => $professional,
+            'canBook' => $prof !== null && $access->canManage($user, $prof),
+            'canSchedule' => $prof !== null && $access->canAddClosure($user, $prof),
+            'scheduleLabel' => $prof === null ? '' : $this->scheduleLabel($user, $prof, $professional),
             'date' => $date, 'today' => $today, 'view' => $view, 'days' => $days, 'grid' => $grid, 'closures' => $closures,
             'prev' => $d->modify('-' . $step . ' days')->format('Y-m-d'), 'next' => $d->modify('+' . $step . ' days')->format('Y-m-d'),
         ]);
@@ -96,7 +101,10 @@ final class AgendaController
         return Response::redirect('/agenda?prof=' . $prof . '&data=' . substr($start, 0, 10));
     }
 
-    /** GET /pacientes/{id}/agendar?prof — proximos 10 horarios livres (60 dias) da profissional para o paciente. */
+    /**
+     * GET /pacientes/{id}/agendar?prof — proximos 10 horarios livres (60 dias) da profissional para o paciente.
+     * Sem ?prof: AgendaAccess::firstBookableAgenda (a mesma do botao do cartao).
+     */
     public function patientSlots(Request $r): Response
     {
         $user = $this->staff($r);
@@ -108,8 +116,11 @@ final class AgendaController
         if (!Container::patientScope()->canAccess($user, $pid)) {
             $this->deny($user, $r, $pid);
         }
-        $agendas = Container::agendaAccess()->agendasFor($user);
-        $prof = $this->chosenProfessional($r, $user, $agendas);
+        $agendas = $this->activeAgendas(Container::agendaAccess()->agendasFor($user));
+        // sem ?prof: a mesma agenda do botao "Agendar" do cartao (a primeira em que este paciente pode ser marcado)
+        $prof = (string) $r->input('prof', '') === ''
+            ? (Container::agendaAccess()->firstBookableAgenda($user, $pid) ?? $this->chosenProfessional($r, $user, $agendas))
+            : $this->chosenProfessional($r, $user, $agendas);
         $refusal = null;
         $slots = [];
         if ($prof !== null) {
@@ -315,8 +326,8 @@ final class AgendaController
 
     private function reschedulePage(Request $r, array $user, array $a, ?string $date, array $errors): Response
     {
-        $agendas = Container::agendaAccess()->agendasFor($user);
-        $prof = $this->chosenProfessional($r, $user, []) ?? (Container::agendaAccess()->canView($user, (int) $a['professional_id'])
+        $agendas = $this->activeAgendas(Container::agendaAccess()->agendasFor($user));
+        $prof = $this->chosenProfessional($r, $user, []) ?? (Container::agendaAccess()->canManage($user, (int) $a['professional_id'])
             ? (int) $a['professional_id'] : ($agendas[0]['id'] ?? null));
         $today = date('Y-m-d');
         $apptDay = substr((string) $a['starts_at'], 0, 10);

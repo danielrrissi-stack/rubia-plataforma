@@ -13,5 +13,5 @@ $rows = static function (array $list) use ($pid): void { ?>
   <?php endif; ?>
   <?php if ($agendaCard['upcoming'] !== []): ?><h3>Próximas</h3><?php $rows($agendaCard['upcoming']); ?><?php endif; ?>
   <?php if ($agendaCard['past'] !== []): ?><h3>Últimas</h3><?php $rows($agendaCard['past']); ?><?php endif; ?>
-  <?php if ($agendaCard['canBook']): ?><p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/agendar')) ?>">Agendar</a></p><?php endif; ?>
+  <?php if ($agendaCard['canBook']): ?><p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/agendar') . '?prof=' . (int) $agendaCard['bookProf']) ?>">Agendar</a></p><?php endif; ?>
 </section>

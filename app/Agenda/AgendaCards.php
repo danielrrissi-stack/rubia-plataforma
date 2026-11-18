@@ -13,7 +13,8 @@ final class AgendaCards
 
     /**
      * Ficha: null sem permissao. Nutricionista ve so as consultas dela; medica e secretaria, de todas as profissionais.
-     * @return ?array{upcoming: list<array>, past: list<array>, canBook: bool, rows: list<array>}
+     * `bookProf`: agenda do botao "Agendar" (AgendaAccess::firstBookableAgenda), null = sem botao.
+     * @return ?array{upcoming: list<array>, past: list<array>, canBook: bool, bookProf: ?int}
      */
     public static function forStaff(array $user, int $patientId, string $now): ?array
     {
@@ -26,17 +27,12 @@ final class AgendaCards
         $link = static function (array $a) use ($user, $access): array {
             return self::row($a) + ['link' => $access->canManageExisting($user, (int) $a['professional_id'])];
         };
-        $agendas = $access->agendasFor($user);
-        $default = $agendas[0]['id'] ?? null;
-        foreach ($agendas as $ag) {
-            if ($ag['id'] === (int) $user['id']) {
-                $default = $ag['id'];
-            }
-        }
+        $bookProf = $access->firstBookableAgenda($user, $patientId);
         return [
             'upcoming' => array_map($link, $found['upcoming']),
             'past' => array_map($link, $found['past']),
-            'canBook' => $default !== null && $access->mayBookPatient($default, $patientId, $user) === null,
+            'canBook' => $bookProf !== null,
+            'bookProf' => $bookProf,
         ];
     }
 

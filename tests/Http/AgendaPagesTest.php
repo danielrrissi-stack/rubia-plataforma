@@ -105,6 +105,32 @@ final class AgendaPagesTest extends DbTestCase
         $this->assertStringContainsString('Ana Paciente', $week->body);
     }
 
+    public function test_inactive_professional_future_appointments_stay_reachable(): void
+    {
+        $id = $this->bookDirect($this->doc, $this->patient, $this->mon . ' 08:00');
+        $this->db->run('UPDATE users SET active = 0 WHERE id = ?', [$this->id($this->doc)]);
+        foreach ([$this->admin, $this->sec] as $who) {
+            $this->loginAs($who);
+            $res = $this->get('/agenda', ['prof' => (string) $this->id($this->doc), 'data' => $this->mon]);
+            $this->assertSame(200, $res->status);
+            $this->assertStringContainsString('>Dra. Comum (desativada)</option>', $res->body);
+            $this->assertStringContainsString('/agenda/consultas/' . $id, $res->body);
+            $this->assertStringNotContainsString('/agenda/marcar?', $res->body, 'sem [marcar] na agenda desativada');
+            $this->assertStringNotContainsString('/agenda/horarios?prof=' . $this->id($this->doc), $res->body);
+            $this->assertSame(200, $this->get('/agenda/consultas/' . $id)->status);
+            $resched = $this->get('/agenda/consultas/' . $id . '/remarcar');
+            $this->assertSame(200, $resched->status);
+            $this->assertStringNotContainsString('Dra. Comum (desativada)', $resched->body, 'remarcar so para agenda ativa');
+        }
+        $before = $this->apptCount();
+        $this->assertNotSame(302, $this->post('/agenda/marcar', ['prof' => (string) $this->id($this->doc), 'inicio' => $this->mon . ' 09:00', 'patient_id' => (string) $this->id($this->other), 'kind' => 'primeira', 'note' => ''])->status);
+        $this->assertSame($before, $this->apptCount());
+
+        $this->assertSame(302, $this->post('/agenda/consultas/' . $id . '/cancelar', ['motivo' => 'profissional saiu'])->status);
+        $this->assertSame('cancelada', $this->db->one('SELECT status FROM appointments WHERE id = ?', [$id])['status']);
+        $this->assertSame(403, $this->get('/agenda', ['prof' => (string) $this->id($this->doc)])->status, 'sem consultas futuras: sai da lista');
+    }
+
     public function test_professional_sees_only_own_agenda(): void
     {
         $this->loginAs($this->doc);
