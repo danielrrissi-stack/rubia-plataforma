@@ -495,4 +495,4 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site).
    **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.
    **Fotos do prato:** para reduzir e endireitar as fotos (celulares gravam fotos "deitadas"), a hospedagem precisa das extensões **GD** e **exif** do PHP:
-   cPanel → "Selecionar versão do PHP" → Extensões → marque `gd` e `exif`. Sem elas o diário funciona normalmente, mas a foto é guardada **como foi enviada** (até 10 MB).
+   cPanel → "Selecionar versão do PHP" → Extensões → marque `gd` e `exif`. Sem a `gd` o diário funciona normalmente, mas a foto é guardada **como foi enviada** (até 10 MB, com seus metadados). Com a `gd` e sem a `exif`, a foto é reduzida mas não é endireitada. Fotos muito grandes (acima de ~25 megapixels) também são guardadas como foram enviadas.

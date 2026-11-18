@@ -27,7 +27,7 @@ final class DiaryEntryRepositoryTest extends DbTestCase
         $this->dir = sys_get_temp_dir() . '/rubia_de_' . bin2hex(random_bytes(4));
         mkdir($this->dir . '/uploads', 0777, true);
         mkdir($this->dir . '/in', 0777, true);
-        Container::set('diaryPhotos', new DiaryPhotoStore($this->dir . '/uploads', true));
+        Container::set('diaryPhotos', new DiaryPhotoStore($this->dir . '/uploads', true, false));
         $this->medico = $this->makeUser('medico');
         $this->nutri = $this->makeUser('nutricionista');
         $this->respA = $this->makeUser('responsavel');
@@ -270,9 +270,6 @@ final class DiaryEntryRepositoryTest extends DbTestCase
 
     public function test_photo_only_for_food_and_failed_write_discards_file(): void
     {
-        if (extension_loaded('gd')) {
-            $this->markTestSkipped('Usa o original sem GD.');
-        }
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
         $mk = function () use ($png): array {
             $tmp = $this->dir . '/in/' . bin2hex(random_bytes(4));

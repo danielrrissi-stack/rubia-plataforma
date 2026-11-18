@@ -11,11 +11,32 @@ final class DiaryPhotoStore
 {
     private const TYPES = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     private const MAX_SIDE = 1280;
+    private const MAX_PIXELS = 25_000_000;
+    private const BYTES_PER_PIXEL = 10;
 
-    /** @param bool $allowNonUploaded aceita arquivos que nao vieram de upload HTTP (so para testes) */
-    public function __construct(private string $uploadsDir, private bool $allowNonUploaded = false)
+    private bool $useGd;
+
+    /**
+     * @param bool $allowNonUploaded aceita arquivos que nao vieram de upload HTTP (so para testes)
+     * @param ?bool $useGd null = usa a GD quando carregada; false forca guardar o original (testes)
+     */
+    public function __construct(private string $uploadsDir, private bool $allowNonUploaded = false, ?bool $useGd = null)
     {
-        $this->uploadsDir = rtrim($uploadsDir, '/\\');
+        $this->uploadsDir = rtrim($uploadsDir, '/' . chr(92));
+        $this->useGd = ($useGd ?? true) && extension_loaded('gd');
+    }
+
+    /** A foto cabe no orcamento de memoria para ser decodificada pela GD? (puro, sem GD) */
+    public static function shouldResize(int $w, int $h, int $memoryLimitBytes): bool
+    {
+        if ($w < 1 || $h < 1) {
+            return false;
+        }
+        $pixels = $w * $h;
+        if ($pixels > self::MAX_PIXELS) {
+            return false;
+        }
+        return $memoryLimitBytes < 0 || $pixels * self::BYTES_PER_PIXEL <= $memoryLimitBytes;
     }
 
     /**
@@ -50,8 +71,8 @@ final class DiaryPhotoStore
 
         $ext = self::TYPES[$mime];
         $image = null;
-        if (extension_loaded('gd')) {
-            $image = $this->resized($tmp);
+        if ($this->useGd) {
+            $image = $this->resized($tmp, $mime);
             if ($image !== null) {
                 $ext = 'jpg';
                 $mime = 'image/jpeg';
@@ -111,20 +132,21 @@ final class DiaryPhotoStore
         return $path;
     }
 
-    /** Imagem reduzida (maior lado <= 1280, sem ampliar) sobre fundo branco; null se a GD nao conseguir ler. */
-    private function resized(string $tmp): ?\GdImage
+    /** Imagem reduzida (maior lado <= 1280, sem ampliar) sobre fundo branco; null se a GD nao puder ou nao couber na memoria. */
+    private function resized(string $tmp, string $mime): ?\GdImage
     {
-        $data = @file_get_contents($tmp);
-        $src = $data === false ? false : @imagecreatefromstring($data);
-        if ($src === false) {
+        $info = @getimagesize($tmp);
+        if ($info === false || !self::shouldResize((int) $info[0], (int) $info[1], self::memoryLimit())) {
             return null;
         }
-        $angle = self::rotationFor($this->orientation($tmp));
-        if ($angle !== 0) {
-            $rotated = imagerotate($src, $angle, 0);
-            if ($rotated !== false) {
-                $src = $rotated;
-            }
+        $src = match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($tmp),
+            'image/png' => @imagecreatefrompng($tmp),
+            'image/webp' => @imagecreatefromwebp($tmp),
+            default => false,
+        };
+        if ($src === false) {
+            return null;
         }
         $w = imagesx($src);
         $h = imagesy($src);
@@ -134,7 +156,22 @@ final class DiaryPhotoStore
         $dst = imagecreatetruecolor($nw, $nh);
         imagefill($dst, 0, 0, (int) imagecolorallocate($dst, 255, 255, 255));
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+        imagedestroy($src);
+        $angle = self::rotationFor($this->orientation($tmp));
+        if ($angle !== 0) {
+            $rotated = imagerotate($dst, $angle, 0);
+            if ($rotated !== false) {
+                imagedestroy($dst);
+                $dst = $rotated;
+            }
+        }
         return $dst;
+    }
+
+    private static function memoryLimit(): int
+    {
+        $v = trim((string) ini_get('memory_limit'));
+        return $v === '-1' ? -1 : self::iniBytes($v);
     }
 
     /**

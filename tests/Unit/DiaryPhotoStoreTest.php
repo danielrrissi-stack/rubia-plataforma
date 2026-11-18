@@ -38,7 +38,7 @@ final class DiaryPhotoStoreTest extends TestCase
 
     private function store(): DiaryPhotoStore
     {
-        return new DiaryPhotoStore($this->dir . '/uploads', true);
+        return new DiaryPhotoStore($this->dir . '/uploads', true, false);
     }
 
     private function upload(string $name, string $content, int $error = UPLOAD_ERR_OK): array
@@ -69,9 +69,6 @@ final class DiaryPhotoStoreTest extends TestCase
 
     public function test_keeps_original_without_gd(): void
     {
-        if (extension_loaded('gd')) {
-            $this->markTestSkipped('GD carregada.');
-        }
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
         $res = $this->store()->store($this->upload('x.png', $png));
         $this->assertSame('image/png', $res['mime']);
@@ -89,12 +86,21 @@ final class DiaryPhotoStoreTest extends TestCase
         ob_start();
         imagepng($img);
         $png = (string) ob_get_clean();
-        $res = $this->store()->store($this->upload('x.png', $png));
+        $res = (new DiaryPhotoStore($this->dir . '/uploads', true))->store($this->upload('x.png', $png));
         $this->assertSame('image/jpeg', $res['mime']);
         $this->assertStringEndsWith('.jpg', $res['path']);
         [$w, $h] = getimagesize($this->dir . '/uploads/' . $res['path']);
         $this->assertSame(1280, $w);
         $this->assertSame(427, $h);
+    }
+
+    public function test_should_resize_respects_pixel_cap_and_memory(): void
+    {
+        $this->assertTrue(DiaryPhotoStore::shouldResize(4000, 3000, 128 * 1024 * 1024));
+        $this->assertFalse(DiaryPhotoStore::shouldResize(6000, 5000, -1)); // 30 MP
+        $this->assertTrue(DiaryPhotoStore::shouldResize(5000, 5000, -1));  // 25 MP exato
+        $this->assertFalse(DiaryPhotoStore::shouldResize(4000, 3000, 64 * 1024 * 1024)); // 120 MB > 64 MB
+        $this->assertFalse(DiaryPhotoStore::shouldResize(0, 10, -1));
     }
 
     public function test_rotation_for_exif_orientation(): void
@@ -112,9 +118,6 @@ final class DiaryPhotoStoreTest extends TestCase
 
     public function test_discard_and_response(): void
     {
-        if (extension_loaded('gd')) {
-            $this->markTestSkipped('Usa o original sem GD.');
-        }
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
         $res = $this->store()->store($this->upload('x.png', $png));
         $r = $this->store()->response(['photo_path' => $res['path'], 'photo_mime' => $res['mime']]);
@@ -123,6 +126,6 @@ final class DiaryPhotoStoreTest extends TestCase
         $this->assertSame('nosniff', $r->headers['X-Content-Type-Options']);
         $this->store()->discard($res['path']);
         $this->assertFileDoesNotExist($this->dir . '/uploads/' . $res['path']);
-        $this->assertSame(404, $this->store()->response(['photo_path' => $res['path'], 'photo_mime' => 'image/png'])->status);
+        $this->assertSame(404, $this->store()->response(['photo_path' => $res['path'], 'photo_mime' => $res['mime']])->status);
     }
 }

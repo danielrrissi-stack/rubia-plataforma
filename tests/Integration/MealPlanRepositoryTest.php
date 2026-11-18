@@ -253,10 +253,11 @@ final class MealPlanRepositoryTest extends DbTestCase
         $this->assertNull($this->repo->onDate($this->pid, '2026-10-31'));
         $this->assertSame($a, (int) $this->repo->onDate($this->pid, '2026-11-05')['id']);
         $this->assertSame($a, (int) $this->repo->onDate($this->pid, '2026-11-09')['id']);
-        $this->assertSame($b, (int) $this->repo->onDate($this->pid, '2026-11-10')['id']);
+        $this->assertSame($b, (int) $this->repo->onDate($this->pid, '2026-11-10')['id']); // dia da troca: o novo vence
         $this->assertIsArray($this->repo->onDate($this->pid, '2026-11-05')['structure']);
         $this->db->run("UPDATE meal_plans SET status = 'encerrado', ended_at = ? WHERE id = ?", ['2026-11-15 10:00:00', $b]);
         $this->assertSame($b, (int) $this->repo->onDate($this->pid, '2026-11-14')['id']);
-        $this->assertNull($this->repo->onDate($this->pid, '2026-11-15'));
+        $this->assertSame($b, (int) $this->repo->onDate($this->pid, '2026-11-15')['id']); // dia do encerramento ainda vale
+        $this->assertNull($this->repo->onDate($this->pid, '2026-11-16'));
     }
 }

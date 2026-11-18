@@ -124,11 +124,20 @@ final class SmokeAllRoutesTest extends DbTestCase
     ];
 
     private array $fx = [];
+    private ?string $diaryPhotoFile = null;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->buildFixtures();
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->diaryPhotoFile !== null && is_file($this->diaryPhotoFile)) {
+            @unlink($this->diaryPhotoFile);
+        }
+        parent::tearDown();
     }
 
     private function buildFixtures(): void
@@ -235,6 +244,10 @@ final class SmokeAllRoutesTest extends DbTestCase
         $id = Container::diaryEntries()->record($request, $today, ['meal' => 'almoco', 'meal_time' => '12:00', 'description' => 'prato fumaca'], [
             'name' => 'f.png', 'type' => 'image/png', 'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($png),
         ], $resp, $today, new Request('POST', '/'));
+        $photo = (string) (Container::diaryEntries()->find($id)['photo_path'] ?? '');
+        if ($photo !== '') {
+            $this->diaryPhotoFile = rtrim((string) \App\Core\Config::get('storage_path', APP_ROOT . '/storage'), '/' . chr(92)) . '/uploads/' . $photo;
+        }
         Container::reset();
         Container::set('db', $this->db);
         return $id;

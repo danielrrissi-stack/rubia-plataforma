@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var list<array> $current @var list<array> $ended @var string $today @var bool $canEdit
- * @var array $grid @var string $monday @var string $prev @var string $next @var array $byDay @var array $plans @var int $userId
+ * @var array $grid @var string $monday @var string $prev @var string $next @var array $byDay @var array $plans @var int $userId @var array<int,bool> $hasEntries
  */
 use App\Diary\DiaryType;
 
@@ -26,7 +26,7 @@ $entryHtml = static function (array $e) use ($pid): string {
       <?php else: ?>
         <p><?= e(\App\Diary\DiaryFormat::cell($type, [$e], false) ?? '') ?></p>
       <?php endif; ?>
-      <p class="ajuda">Anotado por <?= e($e['recorder_name']) ?> (<?= e($e['recorded_by_role'] === 'responsavel' ? 'responsável' : $e['recorded_by_role']) ?>)</p>
+      <p class="ajuda">Anotado por <?= e($e['recorder_name']) ?> (<?= e(['responsavel' => 'responsável', 'paciente' => 'paciente', 'medico' => 'médica', 'nutricionista' => 'nutricionista'][$e['recorded_by_role']] ?? $e['recorded_by_role']) ?>)</p>
       <?php foreach ($e['comments'] as $c): ?>
         <div class="diario-comentario">
           <p><strong><?= e($c['author_name']) ?></strong> <span class="ajuda"><?= e(fmt_date((string) $c['created_at'])) ?></span><br><?= e($c['body']) ?></p>
@@ -52,7 +52,7 @@ $entryHtml = static function (array $e) use ($pid): string {
     return (string) ob_get_clean();
 };
 $name = $patient['social_name'] ?: $patient['full_name'];
-$row = static function (array $p) use ($today, $canEdit, $pid): string {
+$row = static function (array $p) use ($today, $canEdit, $pid, $hasEntries): string {
     ob_start(); ?>
     <li>
       <strong><?= e(DiaryType::LABELS[$p['type']] ?? $p['type']) ?></strong>
@@ -65,7 +65,9 @@ $row = static function (array $p) use ($today, $canEdit, $pid): string {
         <?php if ((string) $p['start_date'] <= $today && ($p['end_date'] === null || (string) $p['end_date'] > $today)): ?>
           <form method="post" action="<?= e(url('/diario/pedidos/' . (int) $p['id'] . '/encerrar')) ?>" class="form-inline" data-confirm="Encerrar este pedido? Os registros já feitos continuam."><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Encerrar</button></form>
         <?php endif; ?>
-        <form method="post" action="<?= e(url('/diario/pedidos/' . (int) $p['id'] . '/excluir')) ?>" class="form-inline" data-confirm="Excluir este pedido? Só é possível se ainda não há registros."><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir</button></form>
+        <?php if (empty($hasEntries[(int) $p['id']])): ?>
+        <form method="post" action="<?= e(url('/diario/pedidos/' . (int) $p['id'] . '/excluir')) ?>" class="form-inline" data-confirm="Excluir este pedido?"><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir</button></form>
+        <?php endif; ?>
       <?php endif; ?>
     </li>
     <?php

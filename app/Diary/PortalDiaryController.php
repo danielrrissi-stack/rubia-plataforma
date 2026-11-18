@@ -91,7 +91,9 @@ final class PortalDiaryController
         try {
             Container::diaryEntries()->record((int) $req['id'], $day, $values, $this->upload($r), $user, date('Y-m-d'), $r);
         } catch (InvalidDiaryException $e) {
-            return $this->formPage($user, $patient, $req, null, $day, $values, $e->errors(), 422);
+            $shown = \DateTimeImmutable::createFromFormat('!Y-m-d', $day);
+            $shown = $shown !== false && $shown->format('Y-m-d') === $day ? $day : date('Y-m-d');
+            return $this->formPage($user, $patient, $req, null, $shown, $values, $e->errors(), 422);
         }
         Session::flash('ok', 'Anotado.');
         return Response::redirect('/portal/p/' . $pid . '/diario?dia=' . $day);
@@ -214,7 +216,7 @@ final class PortalDiaryController
         return in_array((string) $entry['type'], DiaryType::ONE_PER_DAY, true) || (int) $entry['recorded_by'] === (int) $user['id'];
     }
 
-    /** ?dia= (no POST, tambem o campo do formulario); invalido ou fora da janela = hoje. Com $keep, data valida passa e o repositorio decide. */
+    /** ?dia= (no POST, tambem o campo do formulario); invalido ou fora da janela = hoje. Com $keep, o valor enviado passa como veio e o repositorio decide. */
     private function dayOf(Request $r, string $today, bool $keep = false): string
     {
         $raw = $r->query['dia'] ?? ($keep ? ($r->post['dia'] ?? '') : '');
@@ -222,7 +224,8 @@ final class PortalDiaryController
         $d = \DateTimeImmutable::createFromFormat('!Y-m-d', $raw);
         $valid = $d !== false && $d->format('Y-m-d') === $raw;
         if ($keep) {
-            return $valid ? $raw : $today;
+            // sem o campo = hoje; com valor invalido segue como veio e o repositorio recusa (422)
+            return $raw === '' && !isset($r->query['dia']) && !isset($r->post['dia']) ? $today : $raw;
         }
         $from = date('Y-m-d', strtotime($today . ' -' . self::WINDOW_DAYS . ' days'));
         return $valid && $raw >= $from && $raw <= $today ? $raw : $today;

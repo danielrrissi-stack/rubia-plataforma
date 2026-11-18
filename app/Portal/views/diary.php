@@ -44,7 +44,7 @@ $linkLabel = static function (string $ymd) use ($today, $short): string {
       <?php if ($measured): ?>
         <p>Peso anotado ✔</p>
       <?php else: ?>
-        <p><a class="btn" href="<?= e(url('/portal/p/' . $pid . '/medidas/nova')) ?>">Pesar hoje</a></p>
+        <p><a class="btn" href="<?= e(url('/portal/p/' . $pid . '/medidas/nova')) ?>"><?= $day === $today ? 'Pesar hoje' : 'Anotar peso' ?></a></p>
       <?php endif; ?>
     <?php else: ?>
       <?php foreach ($entries as $e): ?>
@@ -63,7 +63,7 @@ $linkLabel = static function (string $ymd) use ($today, $short): string {
           <p class="ajuda">Anotado por <?= e($e['recorder_name']) ?></p>
           <?php foreach ($e['comments'] as $c): ?>
             <div class="diario-comentario">
-              <p>Comentário de <?= e($c['author_name']) ?> em <?= e(date('d/m', strtotime((string) $c['created_at']))) ?>: <?= e($c['body']) ?></p>
+              <p>Comentário de <?= e($c['author_name']) ?> em <?= e(fmt_date((string) $c['created_at'])) ?>: <?= e($c['body']) ?></p>
             </div>
           <?php endforeach; ?>
           <?php if ($e['may_change'] && !$once): ?>

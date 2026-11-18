@@ -261,4 +261,25 @@ final class DiaryWeekPagesTest extends DbTestCase
         $this->food($this->request('alimentacao'));
         $this->assertStringContainsString('1 de 7 dias nos últimos 7', $this->get('/pacientes/' . $this->pid)->body);
     }
+
+    public function test_delete_hidden_with_entries_and_role_label_mapped(): void
+    {
+        $withFood = $this->request('alimentacao');
+        $this->food($withFood);
+        $empty = $this->request('agua');
+        $body = $this->get($this->week())->body;
+        $this->assertStringContainsString('(responsável)', $body);
+        $this->assertStringNotContainsString('/diario/pedidos/' . $withFood . '/excluir', $body);
+        $this->assertStringContainsString('/diario/pedidos/' . $withFood . '/encerrar', $body);
+        $this->assertStringContainsString('/diario/pedidos/' . $empty . '/excluir', $body);
+    }
+
+    public function test_patient_card_shows_future_requests_start(): void
+    {
+        $start = date('Y-m-d', strtotime('+5 days'));
+        $this->request('agua', ['start_date' => $start]);
+        $body = $this->get('/pacientes/' . $this->pid)->body;
+        $this->assertStringContainsString('Pedidos começam em ' . date('d/m/Y', strtotime($start)), $body);
+        $this->assertStringNotContainsString('Nenhum pedido de registro.', $body);
+    }
 }

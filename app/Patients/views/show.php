@@ -103,8 +103,8 @@ $pid = (int) $patient['id'];
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/metas')) ?>">Ver metas</a></p></section><?php endif; ?>
   <?php if ($diaryCard !== null): ?><section class="cartao" id="cartao-diario"><h2>Diário</h2>
     <?php if ($diaryCard['requests'] === []): ?>
-      <p class="ajuda">Nenhum pedido de registro.</p>
-      <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/diario')) ?>">Pedir registros</a></p>
+      <p class="ajuda"><?= $diaryCard['starts'] !== null ? 'Pedidos começam em ' . e(fmt_date($diaryCard['starts'])) . '.' : 'Nenhum pedido de registro.' ?></p>
+      <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/diario')) ?>"><?= $diaryCard['starts'] !== null ? 'Abrir diário' : 'Pedir registros' ?></a></p>
     <?php else: ?>
       <ul><?php foreach ($diaryCard['requests'] as $dr): ?><li><?= e(\App\Diary\DiaryType::LABELS[$dr['type']] ?? $dr['type']) ?> — <?= e(\App\Diary\DiaryType::weekdaysLabel((int) $dr['weekdays'])) ?></li><?php endforeach; ?></ul>
       <?php if ($diaryCard['week']['asked'] > 0): ?><p><?= e($diaryCard['week']['filled']) ?> de <?= e($diaryCard['week']['asked']) ?> dias nos últimos 7</p><?php endif; ?>

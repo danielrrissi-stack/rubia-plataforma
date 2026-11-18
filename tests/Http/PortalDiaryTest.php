@@ -215,6 +215,16 @@ final class PortalDiaryTest extends DbTestCase
         $this->assertStringContainsString('Nada para anotar neste dia.', $this->get($this->base(), ['dia' => $other])->body);
     }
 
+    public function test_unparseable_day_on_post_is_rejected_not_recorded_today(): void
+    {
+        $req = $this->ask('agua');
+        $this->loginAs($this->resp);
+        $res = $this->post($this->base() . '/' . $req . '/anotar', ['glasses' => '3', 'dia' => 'lixo']);
+        $this->assertSame(422, $res->status);
+        $this->assertStringContainsString('Informe um dia válido.', $res->body);
+        $this->assertSame(0, $this->rows());
+    }
+
     public function test_only_author_edits_meal_but_anyone_corrects_water(): void
     {
         $meal = $this->ask('alimentacao');
@@ -248,7 +258,7 @@ final class PortalDiaryTest extends DbTestCase
         Container::diaryComments()->add($entry, 'Muito bem, continue assim', $this->med, new Request('POST', '/'));
 
         $body = $this->get($this->base())->body;
-        $this->assertStringContainsString('Comentário de ' . $this->med['name'] . ' em ' . date('d/m') . ': Muito bem, continue assim', $body);
+        $this->assertStringContainsString('Comentário de ' . $this->med['name'] . ' em ' . date('d/m/Y') . ': Muito bem, continue assim', $body);
     }
 
     public function test_medidas_request_links_to_measure_form(): void

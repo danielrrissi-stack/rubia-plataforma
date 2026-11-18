@@ -250,8 +250,8 @@ final class MealPlanRepository
         return $this->decode($this->db->one(
             "SELECT * FROM meal_plans WHERE patient_id = ? AND status IN ('publicado','substituido','encerrado')
                AND DATE(published_at) <= ?
-               AND (superseded_at IS NULL OR DATE(superseded_at) > ?)
-               AND (ended_at IS NULL OR DATE(ended_at) > ?)
+               AND (superseded_at IS NULL OR DATE(superseded_at) >= ?)
+               AND (ended_at IS NULL OR DATE(ended_at) >= ?)
              ORDER BY published_at DESC, id DESC LIMIT 1",
             [$patientId, $ymd, $ymd, $ymd],
         ));

@@ -35,16 +35,18 @@ final class DiaryController
         $sunday = $grid['days'][6];
         $entries = Container::diaryEntries()->forRange($pid, $user, $monday, $sunday);
         $comments = Container::diaryComments()->forEntries(array_map(fn (array $e): int => (int) $e['id'], $entries));
-        $requests = [];
-        foreach ($grid['rows'] as $row) {
-            $requests[(int) $row['request']['id']] = $row['request'];
-        }
+        $mayComment = [];
         $byDay = [];
         $plans = [];
         $repo = Container::diaryRequests();
         foreach ($entries as $e) {
             $day = (string) $e['day'];
-            $e['may_comment'] = isset($requests[(int) $e['request_id']]) && $repo->mayEdit($requests[(int) $e['request_id']], $user);
+            $rid = (int) $e['request_id'];
+            if (!isset($mayComment[$rid])) {
+                $req = $repo->find($rid);
+                $mayComment[$rid] = $req !== null && $repo->mayEdit($req, $user);
+            }
+            $e['may_comment'] = $mayComment[$rid];
             $e['comments'] = $comments[(int) $e['id']] ?? [];
             $byDay[$day][] = $e;
             if ($e['type'] === 'alimentacao' && !array_key_exists($day, $plans)) {
@@ -52,10 +54,14 @@ final class DiaryController
             }
         }
         $lists = $repo->listForStaff($pid, $user, $today);
+        $hasEntries = [];
+        foreach (array_merge($lists['current'], $lists['ended']) as $p) {
+            $hasEntries[(int) $p['id']] = $repo->hasEntries((int) $p['id']);
+        }
         return $this->page('Diary/views/week.php', 'Diário', $r, [
             'patient' => $patient, 'current' => $lists['current'], 'ended' => $lists['ended'], 'today' => $today,
             'canEdit' => self::allowed($user, 'edit', $pid),
-            'grid' => $grid, 'monday' => $monday, 'byDay' => $byDay, 'plans' => $plans, 'userId' => (int) $user['id'],
+            'hasEntries' => $hasEntries, 'grid' => $grid, 'monday' => $monday, 'byDay' => $byDay, 'plans' => $plans, 'userId' => (int) $user['id'],
             'prev' => (new \DateTimeImmutable($monday))->modify('-7 days')->format('Y-m-d'),
             'next' => (new \DateTimeImmutable($monday))->modify('+7 days')->format('Y-m-d'),
         ]);
@@ -191,7 +197,7 @@ final class DiaryController
     /**
      * Cartao Diario da ficha: so os pedidos vigentes visiveis ao usuario; null se nao e equipe ou nao alcanca o paciente.
      *
-     * @return ?array{requests: list<array>, week: array{filled: int, asked: int}}
+     * @return ?array{requests: list<array>, starts: ?string, week: array{filled: int, asked: int}}
      */
     public static function card(array $user, int $patientId, string $today): ?array
     {
@@ -200,7 +206,9 @@ final class DiaryController
         }
         $current = Container::diaryRequests()->listForStaff($patientId, $user, $today)['current'];
         $started = array_values(array_filter($current, fn (array $p): bool => (string) $p['start_date'] <= $today));
-        return ['requests' => $started, 'week' => Container::diaryWeek()->lastSevenDays($patientId, $user, $today)];
+        $future = array_filter($current, fn (array $p): bool => (string) $p['start_date'] > $today);
+        $starts = $future === [] ? null : min(array_map(fn (array $p): string => (string) $p['start_date'], $future));
+        return ['requests' => $started, 'starts' => $starts, 'week' => Container::diaryWeek()->lastSevenDays($patientId, $user, $today)];
     }
 
     // ---- helpers ----
