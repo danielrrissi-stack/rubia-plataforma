@@ -142,6 +142,7 @@ final class PrescriptionPagesTest extends DbTestCase
             $this->assertSame(403, $this->get('/pacientes/' . $target . '/tratamento')->status, $u['role']);
             $this->assertSame(403, $this->get('/pacientes/' . $target . '/tratamento/nova')->status, $u['role']);
             $this->assertSame(403, $this->get('/prescricoes/' . $id)->status, $u['role']);
+            $this->assertSame(403, $this->get('/prescricoes/999999')->status, $u['role']);
             $this->assertSame(403, $this->post('/prescricoes/' . $id . '/excluir', [])->status, $u['role']);
             $this->assertSame(403, $this->post('/prescricoes/' . $id . '/encerrar', [])->status, $u['role']);
         }
@@ -170,6 +171,7 @@ final class PrescriptionPagesTest extends DbTestCase
         $this->assertStringContainsString('<details', $index->body);
         $this->assertSame(404, $this->get('/prescricoes/' . $b)->status);
         $this->assertSame(404, $this->get('/prescricoes/999999')->status);
+        $this->assertStringContainsString('confirm-submit.js', $this->get('/prescricoes/' . $a)->body);
     }
 
     public function test_patient_card_shows_treatment_only_for_doctor(): void

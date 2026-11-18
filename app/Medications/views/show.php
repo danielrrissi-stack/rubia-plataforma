@@ -93,3 +93,4 @@ $fmtTime = static fn (string $dt): string => fmt_date(substr($dt, 0, 10)) . ' ' 
 <?php endif; ?>
 
 <form class="form-inline" method="post" action="<?= e(url('/prescricoes/' . $rid . '/excluir')) ?>" data-confirm="Excluir esta prescrição? Ela deixa de aparecer para todos."><?= csrf_field() ?><button type="submit" class="btn btn-quiet">Excluir prescrição</button></form>
+<script src="<?= e(url('/assets/js/confirm-submit.js')) ?>" defer></script>
