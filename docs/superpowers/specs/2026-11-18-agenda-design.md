@@ -67,7 +67,8 @@ agendadas só pelo Cron do cPanel (o `cron/run.php` já roda a cada 5 minutos); 
 ### 5.1 Horários de cada profissional
 
 - Tela **"Meus horários"** para cada médica e nutricionista: lista de faixas por dia da semana (ex.: seg 07:30–11:30),
-  e a **duração da consulta** da profissional (padrão 30 min; vale para toda a agenda dela). Uma profissional pode ter
+  e a **duração da consulta** da profissional (padrão 30 min; vale para toda a agenda dela) e o **endereço de
+  atendimento** dela (ver §9.8). Uma profissional pode ter
   várias faixas no mesmo dia; faixas do mesmo dia não podem se sobrepor.
 - **Fechamentos**: data inicial e final, com horário opcional (dia inteiro ou um período), e motivo curto (férias,
   congresso). Consultas já marcadas dentro de um fechamento **não são canceladas sozinhas**: a tela avisa "há N
@@ -125,7 +126,8 @@ quando a família puder pedir horário.
 - Para paciente **menor de 18 anos** na data da consulta, o texto padrão fala com o responsável: "Olá! Lembrando da
   consulta de {nome} com {profissional} …". São dois textos configuráveis (adulto e criança). *(escolha minha)*
 - `{nome}` = nome social se houver, senão primeiro nome do paciente; `{profissional}` = nome da profissional como
-  cadastrado; `{endereço}` = o endereço já configurado na tela da receita (`rx_address`), sem duplicar cadastro.
+  cadastrado; `{endereço}` = o **endereço de atendimento da profissional** (ver §5.1); se ela não preencheu, o
+  endereço da clínica já configurado na tela da receita (`rx_address`).
 - **"amanhã"**: o texto é pensado para ser mandado na véspera. Quando o botão de WhatsApp é usado em outro dia, a
   palavra se ajusta: "hoje", "amanhã" ou omitida (fica só "{dia da semana} {data}"). *(escolha minha)*
 
@@ -223,7 +225,10 @@ duração; agenda de uma profissional desativada some do seletor, mas as consult
    lembretes da família, todos colocados na fila numa mesma transação junto com a marca do dia em `settings`; se algo
    falhar antes do fim, nada fica marcado e a próxima passada do Cron refaz a rodada inteira. Depois de na fila, os
    reenvios são da própria fila.
-8. **Endereço**: `rx_address` é uma configuração única da clínica (tabela `settings`), usada para todas as
-   profissionais.
+8. **Endereço por profissional** (decidido pelo responsável em 2026-11-18: "cada nutricionista pode ter um endereço
+   diferente"): cada profissional tem um campo **endereço de atendimento** na tela "Meus horários" (editável por ela e
+   pela médica administradora). O aviso, o e-mail da véspera e os e-mails da família usam o endereço da profissional
+   da consulta; vazio → `rx_address` da clínica; os dois vazios → a frase "Endereço:" sai do texto. Um endereço por
+   profissional (não por dia/faixa). *(escolha minha)*
 9. **Tipo** (primeira consulta/retorno) é só um rótulo. Ao marcar, vem sugerido "retorno" se o paciente já tem alguma
    consulta realizada com aquela profissional, senão "primeira consulta"; a equipe pode trocar.
