@@ -82,6 +82,9 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/exames/anexos/{attachmentId}'            => [404, 403, 403, 403, 403, 302], // registro sem arquivo no disco: 404 so depois da permissao
         '/pacientes/{id}/tratamento'               => [200, 403, 403, 403, 403, 302], // so medico (Clinician antes do Gate)
         '/pacientes/{id}/tratamento/nova'          => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/receita'                  => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/receita/imprimir'         => [302, 403, 403, 403, 403, 302], // sem p[] volta para a escolha
+        '/admin/receita'                           => [200, 403, 403, 403, 403, 302], // so is_admin (M e admin no fixture)
         '/pacientes/{id}/efeitos/novo'             => [200, 403, 403, 403, 403, 302],
         '/prescricoes/{prescriptionId}'            => [200, 403, 403, 403, 403, 302],
         '/prescricoes/{prescriptionId}/editar'     => [200, 403, 403, 403, 403, 302],

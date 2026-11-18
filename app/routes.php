@@ -24,6 +24,7 @@ use App\Labs\LabCatalogController;
 use App\Labs\LabController;
 use App\Medications\AdverseEventController;
 use App\Medications\PrescriptionController;
+use App\Medications\PrescriptionPrintController;
 use App\Portal\PortalController;
 use App\Records\RecordController;
 use App\Users\UserController;
@@ -66,6 +67,8 @@ $router->post('/equipe/{id:\d+}/reativar', [UserController::class, 'reactivate']
 $router->post('/equipe/{id:\d+}/convite', [UserController::class, 'resendInvite'], $staffMw);
 $router->post('/equipe/{id:\d+}/redefinir-2fa', [UserController::class, 'resetTwoFactor'], $staffMw);
 
+$router->get('/admin/receita', [PrescriptionPrintController::class, 'settingsForm'], $staffMw);
+$router->post('/admin/receita', [PrescriptionPrintController::class, 'saveSettings'], $staffMw);
 $router->get('/admin/backups', [BackupController::class, 'index'], $staffMw);
 $router->post('/admin/backups/gerar', [BackupController::class, 'generate'], $staffMw);
 $router->get('/admin/backups/chave-privada', [BackupController::class, 'privateKey'], $staffMw);
@@ -181,6 +184,8 @@ $router->post('/exames/{collectionId:\d+}/anexos', [LabController::class, 'addAt
 $router->get('/pacientes/{id:\d+}/tratamento', [PrescriptionController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'create'], $authMw);
+$router->get('/pacientes/{id:\d+}/receita', [PrescriptionPrintController::class, 'choose'], $authMw);
+$router->get('/pacientes/{id:\d+}/receita/imprimir', [PrescriptionPrintController::class, 'print'], $authMw);
 $router->get('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'create'], $authMw);
 $router->post('/efeitos/{eventId:\d+}/ciente', [AdverseEventController::class, 'review'], $authMw);

@@ -25,6 +25,9 @@ if (!isset($nav)) {
     if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'view', \App\Access\Policy::AUDITORIA, null)) {
         $nav[] = ['Backups', '/admin/backups'];
     }
+    if ($navUser !== null && (int) ($navUser['is_admin'] ?? 0) === 1) {
+        $nav[] = ['Receita (cabeçalho)', '/admin/receita'];
+    }
 }
 $active = $active ?? '';
 $flashOk = \App\Core\Session::flash('ok');

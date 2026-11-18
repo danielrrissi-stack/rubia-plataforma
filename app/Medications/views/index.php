@@ -23,7 +23,8 @@ $head = '<thead><tr><th scope="col">Medicamento</th><th scope="col">Via</th><th 
 <h1>Tratamento — <?= e($name) ?></h1>
 <p><a href="<?= e(url('/pacientes/' . $pid)) ?>">Voltar à ficha</a></p>
 <p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/tratamento/nova')) ?>">Nova prescrição</a>
-  <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/efeitos/novo')) ?>">Registrar efeito</a></p>
+  <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/efeitos/novo')) ?>">Registrar efeito</a>
+  <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/receita')) ?>">Receita</a></p>
 
 <section class="cartao" aria-labelledby="h-ativas">
   <h2 id="h-ativas">Ativas e futuras</h2>
