@@ -241,4 +241,22 @@ final class MealPlanRepositoryTest extends DbTestCase
         $this->assertArrayHasKey('body_text', $after);
         $this->assertArrayHasKey('guidance_text', $after);
     }
+
+    public function test_on_date_returns_plan_valid_that_day(): void
+    {
+        $a = $this->structured('Plano A');
+        $this->repo->publish($a, $this->uid);
+        $b = $this->structured('Plano B');
+        $this->repo->publish($b, $this->uid);
+        $this->db->run('UPDATE meal_plans SET published_at = ?, superseded_at = ? WHERE id = ?', ['2026-11-01 09:00:00', '2026-11-10 08:00:00', $a]);
+        $this->db->run('UPDATE meal_plans SET published_at = ? WHERE id = ?', ['2026-11-10 08:00:00', $b]);
+        $this->assertNull($this->repo->onDate($this->pid, '2026-10-31'));
+        $this->assertSame($a, (int) $this->repo->onDate($this->pid, '2026-11-05')['id']);
+        $this->assertSame($a, (int) $this->repo->onDate($this->pid, '2026-11-09')['id']);
+        $this->assertSame($b, (int) $this->repo->onDate($this->pid, '2026-11-10')['id']);
+        $this->assertIsArray($this->repo->onDate($this->pid, '2026-11-05')['structure']);
+        $this->db->run("UPDATE meal_plans SET status = 'encerrado', ended_at = ? WHERE id = ?", ['2026-11-15 10:00:00', $b]);
+        $this->assertSame($b, (int) $this->repo->onDate($this->pid, '2026-11-14')['id']);
+        $this->assertNull($this->repo->onDate($this->pid, '2026-11-15'));
+    }
 }

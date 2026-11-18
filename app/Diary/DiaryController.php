@@ -29,11 +29,85 @@ final class DiaryController
         $this->authorizePatient($user, $r, $pid, 'view');
         Container::audit()->record((int) $user['id'], 'view', 'diary', null, $pid, null, ['section' => 'diario'], $r);
 
-        $lists = Container::diaryRequests()->listForStaff($pid, $user, date('Y-m-d'));
-        return $this->page('Diary/views/index.php', 'Diário', $r, [
-            'patient' => $patient, 'current' => $lists['current'], 'ended' => $lists['ended'], 'today' => date('Y-m-d'),
+        $today = date('Y-m-d');
+        $monday = $this->weekOf($r, $today);
+        $grid = Container::diaryWeek()->grid($pid, $user, $monday);
+        $sunday = $grid['days'][6];
+        $entries = Container::diaryEntries()->forRange($pid, $user, $monday, $sunday);
+        $comments = Container::diaryComments()->forEntries(array_map(fn (array $e): int => (int) $e['id'], $entries));
+        $requests = [];
+        foreach ($grid['rows'] as $row) {
+            $requests[(int) $row['request']['id']] = $row['request'];
+        }
+        $byDay = [];
+        $plans = [];
+        $repo = Container::diaryRequests();
+        foreach ($entries as $e) {
+            $day = (string) $e['day'];
+            $e['may_comment'] = isset($requests[(int) $e['request_id']]) && $repo->mayEdit($requests[(int) $e['request_id']], $user);
+            $e['comments'] = $comments[(int) $e['id']] ?? [];
+            $byDay[$day][] = $e;
+            if ($e['type'] === 'alimentacao' && !array_key_exists($day, $plans)) {
+                $plans[$day] = Container::mealPlans()->onDate($pid, $day);
+            }
+        }
+        $lists = $repo->listForStaff($pid, $user, $today);
+        return $this->page('Diary/views/week.php', 'Diário', $r, [
+            'patient' => $patient, 'current' => $lists['current'], 'ended' => $lists['ended'], 'today' => $today,
             'canEdit' => self::allowed($user, 'edit', $pid),
+            'grid' => $grid, 'monday' => $monday, 'byDay' => $byDay, 'plans' => $plans, 'userId' => (int) $user['id'],
+            'prev' => (new \DateTimeImmutable($monday))->modify('-7 days')->format('Y-m-d'),
+            'next' => (new \DateTimeImmutable($monday))->modify('+7 days')->format('Y-m-d'),
         ]);
+    }
+
+    /** POST /diario/registros/{entryId}/comentar */
+    public function comment(Request $r): Response
+    {
+        [$user, $entry] = $this->openEntry($r, (int) $r->params['diaryEntryId']);
+        try {
+            Container::diaryComments()->add((int) $entry['id'], (string) $r->input('body', ''), $user, $r);
+            Session::flash('ok', 'Comentário publicado.');
+        } catch (InvalidDiaryException $e) {
+            Session::flash('erro', $e->errors()[0] ?? 'Não foi possível comentar.');
+        }
+        return $this->backToDay($entry);
+    }
+
+    /** POST /diario/comentarios/{commentId}/editar */
+    public function editComment(Request $r): Response
+    {
+        [$user, $entry, $comment] = $this->openComment($r);
+        try {
+            Container::diaryComments()->update((int) $comment['id'], (string) $r->input('body', ''), $user, $r);
+            Session::flash('ok', 'Comentário salvo.');
+        } catch (InvalidDiaryException $e) {
+            Session::flash('erro', $e->errors()[0] ?? 'Não foi possível salvar o comentário.');
+        }
+        return $this->backToDay($entry);
+    }
+
+    /** POST /diario/comentarios/{commentId}/excluir */
+    public function deleteComment(Request $r): Response
+    {
+        [$user, $entry, $comment] = $this->openComment($r);
+        try {
+            Container::diaryComments()->delete((int) $comment['id'], $user, $r);
+            Session::flash('ok', 'Comentário excluído.');
+        } catch (InvalidDiaryException $e) {
+            Session::flash('erro', $e->errors()[0] ?? 'Não foi possível excluir o comentário.');
+        }
+        return $this->backToDay($entry);
+    }
+
+    /** GET /diario/registros/{entryId}/foto (leitura nao auditada) */
+    public function photo(Request $r): Response
+    {
+        [, $entry] = $this->openEntry($r, (int) $r->params['diaryEntryId'], 'view');
+        if (($entry['photo_path'] ?? null) === null || $entry['photo_path'] === '') {
+            throw new HttpException(404);
+        }
+        return Container::diaryPhotos()->response($entry);
     }
 
     /** GET /pacientes/{id}/diario/pedidos/novo */
@@ -117,7 +191,7 @@ final class DiaryController
     /**
      * Cartao Diario da ficha: so os pedidos vigentes visiveis ao usuario; null se nao e equipe ou nao alcanca o paciente.
      *
-     * @return ?array{requests: list<array>}
+     * @return ?array{requests: list<array>, week: array{filled: int, asked: int}}
      */
     public static function card(array $user, int $patientId, string $today): ?array
     {
@@ -126,7 +200,7 @@ final class DiaryController
         }
         $current = Container::diaryRequests()->listForStaff($patientId, $user, $today)['current'];
         $started = array_values(array_filter($current, fn (array $p): bool => (string) $p['start_date'] <= $today));
-        return ['requests' => $started];
+        return ['requests' => $started, 'week' => Container::diaryWeek()->lastSevenDays($patientId, $user, $today)];
     }
 
     // ---- helpers ----
@@ -193,6 +267,51 @@ final class DiaryController
             $this->deny($user, $r, $pid);
         }
         return [$user, $req, $patient];
+    }
+
+    /** Registro por id: papel -> 404 -> Gate -> visibilidade 404. @return array{0:array,1:array} usuario e registro */
+    private function openEntry(Request $r, int $entryId, string $action = 'edit'): array
+    {
+        $user = $this->staff($r, null);
+        $found = Container::diaryEntries()->find($entryId);
+        if ($found === null) {
+            throw new HttpException(404);
+        }
+        $pid = (int) $found['patient_id'];
+        $this->patient($pid);
+        $this->authorizePatient($user, $r, $pid, $action);
+        $entry = Container::diaryEntries()->visibleTo($entryId, $user);
+        if ($entry === null) {
+            throw new HttpException(404);
+        }
+        return [$user, $entry];
+    }
+
+    /** @return array{0:array,1:array,2:array} usuario, registro e comentario */
+    private function openComment(Request $r): array
+    {
+        $comment = Container::diaryComments()->find((int) $r->params['commentId']);
+        if ($comment === null || $comment['deleted_at'] !== null) {
+            $this->staff($r, null);
+            throw new HttpException(404);
+        }
+        [$user, $entry] = $this->openEntry($r, (int) $comment['entry_id']);
+        return [$user, $entry, $comment];
+    }
+
+    private function backToDay(array $entry): Response
+    {
+        $day = (string) $entry['day'];
+        return Response::redirect('/pacientes/' . (int) $entry['patient_id'] . '/diario?semana=' . DiaryWeek::monday($day) . '#dia-' . $day);
+    }
+
+    /** Segunda-feira pedida em ?semana=AAAA-MM-DD; invalida ou ausente = semana atual. */
+    private function weekOf(Request $r, string $today): string
+    {
+        $raw = (string) $r->input('semana', '');
+        $d = \DateTimeImmutable::createFromFormat('!Y-m-d', $raw);
+        $valid = $d !== false && $d->format('Y-m-d') === $raw;
+        return DiaryWeek::monday($valid ? $raw : $today);
     }
 
     private function input(Request $r): array

@@ -107,6 +107,7 @@ $pid = (int) $patient['id'];
       <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/diario')) ?>">Pedir registros</a></p>
     <?php else: ?>
       <ul><?php foreach ($diaryCard['requests'] as $dr): ?><li><?= e(\App\Diary\DiaryType::LABELS[$dr['type']] ?? $dr['type']) ?> — <?= e(\App\Diary\DiaryType::weekdaysLabel((int) $dr['weekdays'])) ?></li><?php endforeach; ?></ul>
+      <?php if ($diaryCard['week']['asked'] > 0): ?><p><?= e($diaryCard['week']['filled']) ?> de <?= e($diaryCard['week']['asked']) ?> dias nos últimos 7</p><?php endif; ?>
       <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/diario')) ?>">Abrir diário</a></p>
     <?php endif; ?></section><?php endif; ?>
 </div>

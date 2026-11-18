@@ -111,6 +111,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/diario'                   => [200, 200, 403, 403, 403, 302], // medico e nutricionista; C vai para a area dele
         '/pacientes/{id}/diario/pedidos/novo'      => [200, 200, 403, 403, 403, 302],
         '/diario/pedidos/{requestId}/editar'       => [200, 200, 403, 403, 403, 302], // pedido de agua nao sigiloso do paciente liberado
+        '/diario/registros/{diaryEntryId}/foto'    => [200, 200, 403, 403, 403, 302], // registro de alimentacao do responsavel, com foto, liberado a nutricionista
         '/cartoes'                                 => [200, 403, 403, 403, 403, 302], // so a medica; C vai para a area dele
         '/cartoes/novo'                            => [200, 403, 403, 403, 403, 302],
         '/cartoes/{cardId}/editar'                 => [200, 403, 403, 403, 403, 302],
@@ -209,9 +210,29 @@ final class SmokeAllRoutesTest extends DbTestCase
             'diaryRequest' => Container::diaryRequests()->create((int) $child['id'], [
                 'type' => 'agua', 'weekdays' => [1, 2, 3, 4, 5, 6, 7], 'start_date' => $today,
             ], $admin, $today, new Request('POST', '/')),
+            'diaryEntry' => $this->diaryEntry((int) $child['id'], $admin, $resp, $today),
             'card' => $this->publishedCard((int) $admin['id']),
             'secretaria_id' => (int) $sec['id'],
         ];
+    }
+
+    /** Registro de alimentacao do responsavel (hoje), com foto PNG pequena no armazenamento padrao, em pedido proprio. */
+    private function diaryEntry(int $patientId, array $admin, array $resp, string $today): int
+    {
+        $request = Container::diaryRequests()->create($patientId, [
+            'type' => 'alimentacao', 'weekdays' => [1, 2, 3, 4, 5, 6, 7], 'start_date' => $today,
+        ], $admin, $today, new Request('POST', '/'));
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+        $tmp = tempnam(sys_get_temp_dir(), 'rubia_png');
+        file_put_contents($tmp, $png);
+        $store = new \App\Diary\DiaryPhotoStore(rtrim((string) \App\Core\Config::get('storage_path', APP_ROOT . '/storage'), '/\\') . '/uploads', true);
+        Container::set('diaryPhotos', $store);
+        $id = Container::diaryEntries()->record($request, $today, ['meal' => 'almoco', 'meal_time' => '12:00', 'description' => 'prato fumaca'], [
+            'name' => 'f.png', 'type' => 'image/png', 'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($png),
+        ], $resp, $today, new Request('POST', '/'));
+        Container::reset();
+        Container::set('db', $this->db);
+        return $id;
     }
 
     /** Cartao educativo publicado da faixa 7-10 (crianca de fumaca tem 8 anos). */
@@ -241,6 +262,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'goalTemplateId' => (string) $this->fx['goalTemplate'],
                 'goalId' => (string) $this->fx['goal'],
                 'requestId' => (string) $this->fx['diaryRequest'],
+                'diaryEntryId' => (string) $this->fx['diaryEntry'],
                 'cardId' => (string) $this->fx['card'],
                 'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],

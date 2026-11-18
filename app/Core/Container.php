@@ -20,6 +20,7 @@ use App\Growth\GrowthCalculator;
 use App\Diary\DiaryCommentRepository;
 use App\Diary\DiaryEntryRepository;
 use App\Diary\DiaryPhotoStore;
+use App\Diary\DiaryWeek;
 use App\Diary\DiaryRequestRepository;
 use App\Growth\MeasurementRepository;
 use App\Growth\WhoReferenceRepository;
@@ -235,6 +236,11 @@ final class Container
     public static function diaryEntries(): DiaryEntryRepository
     {
         return self::$items['diaryEntries'] ??= new DiaryEntryRepository(self::db(), self::audit(), self::diaryRequests(), self::diaryPhotos());
+    }
+
+    public static function diaryWeek(): DiaryWeek
+    {
+        return self::$items['diaryWeek'] ??= new DiaryWeek(self::diaryRequests(), self::diaryEntries(), self::db());
     }
 
     public static function diaryComments(): DiaryCommentRepository

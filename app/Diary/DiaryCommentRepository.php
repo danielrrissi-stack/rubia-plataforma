@@ -68,6 +68,12 @@ final class DiaryCommentRepository
         return $out;
     }
 
+    /** Comentario por id, inclusive excluido (quem chama confere deleted_at). */
+    public function find(int $id): ?array
+    {
+        return $this->raw($id);
+    }
+
     /** Registro visivel a quem comenta (medica; nutricionista so se pode editar o pedido). */
     private function staffEntry(int $entryId, array $user): array
     {

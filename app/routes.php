@@ -111,6 +111,10 @@ $router->get('/diario/pedidos/{requestId:\d+}/editar', [DiaryController::class, 
 $router->post('/diario/pedidos/{requestId:\d+}/editar', [DiaryController::class, 'update'], $authMw);
 $router->post('/diario/pedidos/{requestId:\d+}/encerrar', [DiaryController::class, 'end'], $authMw);
 $router->post('/diario/pedidos/{requestId:\d+}/excluir', [DiaryController::class, 'delete'], $authMw);
+$router->post('/diario/registros/{diaryEntryId:\d+}/comentar', [DiaryController::class, 'comment'], $authMw);
+$router->post('/diario/comentarios/{commentId:\d+}/editar', [DiaryController::class, 'editComment'], $authMw);
+$router->post('/diario/comentarios/{commentId:\d+}/excluir', [DiaryController::class, 'deleteComment'], $authMw);
+$router->get('/diario/registros/{diaryEntryId:\d+}/foto', [DiaryController::class, 'photo'], $authMw);
 $router->get('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'add'], $authMw);
 $router->post('/responsaveis/{linkId:\d+}/remover', [GuardianController::class, 'remove'], $authMw);
