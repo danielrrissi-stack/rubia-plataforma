@@ -85,6 +85,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/receita'                  => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/receita/imprimir'         => [302, 403, 403, 403, 403, 302], // sem p[] volta para a escolha
         '/admin/receita'                           => [200, 403, 403, 403, 403, 302], // so is_admin (M e admin no fixture)
+        '/admin/agenda'                            => [200, 403, 403, 403, 403, 302], // so medica administradora
         '/pacientes/{id}/efeitos/novo'             => [200, 403, 403, 403, 403, 302],
         '/prescricoes/{prescriptionId}'            => [200, 403, 403, 403, 403, 302],
         '/prescricoes/{prescriptionId}/editar'     => [200, 403, 403, 403, 403, 302],
@@ -121,6 +122,13 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/cartoes/novo'                            => [200, 403, 403, 403, 403, 302],
         '/cartoes/{cardId}/editar'                 => [200, 403, 403, 403, 403, 302],
         '/portal/p/{id}/cartoes/{cardId}'          => [302, 302, 302, 200, 404, 200], // cartao 7-10 publicado; adulto (P) sem faixa
+        // Agenda: so equipe (papel antes de tudo); familia 403, crianca vai para a area dela.
+        '/agenda'                                  => [200, 200, 200, 403, 403, 302], // cada um abre a propria (secretaria: a primeira)
+        '/agenda/marcar'                           => [200, 403, 200, 403, 403, 302], // ?prof= medica M: nutricionista nao ve a agenda dela
+        '/pacientes/{id}/agendar'                  => [200, 200, 200, 403, 403, 302], // nutricionista: propria agenda, crianca liberada
+        '/agenda/consultas/{apptId}'               => [200, 404, 200, 403, 403, 302], // consulta com M: para N nao existe (404)
+        '/agenda/consultas/{apptId}/remarcar'      => [200, 404, 200, 403, 403, 302],
+        '/agenda/horarios'                         => [200, 200, 200, 403, 403, 302], // secretaria: so fechamentos
     ];
 
     private array $fx = [];
@@ -204,7 +212,14 @@ final class SmokeAllRoutesTest extends DbTestCase
             'dose' => '5 mg', 'frequency' => '1 vez ao dia',
         ], $admin, $today, new Request('POST', '/'));
 
+        // Agenda da medica M (horario padrao) com uma consulta da crianca na proxima segunda as 08:00.
+        Container::schedules()->applyClinicDefault((int) $admin['id'], (int) $admin['id'], new Request('POST', '/'));
+        $nextMonday = date('Y-m-d', strtotime('next monday'));
+        $appointmentId = Container::appointments()->book((int) $admin['id'], (int) $child['id'], $nextMonday . ' 08:00', 'primeira', null, $admin, date('Y-m-d H:i'), new Request('POST', '/'));
+
         $this->fx = [
+            'appointment' => $appointmentId,
+            'agendaQuery' => ['prof' => (string) $admin['id'], 'inicio' => $nextMonday . ' 09:00'],
             'users' => ['M' => $admin, 'N' => $nutri, 'S' => $sec, 'R' => $resp, 'P' => $pac, 'C' => $kid],
             'patient' => ['M' => $child, 'N' => $child, 'S' => $child, 'R' => $child, 'P' => $adult, 'C' => $child],
             'measure' => ['M' => $mChild, 'N' => $mChild, 'S' => $mChild, 'R' => $mChild, 'P' => $mAdult, 'C' => $mChild],
@@ -286,6 +301,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'collectionId' => (string) $this->fx['collection'],
                 'prescriptionId' => (string) $this->fx['prescription'],
                 'attachmentId' => (string) $this->fx['attachment'],
+                'apptId' => (string) $this->fx['appointment'],
                 'id' => match (true) {
                     str_starts_with($pattern, '/equipe/') => (string) $this->fx['secretaria_id'],
                     str_starts_with($pattern, '/medidas/') => (string) $this->fx['measure'][$role],
@@ -327,7 +343,11 @@ final class SmokeAllRoutesTest extends DbTestCase
             Container::auth()->completeLogin((int) $this->fx['users'][$role]['id'], new Request('POST', '/login'));
             foreach ($this->getRoutes() as $pattern) {
                 $path = $this->concretePath($pattern, $role);
-                $query = str_ends_with($pattern, 'curvas.json') ? ['indicador' => 'wfa', 'tipo' => 'z'] : [];
+                $query = match (true) {
+                    str_ends_with($pattern, 'curvas.json') => ['indicador' => 'wfa', 'tipo' => 'z'],
+                    $pattern === '/agenda/marcar' => $this->fx['agendaQuery'],
+                    default => [],
+                };
                 $res = App::create()->handle(new Request('GET', $path, $query));
                 $this->assertNotSame(500, $res->status, "$role GET $path devolveu 500");
                 $want = self::EXPECTED[$pattern][$i] ?? null;

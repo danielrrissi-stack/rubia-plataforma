@@ -63,6 +63,7 @@ final class PortalController
                 && Container::labs()->familyView((int) $patient['id']) !== [],
             'hasTreatment' => $this->treatment($user, (int) $patient['id']) !== null,
             'treatmentLogs' => $this->treatment($user, (int) $patient['id']) === 'logs',
+            'agendaCard' => \App\Agenda\AgendaCards::forFamily($user, (int) $patient['id'], date('Y-m-d H:i')),
             'hasDiary' => \App\Diary\PortalDiaryController::hasRequests($user, (int) $patient['id'], date('Y-m-d')),
         ]);
     }

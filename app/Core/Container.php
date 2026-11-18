@@ -4,6 +4,12 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Access\Gate;
+use App\Agenda\AgendaAccess;
+use App\Agenda\AgendaMailer;
+use App\Agenda\AppointmentRepository;
+use App\Agenda\ReminderRound;
+use App\Agenda\ReminderText;
+use App\Agenda\ScheduleRepository;
 use App\Access\PatientScope;
 use App\Access\Policy;
 use App\Audit\AuditLog;
@@ -266,5 +272,35 @@ final class Container
     public static function eduCards(): EduCardRepository
     {
         return self::$items['eduCards'] ??= new EduCardRepository(self::db(), self::audit());
+    }
+
+    public static function schedules(): ScheduleRepository
+    {
+        return self::$items['schedules'] ??= new ScheduleRepository(self::db(), self::audit());
+    }
+
+    public static function agendaAccess(): AgendaAccess
+    {
+        return self::$items['agendaAccess'] ??= new AgendaAccess(self::db(), self::patientScope());
+    }
+
+    public static function appointments(): AppointmentRepository
+    {
+        return self::$items['appointments'] ??= new AppointmentRepository(self::db(), self::audit(), self::schedules(), self::agendaAccess());
+    }
+
+    public static function reminderText(): ReminderText
+    {
+        return self::$items['reminderText'] ??= new ReminderText(self::db());
+    }
+
+    public static function agendaMailer(): AgendaMailer
+    {
+        return self::$items['agendaMailer'] ??= new AgendaMailer(self::db(), self::mailer(), self::reminderText());
+    }
+
+    public static function reminderRound(): ReminderRound
+    {
+        return self::$items['reminderRound'] ??= new ReminderRound(self::db(), self::appointments(), self::reminderText(), self::agendaMailer(), self::mailer(), self::agendaAccess());
     }
 }

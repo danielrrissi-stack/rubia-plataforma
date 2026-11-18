@@ -30,6 +30,18 @@ $pid = (int) $patient['id'];
     <span class="portal-cartao-texto">Anote o que a equipe pediu.</span>
   </a></li><?php endif; ?>
 </ul>
+<?php if (!empty($agendaCard)): ?>
+<section class="portal-cartao" id="portal-consultas"><h2>Consultas</h2>
+  <?php if ($agendaCard['upcoming'] === [] && $agendaCard['past'] === []): ?>
+    <p>Nenhuma consulta marcada.</p>
+  <?php endif; ?>
+  <?php foreach (['upcoming' => 'Próximas', 'past' => 'Últimas'] as $k => $title): ?>
+    <?php if ($agendaCard[$k] !== []): ?><h3><?= e($title) ?></h3>
+    <ul><?php foreach ($agendaCard[$k] as $a): ?><li><?= e(fmt_date($a['date']) . ' às ' . $a['time'] . ' — ' . $a['professional'] . ' — ' . $a['status']) ?></li><?php endforeach; ?></ul>
+    <?php endif; ?>
+  <?php endforeach; ?>
+</section>
+<?php endif; ?>
 <p><a class="btn" href="<?= e(url('/portal/p/' . $pid . '/medidas/nova')) ?>">Registrar medida</a></p>
 <p class="portal-links">
   <?php if ($many): ?><a href="<?= e(url('/portal')) ?>">Trocar de pessoa</a> · <?php endif; ?>

@@ -110,4 +110,5 @@ $pid = (int) $patient['id'];
       <?php if ($diaryCard['week']['asked'] > 0): ?><p><?= e($diaryCard['week']['filled']) ?> de <?= e($diaryCard['week']['asked']) ?> dias nos últimos 7</p><?php endif; ?>
       <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/diario')) ?>">Abrir diário</a></p>
     <?php endif; ?></section><?php endif; ?>
+  <?php if (!empty($agendaCard)) { include dirname(__DIR__, 2) . '/Agenda/views/_patient_card.php'; } ?>
 </div>

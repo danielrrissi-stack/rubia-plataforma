@@ -8,6 +8,9 @@ if (!isset($nav)) {
     $nav = [['Pacientes', '/pacientes']];
     $uid = \App\Core\Session::get('uid');
     $navUser = is_int($uid) ? \App\Core\Container::users()->find($uid) : null;
+    if ($navUser !== null && in_array($navUser['role'], ['medico', 'nutricionista', 'secretaria'], true)) {
+        $nav[] = ['Agenda', '/agenda'];
+    }
     if ($navUser !== null && \App\Core\Container::gate()->check($navUser, 'edit', \App\Access\Policy::NUTRICAO, null)) {
         $nav[] = ['Alimentos', '/alimentos'];
         $nav[] = ['Modelos', '/modelos-plano'];
@@ -27,6 +30,9 @@ if (!isset($nav)) {
     }
     if ($navUser !== null && (int) ($navUser['is_admin'] ?? 0) === 1) {
         $nav[] = ['Receita (cabeçalho)', '/admin/receita'];
+    }
+    if ($navUser !== null && $navUser['role'] === 'medico' && (int) ($navUser['is_admin'] ?? 0) === 1) {
+        $nav[] = ['Agenda (avisos)', '/admin/agenda'];
     }
 }
 $active = $active ?? '';

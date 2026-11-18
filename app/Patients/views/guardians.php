@@ -1,5 +1,5 @@
 <?php
-/** @var array $patient @var array $guardians @var array $values @var string[] $errors @var string[] $relationships */
+/** @var array $patient @var array $guardians @var array $values @var string[] $errors @var string[] $relationships @var int $phoneMax */
 $pid = (int) $patient['id'];
 ?>
 <h1>Responsáveis — <?= e($patient['full_name']) ?></h1>
@@ -13,13 +13,21 @@ $pid = (int) $patient['id'];
   <p>Nenhum responsável vinculado.</p>
 <?php else: ?>
 <table class="tabela">
-  <thead><tr><th>Nome</th><th>E-mail</th><th>Parentesco</th><th>Acesso</th><th>Ações</th></tr></thead>
+  <thead><tr><th>Nome</th><th>E-mail</th><th>Parentesco</th><th>Celular</th><th>Acesso</th><th>Ações</th></tr></thead>
   <tbody>
   <?php foreach ($guardians as $g): ?>
     <tr>
       <td><?= e($g['user_name']) ?></td>
       <td><?= e($g['user_email']) ?></td>
       <td><?= e($g['relationship']) ?></td>
+      <td>
+        <form method="post" action="<?= e(url('/responsaveis/' . $g['id'] . '/celular')) ?>" class="form-inline">
+          <?= csrf_field() ?>
+          <label for="celular-<?= (int) $g['id'] ?>" class="sr-only">Celular de <?= e($g['user_name']) ?></label>
+          <input type="tel" id="celular-<?= (int) $g['id'] ?>" name="celular" value="<?= e($g['user_phone'] ?? '') ?>" maxlength="<?= (int) $phoneMax ?>">
+          <button type="submit" class="btn btn-quiet">Editar celular</button>
+        </form>
+      </td>
       <td><?= (int) $g['has_password'] === 1 ? 'Ativo' : 'Convite pendente' ?></td>
       <td>
         <form method="post" action="<?= e(url('/responsaveis/' . $g['id'] . '/remover')) ?>" class="form-inline">
@@ -43,6 +51,11 @@ $pid = (int) $patient['id'];
     <label for="email">E-mail</label>
     <input type="email" id="email" name="email" value="<?= e($values['email']) ?>" maxlength="190" required>
     <p class="ajuda">Se o e-mail já pertence a um responsável, o mesmo login é reaproveitado.</p>
+  </div>
+  <div class="campo">
+    <label for="celular">Celular (opcional)</label>
+    <input type="tel" id="celular" name="celular" value="<?= e($values['celular'] ?? '') ?>" maxlength="<?= (int) $phoneMax ?>">
+    <p class="ajuda">Com DDD, por exemplo (11) 98765-4321. Usado no botão de WhatsApp da agenda.</p>
   </div>
   <div class="campo">
     <label for="parentesco">Parentesco</label>

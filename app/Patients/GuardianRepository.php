@@ -59,7 +59,7 @@ final class GuardianRepository
     public function forPatient(int $pid): array
     {
         return $this->db->all(
-            'SELECT g.*, u.name AS user_name, u.email AS user_email, (u.password_hash IS NOT NULL) AS has_password
+            'SELECT g.*, u.name AS user_name, u.email AS user_email, u.phone AS user_phone, (u.password_hash IS NOT NULL) AS has_password
              FROM guardian_links g JOIN users u ON u.id = g.user_id
              WHERE g.patient_id = ? AND g.active = 1 ORDER BY g.id',
             [$pid]

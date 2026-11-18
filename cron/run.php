@@ -9,6 +9,14 @@ if (PHP_SAPI !== 'cli') {
 
 require __DIR__ . '/../app/bootstrap.php';
 
+use App\Access\PatientScope;
+use App\Agenda\AgendaAccess;
+use App\Agenda\AgendaMailer;
+use App\Agenda\AppointmentRepository;
+use App\Agenda\ReminderRound;
+use App\Agenda\ReminderText;
+use App\Agenda\ScheduleRepository;
+use App\Audit\AuditLog;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
 use App\Core\Config;
@@ -23,6 +31,20 @@ try {
     (new Mailer($db, (array) Config::get('mail', [])))->sendPending();
 } catch (Throwable $e) {
     fwrite(STDERR, '[cron] e-mail: ' . $e->getMessage() . PHP_EOL);
+    $failed = true;
+}
+
+// rodada da vespera: os e-mails colocados na fila saem na passada seguinte (5 min)
+try {
+    $db ??= new Database((array) Config::get('db'));
+    $mailer = new Mailer($db, (array) Config::get('mail', []));
+    $reminderText = new ReminderText($db);
+    $audit = new AuditLog($db);
+    $access = new AgendaAccess($db, new PatientScope($db));
+    $appointments = new AppointmentRepository($db, $audit, new ScheduleRepository($db, $audit), $access);
+    (new ReminderRound($db, $appointments, $reminderText, new AgendaMailer($db, $mailer, $reminderText), $mailer, $access))->runIfDue(date('Y-m-d H:i'));
+} catch (Throwable $e) {
+    fwrite(STDERR, '[cron] agenda: ' . $e->getMessage() . PHP_EOL);
     $failed = true;
 }
 
