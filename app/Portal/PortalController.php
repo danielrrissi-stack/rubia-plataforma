@@ -61,7 +61,22 @@ final class PortalController
             'many' => count($this->patientsOf($user)) > 1,
             'hasExams' => Container::policy()->allows($user, 'view', Policy::EXAMES)
                 && Container::labs()->familyView((int) $patient['id']) !== [],
+            'hasTreatment' => $this->hasTreatment($user, (int) $patient['id']),
         ]);
+    }
+
+    /** Cartao "Tratamento" so com prescricao visivel ativa ou futura (sigilosa nunca conta para o responsavel). */
+    private function hasTreatment(array $user, int $pid): bool
+    {
+        if (!Container::policy()->allows($user, 'view', Policy::MEDICAMENTOS)) {
+            return false;
+        }
+        foreach (Container::prescriptions()->forViewer($pid, $user, date('Y-m-d')) as $p) {
+            if ($p['status'] !== 'encerrada') {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function growth(Request $r): Response

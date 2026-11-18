@@ -97,7 +97,9 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/portal/p/{id}/alimentacao/imprimir'      => [302, 302, 302, 200, 200, 302],
         '/portal/p/{id}/exames'                    => [302, 302, 302, 200, 200, 302],
         '/portal/p/{id}/metas'                     => [302, 302, 302, 200, 200, 200], // equipe volta a /; familia e crianca veem a area de metas
-        '/portal/conta'                            => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
+        '/portal/p/{id}/tratamento'                => [302, 302, 302, 200, 200, 302], // equipe volta a /; crianca fora do tratamento
+        '/portal/p/{id}/tratamento/relato'         => [302, 302, 302, 200, 200, 302],
+        '/portal/conta'                          => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
         '/senha/trocar'                            => [302, 302, 302, 302, 302, 302], // sem senha provisoria volta para /
         '/pacientes/{id}/acesso-crianca'           => [200, 403, 403, 403, 403, 302], // so medico; C vai para a area dele
         '/metas-modelo'                            => [200, 200, 403, 403, 403, 302], // medico e nutricionista; C vai para a area dele

@@ -23,6 +23,7 @@ use App\Install\InstallController;
 use App\Labs\LabCatalogController;
 use App\Labs\LabController;
 use App\Medications\AdverseEventController;
+use App\Medications\PortalTreatmentController;
 use App\Medications\PrescriptionController;
 use App\Medications\PrescriptionPrintController;
 use App\Portal\PortalController;
@@ -215,5 +216,10 @@ $router->get('/portal/p/{id:\d+}/metas', [PortalGoalController::class, 'show'], 
 $router->post('/portal/p/{id:\d+}/metas/{goalId:\d+}/marcar', [PortalGoalController::class, 'mark'], $authMw);
 $router->post('/portal/p/{id:\d+}/metas/{goalId:\d+}/desmarcar', [PortalGoalController::class, 'unmark'], $authMw);
 $router->get('/portal/p/{id:\d+}/cartoes/{cardId:\d+}', [PortalGoalController::class, 'card'], $authMw);
+$router->get('/portal/p/{id:\d+}/tratamento', [PortalTreatmentController::class, 'show'], $authMw);
+$router->post('/portal/p/{id:\d+}/tratamento/{prescriptionId:\d+}/dose', [PortalTreatmentController::class, 'dose'], $authMw);
+$router->post('/portal/p/{id:\d+}/tratamento/doses/{logId:\d+}/remover', [PortalTreatmentController::class, 'remove'], $authMw);
+$router->get('/portal/p/{id:\d+}/tratamento/relato', [PortalTreatmentController::class, 'reportForm'], $authMw);
+$router->post('/portal/p/{id:\d+}/tratamento/relato', [PortalTreatmentController::class, 'report'], $authMw);
 $router->get('/portal/conta', [PortalController::class, 'account'], $authMw);
 $router->post('/portal/conta/senha', [PortalController::class, 'changePassword'], $authMw);
