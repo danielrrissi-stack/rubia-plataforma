@@ -23,7 +23,7 @@ $pid = (int) $patient['id'];
   </a></li><?php endif; ?>
   <?php if ($hasTreatment): ?><li><a class="portal-cartao" href="<?= e(url('/portal/p/' . $pid . '/tratamento')) ?>">
     <span class="portal-cartao-titulo">Tratamento</span>
-    <span class="portal-cartao-texto">Veja os medicamentos e registre as doses.</span>
+    <span class="portal-cartao-texto">Veja os medicamentos<?= !empty($treatmentLogs) ? ' e registre as doses' : '' ?>.</span>
   </a></li><?php endif; ?>
 </ul>
 <p><a class="btn" href="<?= e(url('/portal/p/' . $pid . '/medidas/nova')) ?>">Registrar medida</a></p>

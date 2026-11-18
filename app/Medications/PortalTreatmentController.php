@@ -25,6 +25,7 @@ final class PortalTreatmentController
         if ($redirect !== null) {
             return $redirect;
         }
+        Container::audit()->record((int) $user['id'], 'view', 'prescriptions', null, (int) $patient['id'], null, ['section' => 'medicamentos', 'portal' => true], $r);
         return $this->page($user, $patient, [], [], 200);
     }
 

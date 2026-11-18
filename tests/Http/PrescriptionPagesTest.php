@@ -202,4 +202,29 @@ final class PrescriptionPagesTest extends DbTestCase
             }
         }
     }
+
+    public function test_new_form_has_family_logs_unchecked(): void
+    {
+        [, $p] = $this->setupDoctor();
+        $body = $this->get('/pacientes/' . $p['id'] . '/tratamento/nova')->body;
+        $this->assertMatchesRegularExpression('/name="family_logs" value="1"(?! checked)/', $body);
+    }
+
+    public function test_adult_secret_box_is_shown_and_only_deliberate_untick_clears_it(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->makePatient(['birth_date' => '1985-01-01', 'sex' => 'F', 'responsible_professional_id' => $med['id'], 'created_by' => $med['id']]);
+        $this->loginAs($med);
+        $id = (int) Container::prescriptions()->create((int) $p['id'], $this->rx(), $med, date('Y-m-d'), new Request('POST', '/'));
+        $this->db->run('UPDATE prescriptions SET secret = 1 WHERE id = ?', [$id]);
+
+        $form = $this->get('/prescricoes/' . $id . '/editar')->body;
+        $this->assertMatchesRegularExpression('/name="secret"[^>]*checked/', $form);
+        $this->assertStringContainsString('name="secret_shown"', $form);
+
+        $this->post('/prescricoes/' . $id . '/editar', $this->rx(['notes' => 'sem marcador']));
+        $this->assertSame(1, (int) $this->db->one('SELECT secret FROM prescriptions WHERE id = ?', [$id])['secret']);
+        $this->post('/prescricoes/' . $id . '/editar', $this->rx(['secret_shown' => '1']));
+        $this->assertSame(0, (int) $this->db->one('SELECT secret FROM prescriptions WHERE id = ?', [$id])['secret']);
+    }
 }

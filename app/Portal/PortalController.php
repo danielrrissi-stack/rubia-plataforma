@@ -61,22 +61,31 @@ final class PortalController
             'many' => count($this->patientsOf($user)) > 1,
             'hasExams' => Container::policy()->allows($user, 'view', Policy::EXAMES)
                 && Container::labs()->familyView((int) $patient['id']) !== [],
-            'hasTreatment' => $this->hasTreatment($user, (int) $patient['id']),
+            'hasTreatment' => $this->treatment($user, (int) $patient['id']) !== null,
+            'treatmentLogs' => $this->treatment($user, (int) $patient['id']) === 'logs',
         ]);
     }
 
-    /** Cartao "Tratamento" so com prescricao visivel ativa ou futura (sigilosa nunca conta para o responsavel). */
-    private function hasTreatment(array $user, int $pid): bool
+    /**
+     * Cartao "Tratamento": null sem prescricao visivel ativa ou futura (sigilosa nunca conta para o responsavel);
+     * 'logs' se alguma delas permite registrar doses, senao 'view'.
+     */
+    private function treatment(array $user, int $pid): ?string
     {
         if (!Container::policy()->allows($user, 'view', Policy::MEDICAMENTOS)) {
-            return false;
+            return null;
         }
+        $found = null;
         foreach (Container::prescriptions()->forViewer($pid, $user, date('Y-m-d')) as $p) {
-            if ($p['status'] !== 'encerrada') {
-                return true;
+            if ($p['status'] === 'encerrada') {
+                continue;
             }
+            if ((int) $p['family_logs'] === 1) {
+                return 'logs';
+            }
+            $found = 'view';
         }
-        return false;
+        return $found;
     }
 
     public function growth(Request $r): Response

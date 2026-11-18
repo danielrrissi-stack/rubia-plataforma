@@ -68,7 +68,7 @@ O navegador salva em PDF e o servidor não precisa de biblioteca nova.
 - Campos: **medicamento** (até 120 caracteres, obrigatório); **via** (oral, sublingual, subcutânea, intramuscular,
   tópica, inalatória, nasal, oftálmica, otológica, retal, vaginal, outra); **início** (obrigatório); **fim** (opcional,
   ≥ início); **próxima avaliação** (opcional); **família registra as doses** (sim/não, padrão não); **sigilosa** (só
-  médica, só paciente menor de 18 anos na data de hoje); **observações internas** (nunca aparecem para a família).
+  médica, só para paciente menor de 18 anos na data de hoje; uma vez ligada, nunca é desligada implicitamente: só a médica a desmarca, deliberadamente, mesmo depois dos 18 anos); **observações internas** (nunca aparecem para a família).
 - A primeira linha de dose nasce com a prescrição, com data = início: **dose** (até 60 caracteres, ex.: "2,5 mg"),
   **frequência** (até 120, ex.: "1 vez por semana"), **orientação para a família** (opcional, até 1000).
 - **Alterar dose:** nova linha com data em que passa a valer (≥ data da última linha, ≥ início e ≤ hoje; se o início
@@ -159,7 +159,7 @@ fim e próxima avaliação; **nunca** as observações internas, o motivo da mud
 
 ## 8. Escolhas registradas
 1. Receita simples impressa pelo navegador (sem biblioteca de PDF). Controle especial fica fora.
-2. Prescrição sigilosa só para menores de 18 anos, marcada só pela médica (como as metas).
+2. Prescrição sigilosa só para menores de 18 anos, marcada só pela médica (como as metas). O sigilo nunca é desligado implicitamente (regra R6): editar a prescrição depois dos 18 anos o mantém; só a médica o desmarca. Ligar continua exigindo médica e menor de 18.
 3. Data de dose futura só até o início da prescrição (sem agenda de escalonamento).
 4. Janela de 7 dias para a família registrar ou remover doses; relatos de efeito até 90 dias atrás.
 5. Relatos da família aparecem na tela inicial da médica até ela marcar "ciente".

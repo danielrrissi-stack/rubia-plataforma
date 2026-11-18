@@ -151,4 +151,16 @@ final class AdverseEventPagesTest extends DbTestCase
         }
         $this->assertNull($this->db->one('SELECT id FROM adverse_events WHERE reviewed_by IS NOT NULL'));
     }
+
+    public function test_dashboard_uses_social_name_not_legal_name(): void
+    {
+        [$med, $p] = $this->setupDoctor();
+        $this->db->run('UPDATE patients SET social_name = ?, full_name = ? WHERE id = ?', ['Nomesocial Pedro', 'Nomelegal Registrado', $p['id']]);
+        $this->familyReport($p);
+        $this->rx($p, $med, date('Y-m-d', strtotime('-3 days')));
+        $this->loginAs($med);
+        $body = $this->get('/')->body;
+        $this->assertStringContainsString('Nomesocial Pedro', $body);
+        $this->assertStringNotContainsString('Nomelegal Registrado', $body);
+    }
 }

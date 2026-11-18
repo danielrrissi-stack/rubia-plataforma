@@ -10,7 +10,6 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
-use App\Growth\Age;
 use App\Labs\Clinician;
 
 /**
@@ -52,7 +51,7 @@ final class PrescriptionController
         $id = $this->authPatient($r, 'edit');
         return $this->renderForm($r, $this->patient($id), null, [
             'drug_name' => '', 'route' => 'oral', 'start_date' => date('Y-m-d'), 'end_date' => '', 'next_review_date' => '',
-            'dose' => '', 'frequency' => '', 'instructions' => '', 'notes' => '', 'family_logs' => 1, 'secret' => 0,
+            'dose' => '', 'frequency' => '', 'instructions' => '', 'notes' => '', 'family_logs' => 0, 'secret' => 0,
         ], []);
     }
 
@@ -107,11 +106,11 @@ final class PrescriptionController
         ], []);
     }
 
-    /** POST /prescricoes/{prescriptionId}/editar — o formulario sempre posta o sigilo atual (update() o recalcula a cada gravacao). */
+    /** POST /prescricoes/{prescriptionId}/editar — o formulario mostra o sigilo (se pode ligar ou ja esta ligado) e posta o valor atual; update() nunca o desliga implicitamente. */
     public function update(Request $r): Response
     {
         $p = $this->authRx($r, 'edit');
-        $values = $this->posted($r);
+        $values = $this->posted($r, true);
         try {
             Container::prescriptions()->update((int) $p['id'], $values, $r->attributes['user'], date('Y-m-d'), $r);
         } catch (InvalidMedicationException $e) {
@@ -142,7 +141,7 @@ final class PrescriptionController
     public function changeDose(Request $r): Response
     {
         $p = $this->authRx($r, 'edit');
-        $values = $this->posted($r);
+        $values = $this->posted($r, true);
         try {
             Container::prescriptions()->changeDose((int) $p['id'], $values, (int) $r->attributes['user']['id'], date('Y-m-d'), $r);
         } catch (InvalidMedicationException $e) {
@@ -213,14 +212,17 @@ final class PrescriptionController
     }
 
     /** @return array<string,mixed> */
-    private function posted(Request $r): array
+    private function posted(Request $r, bool $update = false): array
     {
         $out = [];
         foreach ([...self::FIELDS, 'effective_date', 'reason'] as $f) {
             $out[$f] = $this->str($r->post[$f] ?? '');
         }
         $out['family_logs'] = !empty($r->post['family_logs']) ? 1 : 0;
-        $out['secret'] = !empty($r->post['secret']) ? 1 : 0;
+        // So informa o sigilo quando o formulario mostrou a caixa (R6: ausente = manter o que esta gravado).
+        if (!$update || !empty($r->post['secret_shown'])) {
+            $out['secret'] = !empty($r->post['secret']) ? 1 : 0;
+        }
         return $out;
     }
 
@@ -261,9 +263,10 @@ final class PrescriptionController
         return $this->page('Medications/views/form.php', $rx === null ? 'Nova prescrição' : 'Editar prescrição', $r, [
             'patient' => $patient,
             'rx' => $rx,
-            'values' => $values,
+            'values' => $values + ['secret' => (int) ($rx['secret'] ?? 0)],
             'errors' => $errors,
-            'canSecret' => Age::years((string) $patient['birth_date'], date('Y-m-d')) < 18,
+            'canSecret' => Container::prescriptions()->mayMarkSecret($r->attributes['user'], (int) $patient['id'], date('Y-m-d'))
+                || (int) ($rx['secret'] ?? 0) === 1,
             'drugNames' => Container::prescriptions()->drugNames(),
         ], $errors === [] ? 200 : 422);
     }

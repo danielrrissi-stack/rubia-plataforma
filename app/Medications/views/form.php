@@ -47,6 +47,7 @@ $v = static fn (string $k): string => (string) ($values[$k] ?? '');
     <p class="ajuda">Só a equipe médica vê.</p></div>
   <div class="campo"><label><input type="checkbox" name="family_logs" value="1"<?= (int) ($values['family_logs'] ?? 0) === 1 ? ' checked' : '' ?>> A família pode registrar doses dadas</label></div>
   <?php if ($canSecret): ?>
+    <input type="hidden" name="secret_shown" value="1">
     <div class="campo"><label><input type="checkbox" name="secret" value="1"<?= (int) ($values['secret'] ?? 0) === 1 ? ' checked' : '' ?>> Sigilosa</label>
       <p class="ajuda">Os responsáveis não veem esta prescrição, as doses registradas nela nem os efeitos ligados a ela.</p></div>
   <?php endif; ?>

@@ -348,19 +348,19 @@ Na ficha da paciente, abra **Tratamento** e use **Nova prescrição**. Informe o
 
 ### Prescrição sigilosa
 
-A marca **Sigilosa** só existe para pacientes **menores de 18 anos** e só a médica pode ligá-la. Os responsáveis não veem nada dela: nem a prescrição, nem as doses, nem os relatos ligados a ela.
+A marca **Sigilosa** só pode ser ligada para pacientes **menores de 18 anos** e só pela médica. Depois de ligada, ela **nunca some sozinha** (nem quando o paciente faz 18 anos ou a prescrição é editada): só a médica a desmarca, de propósito. Os responsáveis não veem nada dela: nem a prescrição, nem as doses, nem os relatos ligados a ela.
 
 ### Família registra as doses
 
-Em cada prescrição há a chave **Família registra as doses**. Quando ligada, o portal mostra o cartão **Tratamento**, onde a família marca as doses dos **últimos 7 dias**.
+Em cada prescrição há a opção **A família pode registrar doses dadas**. O cartão **Tratamento** do portal aparece sempre que há uma prescrição visível, ativa ou futura; os botões para marcar as doses dos **últimos 7 dias** só aparecem nas prescrições com essa opção ligada.
 
 ### Relatos de efeitos e "Ciente"
 
-A família pode **relatar um efeito indesejado** (até 90 dias para trás); a tela mostra um aviso de urgência para casos graves. Na tela inicial, a médica vê os **relatos ainda não vistos** e as **reavaliações vencidas ou a vencer nos próximos 7 dias**. Ao ler um relato, ela clica em **Ciente** e, se quiser, anota a gravidade e a conduta.
+A família pode **relatar um efeito indesejado** (até 90 dias para trás); a tela mostra um aviso geral de que, em caso de urgência, a família deve procurar atendimento. Na tela inicial, a médica vê os **relatos ainda não vistos** e as **reavaliações vencidas ou a vencer nos próximos 7 dias**. Ao ler um relato, ela clica em **Ciente** e, se quiser, anota a gravidade e a conduta.
 
 ### Receita
 
-Preencha o **cabeçalho** uma única vez em **Receita (cabeçalho)** (`/admin/receita`, médica administradora). Depois, na ficha, escolha os itens da receita e **imprima** ou use **Salvar como PDF** no navegador. A assinatura é **à mão**. Receitas de **controle especial** (duas vias) **não** são cobertas.
+Preencha o **cabeçalho** uma única vez em **Receita (cabeçalho)** (`/admin/receita`, médica administradora). Depois, na ficha, escolha os itens da receita e clique em **Imprimir**; na janela de impressão do navegador, escolha **Salvar como PDF** se preferir um arquivo. A assinatura é **à mão**. Receitas de **controle especial** (duas vias) **não** são cobertas.
 
 ## 6. Limites legais
 

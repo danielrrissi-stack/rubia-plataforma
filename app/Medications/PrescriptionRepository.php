@@ -47,7 +47,7 @@ final class PrescriptionRepository
         }
         $uid = (int) $user['id'];
         $patientId = (int) $before['patient_id'];
-        $row['secret'] = $this->secretFor($patientId, $user, !empty($data['secret']), $today);
+        $row['secret'] = $this->secretOnUpdate((int) $before['secret'], $patientId, $user, $data, $today);
         $sets = implode(', ', array_map(fn (string $c): string => $c . ' = ?', array_keys($row)));
         $this->db->run(
             'UPDATE prescriptions SET ' . $sets . ', updated_by = ?, updated_at = NOW() WHERE id = ?',
@@ -166,7 +166,7 @@ final class PrescriptionRepository
     {
         $limit = (new \DateTimeImmutable($today))->modify('+' . $days . ' days')->format('Y-m-d');
         return $this->db->all(
-            'SELECT p.*, pt.full_name AS patient_name FROM prescriptions p
+            'SELECT p.*, COALESCE(NULLIF(pt.social_name, ""), pt.full_name) AS patient_name FROM prescriptions p
              JOIN patients pt ON pt.id = p.patient_id AND pt.deleted_at IS NULL
              WHERE p.deleted_at IS NULL AND p.start_date <= ? AND (p.end_date IS NULL OR p.end_date >= ?)
                AND p.next_review_date IS NOT NULL AND p.next_review_date <= ?
@@ -247,14 +247,31 @@ final class PrescriptionRepository
         return $p;
     }
 
-    /** Sigilo so por medico e so para menor de 18 anos hoje (anos completos; months() < 216 erra no aniversario por dias bissextos). */
-    private function secretFor(int $patientId, array $user, bool $wanted, string $today): int
+    /** Unico predicado de "pode ligar o sigilo": medico e paciente com menos de 18 anos hoje (anos completos). */
+    public function mayMarkSecret(array $user, int $patientId, string $today): bool
     {
-        if (!$wanted || (string) $user['role'] !== 'medico') {
-            return 0;
+        if ((string) $user['role'] !== 'medico') {
+            return false;
         }
         $patient = $this->db->one('SELECT birth_date FROM patients WHERE id = ?', [$patientId]);
-        return $patient !== null && Age::years((string) $patient['birth_date'], $today) < 18 ? 1 : 0;
+        return $patient !== null && Age::years((string) $patient['birth_date'], $today) < 18;
+    }
+
+    private function secretFor(int $patientId, array $user, bool $wanted, string $today): int
+    {
+        return $wanted && $this->mayMarkSecret($user, $patientId, $today) ? 1 : 0;
+    }
+
+    /** R6: o sigilo nunca e desligado implicitamente; so o medico o desmarca, e ligar exige mayMarkSecret(). */
+    private function secretOnUpdate(int $current, int $patientId, array $user, array $data, string $today): int
+    {
+        if (!array_key_exists('secret', $data)) {
+            return $current;
+        }
+        if (!empty($data['secret'])) {
+            return $current === 1 ? 1 : $this->secretFor($patientId, $user, true, $today);
+        }
+        return (string) $user['role'] === 'medico' ? 0 : $current;
     }
 
     /**

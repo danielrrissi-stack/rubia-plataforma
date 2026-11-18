@@ -248,4 +248,59 @@ final class PortalTreatmentTest extends DbTestCase
         $this->assertStringContainsString('Antigo sigiloso', $page->body);
         $this->assertStringContainsString('Veja os medicamentos', $this->get('/portal/p/' . $pid)->body);
     }
+
+    public function test_secret_stays_hidden_from_guardian_after_patient_turns_18_and_doctor_edits(): void
+    {
+        $med = $this->makeUser('medico', ['totp_enabled' => 1]);
+        $g = $this->makeUser('responsavel');
+        $p = $this->makePatient([
+            'full_name' => 'Ana Souza', 'birth_date' => date('Y-m-d', strtotime('-18 years -1 day')), 'sex' => 'F',
+            'responsible_professional_id' => $med['id'], 'created_by' => $med['id'],
+        ]);
+        $pid = (int) $p['id'];
+        $this->db->insert('guardian_links', ['patient_id' => $pid, 'user_id' => $g['id'], 'relationship' => 'mãe', 'created_by' => $med['id']]);
+        $before18 = date('Y-m-d', strtotime('-2 days'));
+        $rx = Container::prescriptions()->create($pid, [
+            'drug_name' => 'Segredinho', 'route' => 'oral', 'start_date' => $this->day(-30), 'dose' => '5 mg', 'frequency' => '1x',
+            'instructions' => '', 'family_logs' => '1', 'secret' => '1',
+        ], $med, $before18, new Request('POST', '/'));
+        $this->assertSame(1, (int) $this->db->one('SELECT secret FROM prescriptions WHERE id = ?', [$rx])['secret']);
+        $this->db->insert('medication_logs', ['prescription_id' => $rx, 'given_at' => $this->day(-1) . ' 08:00:00', 'dose' => '5 mg', 'note' => 'LOG-SECRETO', 'recorded_by' => $med['id'], 'recorded_by_role' => 'medico']);
+        $this->db->insert('adverse_events', [
+            'patient_id' => $pid, 'prescription_id' => $rx, 'occurred_on' => date('Y-m-d'), 'description' => 'EVENTO-SECRETO',
+            'source' => 'equipe', 'reported_by' => $med['id'], 'reported_by_role' => 'medico',
+        ]);
+
+        $this->loginAs($med);
+        $res = $this->post('/prescricoes/' . $rx . '/editar', [
+            'drug_name' => 'Segredinho', 'route' => 'oral', 'start_date' => $this->day(-30), 'dose' => '5 mg', 'frequency' => '1x',
+            'family_logs' => '1', 'notes' => 'corrigi typo',
+        ]);
+        $this->assertSame(302, $res->status);
+        $this->assertSame(1, (int) $this->db->one('SELECT secret FROM prescriptions WHERE id = ?', [$rx])['secret']);
+
+        $this->loginAs($g);
+        $this->assertStringNotContainsString('Veja os medicamentos', $this->get('/portal/p/' . $pid)->body);
+        $body = $this->get('/portal/p/' . $pid . '/tratamento')->body;
+        foreach (['Segredinho', 'LOG-SECRETO', 'EVENTO-SECRETO'] as $s) {
+            $this->assertStringNotContainsString($s, $body);
+        }
+        $this->assertSame(404, $this->post('/portal/p/' . $pid . '/tratamento/' . $rx . '/dose', ['data' => date('Y-m-d'), 'hora' => '00:01'])->status);
+        $this->assertSame(1, $this->logs($rx));
+    }
+
+    public function test_home_card_text_and_treatment_view_audit(): void
+    {
+        [$g, $p, $med] = $this->family();
+        $pid = (int) $p['id'];
+        $this->rx($pid, $med, ['family_logs' => '0']);
+        $this->loginAs($g);
+        $home = $this->get('/portal/p/' . $pid)->body;
+        $this->assertStringContainsString('Veja os medicamentos.', $home);
+        $this->assertStringNotContainsString('registre as doses', $home);
+        $this->get('/portal/p/' . $pid . '/tratamento');
+        $row = $this->db->one("SELECT after_json FROM audit_log WHERE action = 'view' AND entity = 'prescriptions' AND patient_id = ? AND user_id = ?", [$pid, $g['id']]);
+        $this->assertNotNull($row);
+        $this->assertTrue(json_decode((string) $row['after_json'], true)['portal']);
+    }
 }

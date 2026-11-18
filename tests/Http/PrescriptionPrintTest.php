@@ -169,4 +169,21 @@ final class PrescriptionPrintTest extends DbTestCase
         $this->assertSame(422, $res->status);
         $this->assertSame(0, $this->n("SELECT COUNT(*) n FROM settings WHERE `key` = 'rx_clinic_name'"));
     }
+
+    public function test_choose_page_is_audited(): void
+    {
+        [, $p] = $this->setupDoctor();
+        $this->get('/pacientes/' . $p['id'] . '/receita');
+        $row = $this->db->one("SELECT after_json FROM audit_log WHERE action = 'view' AND entity = 'prescriptions' AND patient_id = ? AND after_json LIKE '%escolha%'", [$p['id']]);
+        $this->assertNotNull($row);
+    }
+
+    public function test_settings_array_value_is_treated_as_empty(): void
+    {
+        $admin = $this->makeUser('medico', ['is_admin' => 1, 'totp_enabled' => 1]);
+        $this->loginAs($admin);
+        $res = $this->post('/admin/receita', ['rx_clinic_name' => ['x'], 'rx_address' => '', 'rx_phone' => '', 'rx_city' => 'Campinas']);
+        $this->assertSame(302, $res->status);
+        $this->assertSame('', $this->db->one("SELECT value FROM settings WHERE `key` = 'rx_clinic_name'")['value']);
+    }
 }

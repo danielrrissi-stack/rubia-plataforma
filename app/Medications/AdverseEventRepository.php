@@ -130,7 +130,7 @@ final class AdverseEventRepository
             $params = array_map('intval', array_values($patientIds));
         }
         return $this->db->all(
-            "SELECT e.*, pt.full_name AS patient_name, p.drug_name FROM adverse_events e
+            "SELECT e.*, COALESCE(NULLIF(pt.social_name, ''), pt.full_name) AS patient_name, p.drug_name FROM adverse_events e
              JOIN patients pt ON pt.id = e.patient_id AND pt.deleted_at IS NULL
              LEFT JOIN prescriptions p ON p.id = e.prescription_id
              WHERE e.source = 'familia' AND e.reviewed_by IS NULL AND e.deleted_at IS NULL" . $in . '

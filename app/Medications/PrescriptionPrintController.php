@@ -28,6 +28,7 @@ final class PrescriptionPrintController
         $id = $this->authPatient($r);
         $user = $r->attributes['user'];
         $patient = $this->patient($id);
+        Container::audit()->record((int) $user['id'], 'view', 'prescriptions', null, $id, null, ['section' => 'medicamentos', 'receita' => 'escolha'], $r);
         $items = $this->open($id, $user, date('Y-m-d'));
         return Response::html(View::render('Medications/views/rx_choose.php', [
             'title' => 'Receita', 'userName' => $user['name'], 'active' => '/pacientes',
@@ -92,7 +93,8 @@ final class PrescriptionPrintController
         $values = [];
         $errors = [];
         foreach (self::SETTINGS as $key => $max) {
-            $v = trim((string) ($r->post[$key] ?? ''));
+            $raw = $r->post[$key] ?? '';
+            $v = is_string($raw) ? trim($raw) : '';
             if (mb_strlen($v) > $max) {
                 $errors[] = self::LABELS[$key] . ': no máximo ' . $max . ' caracteres.';
             }

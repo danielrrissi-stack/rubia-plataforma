@@ -196,4 +196,31 @@ final class PrescriptionRepositoryTest extends DbTestCase
         $this->assertNotNull($repo->find($id)['deleted_at']);
         $this->assertSame(1, $this->audits('delete', 'prescriptions'));
     }
+
+    public function test_secret_is_never_cleared_implicitly_after_majority(): void
+    {
+        $repo = Container::prescriptions();
+        $young = '2033-03-01'; // paciente (nasc. 2015-03-10) com 17 anos
+        $adult = '2033-03-15'; // ja com 18
+        $id = $repo->create((int) $this->patient['id'], $this->data(['secret' => 1, 'start_date' => '2033-02-01']), $this->medico, $young, $this->r());
+        $this->assertSame(1, (int) $repo->find($id)['secret']);
+
+        $noField = $this->data(['start_date' => '2033-02-01', 'notes' => 'typo']);
+        unset($noField['secret']);
+        $repo->update($id, $noField, $this->medico, $adult, $this->r());
+        $this->assertSame(1, (int) $repo->find($id)['secret']);
+
+        $repo->update($id, $this->data(['start_date' => '2033-02-01', 'secret' => 1]), $this->medico, $adult, $this->r());
+        $this->assertSame(1, (int) $repo->find($id)['secret']);
+
+        $nutri = $this->makeUser('nutricionista');
+        $repo->update($id, $this->data(['start_date' => '2033-02-01', 'secret' => 0]), $nutri, $adult, $this->r());
+        $this->assertSame(1, (int) $repo->find($id)['secret']);
+
+        $repo->update($id, $this->data(['start_date' => '2033-02-01', 'secret' => 0]), $this->medico, $adult, $this->r());
+        $this->assertSame(0, (int) $repo->find($id)['secret']);
+
+        $repo->update($id, $this->data(['start_date' => '2033-02-01', 'secret' => 1]), $this->medico, $adult, $this->r());
+        $this->assertSame(0, (int) $repo->find($id)['secret'], 'ligar o sigilo para adulto continua proibido');
+    }
 }
