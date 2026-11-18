@@ -22,6 +22,8 @@ use App\Growth\WhoReferenceRepository;
 use App\Labs\AttachmentStore;
 use App\Labs\LabCatalogRepository;
 use App\Labs\LabRepository;
+use App\Medications\AdverseEventRepository;
+use App\Medications\MedicationLogRepository;
 use App\Medications\PrescriptionRepository;
 use App\Nutrition\FoodRepository;
 use App\Nutrition\MealPlanRepository;
@@ -217,6 +219,16 @@ final class Container
     public static function prescriptions(): PrescriptionRepository
     {
         return self::$items['prescriptions'] ??= new PrescriptionRepository(self::db(), self::audit());
+    }
+
+    public static function medicationLogs(): MedicationLogRepository
+    {
+        return self::$items['medicationLogs'] ??= new MedicationLogRepository(self::db(), self::audit(), self::prescriptions());
+    }
+
+    public static function adverseEvents(): AdverseEventRepository
+    {
+        return self::$items['adverseEvents'] ??= new AdverseEventRepository(self::db(), self::audit(), self::prescriptions());
     }
 
     public static function eduCards(): EduCardRepository
