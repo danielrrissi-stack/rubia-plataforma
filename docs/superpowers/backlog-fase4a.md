@@ -21,3 +21,5 @@ Itens adiados na revisão final:
 - O celular do responsável é um só para todos os pacientes dele (vale explicar no texto de ajuda depois).
 - Pacientes com exclusão lógica não são filtrados nas consultas da agenda (importa para a fase 4b).
 - Consulta marcada para amanhã depois da rodada das 08:00 de hoje não recebe o lembrete da véspera.
+- `GET /agenda/marcar?prof=<profissional desativada>` ainda mostra o formulário (só digitando a URL); a gravação é recusada.
+- Secretária/médica admin: cada checagem de acesso refaz a lista de agendas (consulta extra das desativadas); ok no tamanho da clínica.
