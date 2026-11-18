@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Access\Gate;
+use App\Agenda\AgendaAccess;
+use App\Agenda\ScheduleRepository;
 use App\Access\PatientScope;
 use App\Access\Policy;
 use App\Audit\AuditLog;
@@ -266,5 +268,15 @@ final class Container
     public static function eduCards(): EduCardRepository
     {
         return self::$items['eduCards'] ??= new EduCardRepository(self::db(), self::audit());
+    }
+
+    public static function schedules(): ScheduleRepository
+    {
+        return self::$items['schedules'] ??= new ScheduleRepository(self::db(), self::audit());
+    }
+
+    public static function agendaAccess(): AgendaAccess
+    {
+        return self::$items['agendaAccess'] ??= new AgendaAccess(self::db(), self::patientScope());
     }
 }

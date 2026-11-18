@@ -24,6 +24,8 @@ final class PolicyTest extends TestCase
         $this->assertTrue($p->allows($u, 'edit', Policy::ENERGIA));
         $this->assertTrue($p->allows($u, 'view', Policy::CADASTRO_BASICO));
         $this->assertFalse($p->allows($u, 'edit', Policy::CADASTRO_BASICO));
+        $this->assertTrue($p->allows($u, 'view', Policy::AGENDA)); // qual agenda: AgendaAccess
+        $this->assertTrue($p->allows($u, 'edit', Policy::AGENDA));
     }
 
     public function testSecretaria(): void
@@ -57,6 +59,8 @@ final class PolicyTest extends TestCase
             $this->assertFalse($p->allows($u, 'edit', Policy::MEDICAMENTOS));
             $this->assertTrue($p->allows($u, 'view', Policy::DIARIO));
             $this->assertFalse($p->allows($u, 'edit', Policy::DIARIO));
+            $this->assertTrue($p->allows($u, 'view', Policy::AGENDA)); // so as proprias consultas, no portal
+            $this->assertFalse($p->allows($u, 'edit', Policy::AGENDA));
         }
         $c = $this->u('crianca');
         $this->assertTrue($p->allows($c, 'view', Policy::METAS));
@@ -68,6 +72,8 @@ final class PolicyTest extends TestCase
         $this->assertFalse($p->allows($c, 'view', Policy::DIARIO));
         $this->assertFalse($p->allows($c, 'view', Policy::CADASTRO_BASICO));
         $this->assertFalse($p->allows($c, 'view', Policy::ANTROPOMETRIA));
+        $this->assertFalse($p->allows($c, 'view', Policy::AGENDA));
+        $this->assertFalse($p->allows($c, 'edit', Policy::AGENDA));
     }
 
     public function testMedicoAndAdmin(): void
