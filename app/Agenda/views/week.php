@@ -20,4 +20,5 @@ if ($prof !== null): ?>
     </section>
   <?php endforeach; ?>
 </div>
+<script src="<?= e(url('/assets/js/agenda-whatsapp.js')) ?>" defer></script>
 <?php endif;

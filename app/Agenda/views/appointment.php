@@ -86,3 +86,4 @@ $action = static fn (string $suffix): string => url('/agenda/consultas/' . (int)
 
 <p><a href="<?= e(url('/agenda') . '?' . http_build_query(['prof' => (int) $a['professional_id'], 'data' => $day], '', '&', PHP_QUERY_RFC3986)) ?>">Voltar à agenda</a></p>
 <script src="<?= e(url('/assets/js/confirm-submit.js')) ?>" defer></script>
+<script src="<?= e(url('/assets/js/agenda-whatsapp.js')) ?>" defer></script>

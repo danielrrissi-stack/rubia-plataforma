@@ -15,4 +15,5 @@ if ($prof !== null):
     <?php foreach ($grid[$date] as $row) { include __DIR__ . '/_slot.php'; } ?>
   </ul>
 <?php endif; ?>
+<script src="<?= e(url('/assets/js/agenda-whatsapp.js')) ?>" defer></script>
 <?php endif;

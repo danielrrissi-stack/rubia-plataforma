@@ -31,6 +31,9 @@ if (!isset($nav)) {
     if ($navUser !== null && (int) ($navUser['is_admin'] ?? 0) === 1) {
         $nav[] = ['Receita (cabeçalho)', '/admin/receita'];
     }
+    if ($navUser !== null && $navUser['role'] === 'medico' && (int) ($navUser['is_admin'] ?? 0) === 1) {
+        $nav[] = ['Agenda (avisos)', '/admin/agenda'];
+    }
 }
 $active = $active ?? '';
 $flashOk = \App\Core\Session::flash('ok');

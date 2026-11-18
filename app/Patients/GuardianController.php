@@ -15,12 +15,13 @@ use App\Users\UserRepository;
 final class GuardianController
 {
     public const RELATIONSHIPS = ['mãe', 'pai', 'avó', 'avô', 'tutor legal', 'outro'];
+    private const PHONE_MAX = 30;
 
     public function index(Request $r): Response
     {
         $id = (int) $r->params['id'];
         $this->authorize($r, $id);
-        return $this->form($r, $this->patient($id), ['nome' => '', 'email' => '', 'parentesco' => ''], []);
+        return $this->form($r, $this->patient($id), ['nome' => '', 'email' => '', 'parentesco' => '', 'celular' => ''], []);
     }
 
     public function add(Request $r): Response
@@ -31,7 +32,8 @@ final class GuardianController
         $name = trim((string) $r->input('nome', ''));
         $email = UserRepository::normalizeEmail((string) $r->input('email', ''));
         $rel = (string) $r->input('parentesco', '');
-        $values = ['nome' => $name, 'email' => $email, 'parentesco' => $rel];
+        $phone = trim((string) $r->input('celular', ''));
+        $values = ['nome' => $name, 'email' => $email, 'parentesco' => $rel, 'celular' => $phone];
 
         $errors = [];
         $existing = null;
@@ -53,22 +55,28 @@ final class GuardianController
         if ($existing === null && ($name === '' || mb_strlen($name) > 150)) {
             $errors[] = 'Informe o nome do responsável (até 150 caracteres).';
         }
+        if (mb_strlen($phone) > self::PHONE_MAX) {
+            $errors[] = 'Celular: no máximo ' . self::PHONE_MAX . ' caracteres.';
+        }
         if ($errors !== []) {
             return $this->form($r, $patient, $values, $errors);
         }
 
         $users = Container::users();
-        Container::db()->transaction(function () use ($users, $existing, $name, $email, $rel, $id, $actor, $r): void {
+        Container::db()->transaction(function () use ($users, $existing, $name, $email, $rel, $phone, $id, $actor, $r): void {
             if ($existing === null) {
-                $uid = $users->create(['name' => $name, 'email' => $email, 'role' => 'responsavel', 'password' => null, 'active' => 1]);
+                $uid = $users->create(['name' => $name, 'email' => $email, 'role' => 'responsavel', 'password' => null, 'active' => 1, 'phone' => $phone === '' ? null : $phone]);
                 Container::audit()->record((int) $actor['id'], 'create', 'users', $uid, $id, null,
-                    ['email' => $email, 'role' => 'responsavel'], $r);
+                    ['email' => $email, 'role' => 'responsavel', 'phone' => $phone === '' ? null : $phone], $r);
                 $user = $users->find($uid);
                 $invite = true;
             } else {
                 $uid = (int) $existing['id'];
                 $user = $existing;
                 $invite = $existing['password_hash'] === null;
+                if ($phone !== '') {
+                    $this->savePhone($uid, $existing['phone'] ?? null, $phone, $id, $actor, $r);
+                }
             }
             Container::guardians()->link($id, $uid, $rel, (int) $actor['id'], $r);
             if ($invite) {
@@ -92,6 +100,41 @@ final class GuardianController
         Container::guardians()->unlink((int) $link['id'], (int) $actor['id'], $r);
         Session::flash('ok', 'Vínculo removido.');
         return Response::redirect('/pacientes/' . $pid . '/responsaveis');
+    }
+
+    /** POST /responsaveis/{linkId}/celular — celular do responsavel (users.phone; vazio apaga). */
+    public function phone(Request $r): Response
+    {
+        $link = Container::guardians()->find((int) $r->params['linkId']);
+        if ($link === null || (int) $link['active'] !== 1) {
+            throw new HttpException(404);
+        }
+        $pid = (int) $link['patient_id'];
+        $actor = $this->authorize($r, $pid);
+        $phone = trim((string) $r->input('celular', ''));
+        if (mb_strlen($phone) > self::PHONE_MAX) {
+            Session::flash('erro', 'Celular: no máximo ' . self::PHONE_MAX . ' caracteres.');
+            return Response::redirect('/pacientes/' . $pid . '/responsaveis');
+        }
+        $uid = (int) $link['user_id'];
+        $guardian = Container::users()->find($uid);
+        if ($guardian === null) {
+            throw new HttpException(404);
+        }
+        $this->savePhone($uid, $guardian['phone'] ?? null, $phone, $pid, $actor, $r);
+        Session::flash('ok', 'Celular do responsável salvo.');
+        return Response::redirect('/pacientes/' . $pid . '/responsaveis');
+    }
+
+    /** Grava users.phone (vazio = NULL) e audita `update` em users so com o telefone; nada quando nao mudou. */
+    private function savePhone(int $uid, ?string $before, string $phone, int $patientId, array $actor, Request $r): void
+    {
+        $after = $phone === '' ? null : $phone;
+        if ($after === $before) {
+            return;
+        }
+        Container::db()->run('UPDATE users SET phone = ? WHERE id = ?', [$after, $uid]);
+        Container::audit()->record((int) $actor['id'], 'update', 'users', $uid, $patientId, ['phone' => $before], ['phone' => $after], $r);
     }
 
     private function authorize(Request $r, int $patientId): array
@@ -122,6 +165,7 @@ final class GuardianController
             'values' => $values,
             'errors' => $errors,
             'relationships' => self::RELATIONSHIPS,
+            'phoneMax' => self::PHONE_MAX,
         ]));
     }
 }

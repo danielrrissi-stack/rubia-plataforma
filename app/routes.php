@@ -4,6 +4,7 @@ declare(strict_types=1);
 /** @var \App\Core\Router $router */
 
 use App\Agenda\AgendaController;
+use App\Agenda\AgendaSettingsController;
 use App\Agenda\ScheduleController;
 use App\Auth\AuthController;
 use App\Auth\TwoFactorController;
@@ -74,6 +75,8 @@ $router->post('/equipe/{id:\d+}/redefinir-2fa', [UserController::class, 'resetTw
 
 $router->get('/admin/receita', [PrescriptionPrintController::class, 'settingsForm'], $staffMw);
 $router->post('/admin/receita', [PrescriptionPrintController::class, 'saveSettings'], $staffMw);
+$router->get('/admin/agenda', [AgendaSettingsController::class, 'form'], $staffMw);
+$router->post('/admin/agenda', [AgendaSettingsController::class, 'save'], $staffMw);
 $router->get('/admin/backups', [BackupController::class, 'index'], $staffMw);
 $router->post('/admin/backups/gerar', [BackupController::class, 'generate'], $staffMw);
 $router->get('/admin/backups/chave-privada', [BackupController::class, 'privateKey'], $staffMw);
@@ -138,6 +141,7 @@ $router->get('/diario/registros/{diaryEntryId:\d+}/foto', [DiaryController::clas
 $router->get('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/responsaveis', [GuardianController::class, 'add'], $authMw);
 $router->post('/responsaveis/{linkId:\d+}/remover', [GuardianController::class, 'remove'], $authMw);
+$router->post('/responsaveis/{linkId:\d+}/celular', [GuardianController::class, 'phone'], $authMw);
 $router->get('/consentimento', [PatientController::class, 'showConsent'], $authMw);
 $router->post('/consentimento', [PatientController::class, 'acceptConsent'], $authMw);
 $router->get('/pacientes/{id:\d+}/acesso-profissionais', [AccessGrantController::class, 'index'], $authMw);
