@@ -119,6 +119,13 @@ final class DiaryPhotoStore
         if ($src === false) {
             return null;
         }
+        $angle = self::rotationFor($this->orientation($tmp));
+        if ($angle !== 0) {
+            $rotated = imagerotate($src, $angle, 0);
+            if ($rotated !== false) {
+                $src = $rotated;
+            }
+        }
         $w = imagesx($src);
         $h = imagesy($src);
         $scale = min(1.0, self::MAX_SIDE / max($w, $h));
@@ -128,6 +135,30 @@ final class DiaryPhotoStore
         imagefill($dst, 0, 0, (int) imagecolorallocate($dst, 255, 255, 255));
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
         return $dst;
+    }
+
+    /**
+     * Graus anti-horarios para imagerotate() que deixam a foto em pe, dado o Orientation do EXIF.
+     * Valores espelhados (2, 4, 5, 7) usam so a rotacao equivalente; desconhecido = 0.
+     */
+    public static function rotationFor(int $orientation): int
+    {
+        return match ($orientation) {
+            3, 4 => 180,
+            6, 5 => 270,
+            8, 7 => 90,
+            default => 0,
+        };
+    }
+
+    /** Orientation do EXIF de um JPEG (1 quando nao ha EXIF ou a extensao falta). */
+    private function orientation(string $file): int
+    {
+        if (!function_exists('exif_read_data') || (string) (new \finfo(FILEINFO_MIME_TYPE))->file($file) !== 'image/jpeg') {
+            return 1;
+        }
+        $exif = @exif_read_data($file);
+        return is_array($exif) ? (int) ($exif['Orientation'] ?? 1) : 1;
     }
 
     private static function iniBytes(string $v): int

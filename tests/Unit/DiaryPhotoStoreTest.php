@@ -97,6 +97,19 @@ final class DiaryPhotoStoreTest extends TestCase
         $this->assertSame(427, $h);
     }
 
+    public function test_rotation_for_exif_orientation(): void
+    {
+        $this->assertSame(0, DiaryPhotoStore::rotationFor(1));
+        $this->assertSame(180, DiaryPhotoStore::rotationFor(3));
+        $this->assertSame(270, DiaryPhotoStore::rotationFor(6)); // 90 horario
+        $this->assertSame(90, DiaryPhotoStore::rotationFor(8));  // 90 anti-horario
+        $this->assertSame(0, DiaryPhotoStore::rotationFor(2));
+        $this->assertSame(180, DiaryPhotoStore::rotationFor(4));
+        $this->assertSame(270, DiaryPhotoStore::rotationFor(5));
+        $this->assertSame(90, DiaryPhotoStore::rotationFor(7));
+        $this->assertSame(0, DiaryPhotoStore::rotationFor(99));
+    }
+
     public function test_discard_and_response(): void
     {
         if (extension_loaded('gd')) {
