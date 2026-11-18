@@ -6,6 +6,7 @@ Itens que ficaram abertos depois das revisões de cada tarefa.
 - Orientações EXIF espelhadas (2, 4, 5 e 7) são aproximadas só por rotação.
 - Sem a extensão exif a orientação é ignorada em silêncio (o README já avisa que GD e exif são necessárias).
 - Falta um teste de ponta a ponta do caminho GD com foto que tem orientação EXIF.
+- `imagedestroy()` em `DiaryPhotoStore::resized()` não faz nada desde o PHP 8.0 e fica obsoleto no 8.5; trocar por `unset()` antes de atualizar o PHP.
 
 ## Repositórios
 - forRange filtra a visibilidade no PHP, não no SQL.
