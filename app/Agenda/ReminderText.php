@@ -49,10 +49,7 @@ final class ReminderText
         $minor = Age::years((string) $appointment['birth_date'], $day) < 18;
         $template = $this->templates()[$minor ? 'child' : 'adult'];
 
-        $address = trim((string) ($appointment['professional_address'] ?? ''));
-        if ($address === '') {
-            $address = trim($this->settings()['rx_address'] ?? '');
-        }
+        $address = $this->address($appointment);
         if ($address === '') {
             $template = str_replace([' ' . self::ADDRESS_SEGMENT, self::ADDRESS_SEGMENT], '', $template);
         }
@@ -64,6 +61,13 @@ final class ReminderText
             '{hora}' => substr($startsAt, 11, 5),
             '{endereço}' => $address,
         ]);
+    }
+
+    /** Endereco da profissional, senao settings.rx_address, senao ''. */
+    public function address(array $appointment): string
+    {
+        $address = trim((string) ($appointment['professional_address'] ?? ''));
+        return $address !== '' ? $address : trim($this->settings()['rx_address'] ?? '');
     }
 
     /** "amanhã, quinta-feira, 19/11" / "hoje, quinta-feira, 19/11" / "quinta-feira, 19/11". */
@@ -81,7 +85,7 @@ final class ReminderText
     }
 
     /**
-     * Telefone do paciente ("WhatsApp — paciente") e celular de cada responsavel ativo ("WhatsApp — {nome}").
+     * Telefone do paciente ("WhatsApp — paciente") e celular de cada responsavel ativo (vinculo e conta ativos) ("WhatsApp — {nome}").
      * `wa` = numero para wa.me ou null quando o formato e invalido. Sem telefone nenhum = lista vazia.
      *
      * @return list<array{label:string,wa:?string,raw:string}>
@@ -95,7 +99,7 @@ final class ReminderText
         }
         $guardians = $this->db->all(
             "SELECT u.name, u.phone FROM guardian_links g JOIN users u ON u.id = g.user_id
-             WHERE g.patient_id = ? AND g.active = 1 AND u.phone IS NOT NULL AND TRIM(u.phone) <> '' ORDER BY g.id",
+             WHERE g.patient_id = ? AND g.active = 1 AND u.active = 1 AND u.phone IS NOT NULL AND TRIM(u.phone) <> '' ORDER BY g.id",
             [(int) $appointment['patient_id']],
         );
         foreach ($guardians as $g) {
@@ -106,7 +110,7 @@ final class ReminderText
     }
 
     /** Nome social, senao o primeiro nome. */
-    private static function callName(array $a): string
+    public static function callName(array $a): string
     {
         $social = trim((string) ($a['social_name'] ?? ''));
         if ($social !== '') {

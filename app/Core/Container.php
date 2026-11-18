@@ -5,7 +5,9 @@ namespace App\Core;
 
 use App\Access\Gate;
 use App\Agenda\AgendaAccess;
+use App\Agenda\AgendaMailer;
 use App\Agenda\AppointmentRepository;
+use App\Agenda\ReminderRound;
 use App\Agenda\ReminderText;
 use App\Agenda\ScheduleRepository;
 use App\Access\PatientScope;
@@ -290,5 +292,15 @@ final class Container
     public static function reminderText(): ReminderText
     {
         return self::$items['reminderText'] ??= new ReminderText(self::db());
+    }
+
+    public static function agendaMailer(): AgendaMailer
+    {
+        return self::$items['agendaMailer'] ??= new AgendaMailer(self::db(), self::mailer(), self::reminderText());
+    }
+
+    public static function reminderRound(): ReminderRound
+    {
+        return self::$items['reminderRound'] ??= new ReminderRound(self::db(), self::appointments(), self::reminderText(), self::agendaMailer(), self::mailer());
     }
 }

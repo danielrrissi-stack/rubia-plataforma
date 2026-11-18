@@ -87,10 +87,11 @@ final class AgendaController
             return $this->bookPage($r, $user, $agendas, $prof, $start, null, $kind, $note, ['Escolha o paciente.']);
         }
         try {
-            Container::appointments()->book($prof, $patientId, $start, $kind, $note, $user, date('Y-m-d H:i'), $r);
+            $id = Container::appointments()->book($prof, $patientId, $start, $kind, $note, $user, date('Y-m-d H:i'), $r);
         } catch (InvalidAgendaException $e) {
             return $this->bookPage($r, $user, $agendas, $prof, $start, $patientId, $kind, $note, $e->errors());
         }
+        $this->notifyFamily(fn () => Container::agendaMailer()->booked($id, date('Y-m-d')));
         Session::flash('ok', 'Consulta marcada.');
         return Response::redirect('/agenda?prof=' . $prof . '&data=' . substr($start, 0, 10));
     }
@@ -169,6 +170,7 @@ final class AgendaController
         try {
             Container::appointments()->cancel((int) $a['id'], (string) $r->input('motivo', ''), $user, date('Y-m-d H:i'), $r);
             Session::flash('ok', 'Consulta cancelada. O horário ficou livre.');
+            $this->notifyFamily(fn () => Container::agendaMailer()->cancelled((int) $a['id'], date('Y-m-d')));
         } catch (InvalidAgendaException $e) {
             Session::flash('erro', $e->errors()[0] ?? 'Não foi possível cancelar.');
         }
@@ -197,11 +199,22 @@ final class AgendaController
         } catch (InvalidAgendaException $e) {
             return $this->reschedulePage($r, $user, $a, $this->validDate(substr($start, 0, 10)), $e->errors());
         }
+        $this->notifyFamily(fn () => Container::agendaMailer()->rescheduled((int) $a['id'], $newId, date('Y-m-d')));
         Session::flash('ok', 'Consulta remarcada.');
         return Response::redirect('/agenda/consultas/' . $newId);
     }
 
     // ---- helpers ----
+
+    /** E-mail para a familia depois da mudanca gravada: falha de e-mail nunca desfaz nem quebra a acao. */
+    private function notifyFamily(callable $send): void
+    {
+        try {
+            $send();
+        } catch (\Throwable $e) {
+            error_log('[agenda] e-mail para a familia: ' . $e->getMessage());
+        }
+    }
 
     /**
      * Consulta por id: papel -> existe -> agenda alcancavel (canManageExisting) -> nutricionista so com paciente

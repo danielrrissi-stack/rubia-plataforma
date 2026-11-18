@@ -115,6 +115,17 @@ final class AgendaWhatsappTest extends DbTestCase
         $this->assertStringNotContainsString('wa.me', $day->body, 'riscada nao tem botao');
     }
 
+    public function test_inactive_guardian_account_has_no_button(): void
+    {
+        $this->db->run('UPDATE users SET active = 0 WHERE id = ?', [(int) $this->mom['id']]);
+        $a2 = $this->book($this->doc, $this->child, '09:00');
+        $this->loginAs($this->sec);
+        $page = $this->get('/agenda/consultas/' . $a2);
+        $this->assertSame(200, $page->status);
+        $this->assertStringNotContainsString('btn-whatsapp', $page->body);
+        $this->assertStringNotContainsString('Mãe Teste', $page->body);
+    }
+
     public function test_nutritionist_unreleased_row_has_no_button(): void
     {
         Container::accessGrants()->grant((int) $this->adult['id'], (int) $this->nutri['id'], (int) $this->doc['id']);
