@@ -534,3 +534,7 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.
    **Cron:** confira que o Cron de 5 minutos (`cron/run.php`) existe no cPanel, pois o e-mail da véspera depende dele.
    **Depois de instalar:** cada profissional entra em **Meus horários** e clica em **Usar horário padrão da clínica** (ou monta os horários dela) e preenche o endereço de atendimento.
+12. **A atualização da receita e do plano em PDF (Fase 4b)** não tem migração nem seeds. Ela traz a biblioteca **Dompdf 3.1.6** na pasta `lib/dompdf/` (vai dentro do zip; nada para instalar à parte).
+   Requer a extensão **`dom`** do PHP (quase sempre já ativa): cPanel → "Selecionar versão do PHP" → Extensões → `dom` marcada. O verificador do instalador avisa se faltar.
+   Extraia o zip **dentro de `rubia_app`** como nas outras versões. Esta versão **não muda `public/`**: não é preciso copiar nada para `public_html/rubia.med.br/`.
+   O PDF guarda um cache de fontes em `cache/dompdf`, dentro da pasta de dados (criada sozinha). Para usar: na receita ou no plano publicado, abra **Imprimir** e clique em **Baixar PDF**.

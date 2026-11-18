@@ -1,0 +1,8 @@
+@page { margin: 18mm 16mm; }
+body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #000; line-height: 1.35; }
+h1 { font-size: 15pt; margin: 0 0 2mm; }
+h2 { font-size: 12.5pt; margin: 4mm 0 2mm; }
+h3 { font-size: 11pt; margin: 4mm 0 1.5mm; }
+p { margin: 0.8mm 0; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 0.3mm solid #999; padding: 1mm 1.5mm; text-align: left; vertical-align: top; }
