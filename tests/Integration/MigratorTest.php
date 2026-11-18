@@ -27,11 +27,11 @@ final class MigratorTest extends TestCase
         }
 
         $migrator = new Migrator($db, APP_ROOT . '/database/migrations');
-        $this->assertCount(10, $migrator->migrate());
+        $this->assertCount(11, $migrator->migrate());
         $this->assertSame([], $migrator->migrate());
 
         $tables = array_column($db->all('SHOW TABLES'), 'Tables_in_rubia_test');
-        foreach (['users', 'audit_log', 'clinical_entries', 'measurements', 'who_lms', 'energy_goals', 'foods', 'meal_plans', 'lab_tests', 'lab_ranges', 'lab_collections', 'lab_results', 'lab_attachments'] as $t) {
+        foreach (['users', 'audit_log', 'clinical_entries', 'measurements', 'who_lms', 'energy_goals', 'foods', 'meal_plans', 'lab_tests', 'lab_ranges', 'lab_collections', 'lab_results', 'lab_attachments', 'prescriptions', 'prescription_doses', 'medication_logs', 'adverse_events'] as $t) {
             $this->assertContains($t, $tables);
         }
     }
