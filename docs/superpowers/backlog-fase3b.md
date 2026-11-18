@@ -30,3 +30,6 @@ Itens que ficaram abertos depois das revisões de cada tarefa.
 - PortalTreatmentController tem a terceira cópia de guarda do portal, open e firstName.
 - Alinhamento das colunas em tests/Http/SmokeAllRoutesTest.php (linha /portal/conta).
 - A família não consegue remover registros de uma prescrição encerrada ontem (fora da janela de remoção do portal).
+- O início do portal calcula as prescrições visíveis duas vezes (PortalController::treatment chamado duas vezes).
+- O teste de sigilo após os 18 anos (PortalTreatmentTest) não confere o status 200 das páginas antes de checar que o texto não aparece.
+- Depois que a médica desmarca o sigilo de um paciente já adulto, não dá para marcar de novo (regra: só menores). Vale uma linha no README.
