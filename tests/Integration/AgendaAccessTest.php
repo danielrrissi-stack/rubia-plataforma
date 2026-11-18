@@ -85,6 +85,36 @@ final class AgendaAccessTest extends DbTestCase
         $this->assertFalse($a->canEditTexts($this->makeUser('secretaria', ['is_admin' => 1])));
     }
 
+    public function test_can_manage_existing_covers_inactive_professionals(): void
+    {
+        $a = Container::agendaAccess();
+        $m = (int) $this->medica['id'];
+        $n = (int) $this->nutri['id'];
+        $off = (int) $this->inativa['id'];
+        $secretaria = (int) $this->secretaria['id'];
+        // [usuario, profissional, canManageExisting]
+        $cases = [
+            [$this->secretaria, $m, true],
+            [$this->secretaria, $off, true],
+            [$this->admin, $off, true],
+            [$this->admin, $n, true],
+            [$this->medica, $m, true],
+            [$this->medica, $n, false],
+            [$this->medica, $off, false],
+            [$this->nutri, $n, true],
+            [$this->nutri, $m, false],
+            [$this->inativa, $off, false],
+            [$this->responsavel, $m, false],
+            [$this->secretaria, $secretaria, false],
+            [$this->secretaria, 999999, false],
+            [['id' => $this->secretaria['id'], 'role' => 'secretaria', 'active' => 0], $m, false],
+        ];
+        foreach ($cases as $i => [$user, $pid, $expected]) {
+            $this->assertSame($expected, $a->canManageExisting($user, $pid), 'canManageExisting #' . $i);
+        }
+        $this->assertFalse($a->canManage($this->secretaria, $off));
+    }
+
     public function test_nutritionist_booking_requires_release(): void
     {
         $a = Container::agendaAccess();

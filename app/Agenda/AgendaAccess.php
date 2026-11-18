@@ -56,6 +56,22 @@ final class AgendaAccess
         return $this->canView($user, $professionalId);
     }
 
+    /**
+     * Mudar consulta ja marcada (situacao, cancelar, origem da remarcacao): como canManage, mas vale tambem para
+     * profissional desativada (spec §8: as consultas dela ficam no historico). Secretaria e medica administradora:
+     * qualquer profissional (medico/nutricionista), ativa ou nao; medica/nutricionista: so a propria.
+     */
+    public function canManageExisting(array $user, int $professionalId): bool
+    {
+        if (!$this->isActive($user)) {
+            return false;
+        }
+        if ($this->isSecretary($user) || $this->isAdminDoctor($user)) {
+            return $this->db->one("SELECT 1 AS n FROM users WHERE id = ? AND role IN ('medico','nutricionista')", [$professionalId]) !== null;
+        }
+        return in_array((string) $user['role'], ['medico', 'nutricionista'], true) && (int) $user['id'] === $professionalId;
+    }
+
     /** Semana-modelo, duracao e endereco: a propria profissional ou a medica administradora. */
     public function canEditWeek(array $user, int $professionalId): bool
     {

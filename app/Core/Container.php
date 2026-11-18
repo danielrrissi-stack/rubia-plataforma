@@ -5,6 +5,7 @@ namespace App\Core;
 
 use App\Access\Gate;
 use App\Agenda\AgendaAccess;
+use App\Agenda\AppointmentRepository;
 use App\Agenda\ScheduleRepository;
 use App\Access\PatientScope;
 use App\Access\Policy;
@@ -278,5 +279,10 @@ final class Container
     public static function agendaAccess(): AgendaAccess
     {
         return self::$items['agendaAccess'] ??= new AgendaAccess(self::db(), self::patientScope());
+    }
+
+    public static function appointments(): AppointmentRepository
+    {
+        return self::$items['appointments'] ??= new AppointmentRepository(self::db(), self::audit(), self::schedules(), self::agendaAccess());
     }
 }
