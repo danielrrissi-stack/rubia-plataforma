@@ -318,4 +318,9 @@ final class Container
     {
         return self::$items['weightGoals'] ??= new WeightGoalRepository(self::db(), self::audit());
     }
+
+    public static function evolutionSettings(): \App\Evolution\EvolutionSettingsRepository
+    {
+        return self::$items['evolutionSettings'] ??= new \App\Evolution\EvolutionSettingsRepository(self::db(), self::audit());
+    }
 }
