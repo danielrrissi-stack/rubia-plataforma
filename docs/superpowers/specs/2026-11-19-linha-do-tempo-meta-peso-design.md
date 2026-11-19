@@ -47,8 +47,12 @@ vê a meta**; forma de controle a meu critério; gráfico com caminho combinado 
 - **Criança/adolescente** (< 229 meses): meta em **escore-z do IMC para a idade** (OMS, o mesmo `GrowthCalculator`
   das curvas). Junto, como referência, o **peso equivalente ao alvo hoje**: o peso que daria o z-alvo na idade e altura
   da última medição (`Lms::valueAt` para o IMC, × altura²). Rótulo: "≈ X kg com a altura atual".
-- O tipo é fixado na criação. Em criança, o **prazo não pode passar da data em que o paciente completa 229 meses**
-  (depois disso o z deixa de ser calculado); a tela explica e sugere criar uma meta em kg depois.
+- **Adolescente de 13 anos ou mais** (≥ 156 meses e < 229 meses na data de criação) — **decisão da usuária
+  (2026-11-19):** quem registra a meta **escolhe** entre escore-z do IMC e peso em kg. Na meta em kg do adolescente, o
+  IMC e o z do IMC aparecem junto só como informação. Abaixo de 13 anos, só escore-z; adulto, só kg.
+- O tipo é fixado na criação. Na meta em escore-z, o **prazo não pode passar da data em que o paciente completa 229
+  meses** (depois disso o z deixa de ser calculado); a tela explica e sugere a meta em kg. A meta em kg não tem esse
+  limite.
 
 ### 4.2 Dados (migração 014, compatível com MySQL 5.7)
 Tabela `weight_goals`: `id`, `patient_id`, `kind ENUM('peso','imc_z')`, `start_on DATE`, `start_value DECIMAL(7,3)`,
@@ -61,10 +65,11 @@ no repositório.
 - **Quem define, troca e encerra:** médica e nutricionista com o paciente liberado (seção `ANTROPOMETRIA`, ação
   `edit`). Quem vê: quem tem `ANTROPOMETRIA` `view` **e é equipe** (médica, nutricionista). Secretária não vê. Família
   e criança nunca — a regra fica num ponto só (ex.: `WeightGoalAccess`), não espalhada pelas telas.
-- **Valor de partida:** a medição mais recente válida (não apagada nem substituída) até hoje. Adulto: com peso.
-  Criança: com peso e altura no mesmo registro. Sem ela, a tela pede para registrar uma medição antes. `start_on` e
+- **Valor de partida:** a medição mais recente válida (não apagada nem substituída) até hoje. Meta em kg: com peso.
+  Meta em escore-z: com peso e altura no mesmo registro. Sem ela, a tela pede para registrar uma medição antes. `start_on` e
   `start_value` são gravados (foto do momento).
-- **Validação:** prazo > hoje e ≤ 5 anos; alvo diferente da partida; adulto 20–300 kg; criança z entre −3 e +5.
+- **Validação:** prazo > hoje e ≤ 5 anos; alvo diferente da partida; meta em kg 20–300 kg; escore-z entre −3 e +5.
+  O servidor recusa um tipo que a idade não permite (z em adulto, kg abaixo de 13 anos).
   Direção (perder ou ganhar) sai de alvo vs. partida — a meta serve também para ganho.
 - **Trocar a meta** encerra a atual (`substituida`) e cria a nova na mesma operação. **Encerrar** sem nova:
   `encerrada`. Nada é apagado. Tudo vai para a auditoria.
@@ -77,7 +82,8 @@ no repositório.
   - **Atingida:** `v` chegou ao alvo (≤ alvo se perder, ≥ alvo se ganhar). A primeira medição que atinge vira o evento
     "meta atingida". A meta continua ativa até a equipe encerrar ou trocar.
   - **Prazo vencido:** hoje > prazo e não atingida.
-  - **No caminho:** |v − e(d)| ≤ tolerância — **1,0 kg** (adulto) ou **0,2 de z** (criança) *(escolha minha)*.
+  - **No caminho:** |v − e(d)| ≤ tolerância — **1,0 kg** (meta em kg) ou **0,2 de z** (meta em escore-z)
+    *(escolha minha)*.
   - **À frente do caminho** / **Atrás do caminho:** fora da tolerância, a favor ou contra a direção da meta.
   - Sem medição depois da partida: "aguardando a primeira medição".
 - **Tendência (a partir da 5ª medição que conta, contando a de partida):** reta por mínimos quadrados (valor × dias)
@@ -92,7 +98,7 @@ no repositório.
   botão "Ver meta". Sem meta: "Nenhuma meta de peso" + "Definir meta" (se pode editar).
 - **Página `/pacientes/{id}/meta-peso`:** gráfico (Chart.js local + `.js` externo, sem script inline — CSP), meta
   atual, formulário de definir/trocar/encerrar, histórico das metas anteriores (com situação final).
-  - Gráfico: eixo y em kg (adulto) ou z do IMC (criança); pontos das medições; **caminho combinado** tracejado até
+  - Gráfico: eixo y em kg (meta em kg) ou z do IMC (meta em escore-z); pontos das medições; **caminho combinado** tracejado até
     a estrela do alvo; **tendência** em outra cor, só a partir da 5ª medição, estendida até o prazo; linha horizontal
     do alvo. Legenda e texto alternativo com a situação (não depender só de cor).
   - Dados por um endpoint JSON (padrão de `curvas.json`), com a mesma checagem de acesso.
