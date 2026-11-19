@@ -11,6 +11,7 @@ $pid = (int) $patient['id'];
   <?= e(\App\Growth\Age::label($patient['birth_date'], $today)) ?> (nascimento <?= e(fmt_date($patient['birth_date'])) ?>) ·
   <?= $patient['sex'] === 'F' ? 'Feminino' : 'Masculino' ?>
 </p>
+<?php if ($canTimeline): ?><p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/linha-do-tempo')) ?>">Linha do tempo</a></p><?php endif; ?>
 <?php if ($canEdit || $canAcessoProf || $canChildAccount): ?>
   <p><?php if ($canEdit): ?><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/editar')) ?>">Editar cadastro</a>
      <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/responsaveis')) ?>">Responsáveis</a><?php endif; ?>
