@@ -13,7 +13,7 @@ $flashErr = \App\Core\Session::flash('erro');
 <link rel="manifest" href="<?= e(url('/manifest.json')) ?>">
 <meta name="theme-color" content="#2f6b5f">
 <link rel="apple-touch-icon" href="<?= e(url('/assets/icons/icon-192.png')) ?>">
-<link rel="stylesheet" href="<?= e(url('/assets/css/app.css')) ?>">
+<link rel="stylesheet" href="<?= e(asset('/assets/css/app.css')) ?>">
 </head>
 <body class="portal">
 <a class="skip" href="#conteudo">Ir para o conteúdo</a>
@@ -33,6 +33,6 @@ $flashErr = \App\Core\Session::flash('erro');
 </main>
 <footer class="portal-rodape">Em caso de dúvida, fale com a equipe da Dra. Rubia.</footer>
 <?php if (!empty($registerSw)): ?><script src="<?= e(url('/assets/js/portal-sw.js')) ?>"></script><?php endif; ?>
-<script src="<?= e(url('/assets/js/dictation.js')) ?>"></script>
+<script src="<?= e(asset('/assets/js/dictation.js')) ?>"></script>
 </body>
 </html>

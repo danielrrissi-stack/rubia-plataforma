@@ -11,7 +11,7 @@ $family = !$withTotals;
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e($plan['title']) ?> · Dra. Rubia</title>
-<link rel="stylesheet" href="<?= e(url('/assets/css/app.css')) ?>">
+<link rel="stylesheet" href="<?= e(asset('/assets/css/app.css')) ?>">
 </head>
 <body class="impressao">
 <p class="nao-imprimir"><button type="button" class="btn" data-print>Imprimir</button>

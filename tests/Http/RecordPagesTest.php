@@ -217,7 +217,7 @@ final class RecordPagesTest extends DbTestCase
         $this->loginAs($m);
         $res = $this->get('/pacientes/' . $p['id'] . '/prontuario/evolucao');
         $this->assertSame(200, $res->status);
-        $this->assertStringContainsString('<script src="/assets/js/dictation.js"></script>', $res->body);
+        $this->assertMatchesRegularExpression('#<script src="/assets/js/dictation\.js\?v=[0-9a-f]{8}"></script>#', $res->body);
         $this->assertSame(6, substr_count($res->body, '<textarea')); // o JS poe o microfone em cada um
         $this->assertStringNotContainsString('data-sem-ditado', $res->body);
     }
