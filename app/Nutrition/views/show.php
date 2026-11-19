@@ -33,7 +33,7 @@ $family = false;
 <section class="cartao"><h2>Salvar como modelo</h2>
   <p class="ajuda">Cria um modelo da equipe com o conteúdo deste plano (sem dados do paciente).</p>
   <form method="post" action="<?= e(url('/planos/' . $plan['id'] . '/salvar-como-modelo')) ?>"><?= csrf_field() ?>
-    <label>Título do modelo <input name="titulo" value="<?= e($plan['title']) ?>" maxlength="150" required></label>
+    <label>Título do modelo <input name="titulo" value="<?= e($plan['title']) ?>" maxlength="150" required data-ditado></label>
     <button type="submit" class="btn btn-quiet">Salvar como modelo</button>
   </form>
 </section>
@@ -46,7 +46,7 @@ $family = false;
   <h3>Encerrar plano</h3>
   <?php if ($endError !== null): ?><p class="aviso aviso-erro" role="alert"><?= e($endError) ?></p><?php endif; ?>
   <form method="post" action="<?= e(url('/planos/' . $plan['id'] . '/encerrar')) ?>"><?= csrf_field() ?>
-    <label>Motivo <input name="motivo" maxlength="255" value="<?= e($motivo) ?>" required></label>
+    <label>Motivo <input name="motivo" maxlength="255" value="<?= e($motivo) ?>" required data-ditado></label>
     <button type="submit" class="btn btn-quiet">Encerrar plano</button>
   </form>
 </section>

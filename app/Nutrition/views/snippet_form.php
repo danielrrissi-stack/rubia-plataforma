@@ -9,7 +9,7 @@
 <form method="post" action="<?= e(url($snippet === null ? '/trechos/novo' : '/trechos/' . $snippet['id'] . '/editar')) ?>" class="cartao">
   <?= csrf_field() ?>
   <p class="campo"><label for="titulo">Título *</label>
-    <input id="titulo" name="titulo" value="<?= e($values['title']) ?>" maxlength="100" required></p>
+    <input id="titulo" name="titulo" value="<?= e($values['title']) ?>" maxlength="100" required data-ditado></p>
   <p class="campo"><label for="corpo">Texto *</label>
     <textarea id="corpo" name="corpo" rows="8" maxlength="5000" required><?= e($values['body']) ?></textarea></p>
   <p><button type="submit" class="btn">Salvar</button></p>

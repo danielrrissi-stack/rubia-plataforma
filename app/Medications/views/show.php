@@ -86,7 +86,7 @@ $fmtTime = static fn (string $dt): string => fmt_date(substr($dt, 0, 10)) . ' ' 
     <div class="campo"><label for="end_date">Data de término</label>
       <input type="date" id="end_date" name="end_date" value="<?= e($today) ?>" min="<?= e($p['start_date']) ?>" max="<?= e($today) ?>" required></div>
     <div class="campo"><label for="reason">Motivo (opcional)</label>
-      <input type="text" id="reason" name="reason" maxlength="200"></div>
+      <input type="text" id="reason" name="reason" maxlength="200" data-ditado></div>
     <button type="submit" class="btn btn-quiet">Encerrar</button>
   </form>
 </section>

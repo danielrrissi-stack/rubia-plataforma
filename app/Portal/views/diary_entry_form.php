@@ -55,7 +55,7 @@ $v = static fn (string $k): string => (string) ($values[$k] ?? '');
     </fieldset>
   <?php elseif ($type === 'atividade'): ?>
     <div class="campo"><label for="activity">O que fez</label>
-      <input type="text" id="activity" name="activity" maxlength="120" value="<?= e($v('activity')) ?>" required></div>
+      <input type="text" id="activity" name="activity" maxlength="120" value="<?= e($v('activity')) ?>" required data-ditado></div>
     <div class="campo"><label for="minutes">Quantos minutos (opcional)</label>
       <input type="number" id="minutes" name="minutes" min="1" max="600" inputmode="numeric" value="<?= e($v('minutes')) ?>"></div>
   <?php elseif ($type === 'tela'): ?>

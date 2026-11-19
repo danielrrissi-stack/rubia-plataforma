@@ -15,7 +15,7 @@ $actions = static function (array $row, bool $canEdit) use ($pid): void {
     echo '</p>';
     if ($canEdit) {
         echo '<form method="post" action="' . e(url('/prontuario/' . $id . '/remover')) . '">' . csrf_field()
-            . '<label>Motivo da remoção <input name="motivo" maxlength="255" required></label> '
+            . '<label>Motivo da remoção <input name="motivo" maxlength="255" required data-ditado></label> '
             . '<button type="submit" class="btn btn-quiet">Remover</button></form>';
     }
 };

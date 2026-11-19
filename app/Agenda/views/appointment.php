@@ -77,7 +77,7 @@ $action = static fn (string $suffix): string => url('/agenda/consultas/' . (int)
     <?= csrf_field() ?>
     <div class="campo">
       <label for="agenda-motivo">Motivo</label>
-      <input id="agenda-motivo" type="text" name="motivo" maxlength="255" required>
+      <input id="agenda-motivo" type="text" name="motivo" maxlength="255" required data-ditado>
       <p class="ajuda">Só a equipe vê o motivo.</p>
     </div>
     <button type="submit" class="btn btn-quiet">Cancelar consulta</button>

@@ -15,7 +15,7 @@ $patient = $patient ?? null;
 <form method="post" action="<?= e(url($context['saveUrl'])) ?>" id="plano-form" data-previa-url="<?= e(url('/planos/previa')) ?>" data-csrf="<?= e(\App\Core\Csrf::token()) ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="revisao" value="<?= e($values['revisao']) ?>">
-  <p><label>Título <input name="titulo" value="<?= e($values['title']) ?>" maxlength="150" required></label></p>
+  <p><label>Título <input name="titulo" value="<?= e($values['title']) ?>" maxlength="150" required data-ditado></label></p>
   <p class="barra-editor">
     <button type="button" class="btn btn-quiet" data-insert="titulo">Título de refeição</button>
     <button type="button" class="btn btn-quiet" data-insert="item">Item</button>

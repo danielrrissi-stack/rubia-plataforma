@@ -33,7 +33,7 @@ $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
      data-salvar-url="<?= e(url($context['saveUrl'])) ?>"
      data-revisao="<?= e($values['revisao'] ?? ($plan['revision'] ?? 1)) ?>"
      data-csrf="<?= e(\App\Core\Csrf::token()) ?>">
-  <p><label>Título <input id="pe-titulo" value="<?= e($values['title'] ?? ($plan['title'] ?? '')) ?>" maxlength="150" required></label></p>
+  <p><label>Título <input id="pe-titulo" value="<?= e($values['title'] ?? ($plan['title'] ?? '')) ?>" maxlength="150" required data-ditado></label></p>
 
   <section class="pe-totais" id="pe-totais" aria-labelledby="pe-totais-titulo">
     <h2 id="pe-totais-titulo">Total do dia <span class="ajuda">(Opção 1 de cada refeição)</span></h2>

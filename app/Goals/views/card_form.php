@@ -23,7 +23,7 @@ $bands = is_array($values['bands'] ?? null) ? $values['bands'] : [];
 <form method="post" action="<?= e(url($action)) ?>">
   <?= csrf_field() ?>
   <div class="campo"><label for="title">Título (até 60 caracteres)</label>
-    <input type="text" id="title" name="title" value="<?= e($v('title')) ?>" maxlength="60" required></div>
+    <input type="text" id="title" name="title" value="<?= e($v('title')) ?>" maxlength="60" required data-ditado></div>
   <div class="campo"><label for="emoji">Emoji</label>
     <input type="text" id="emoji" name="emoji" value="<?= e($v('emoji')) ?>" maxlength="16" size="4" required></div>
   <div class="campo"><label for="body">Texto (até 600 caracteres)</label>

@@ -69,5 +69,6 @@ $flashErr = \App\Core\Session::flash('erro');
   <?php if ($flashErr): ?><p class="aviso aviso-erro" role="alert"><?= e($flashErr) ?></p><?php endif; ?>
   <?= $content ?>
 </main>
+<script src="<?= e(url('/assets/js/dictation.js')) ?>"></script>
 </body>
 </html>

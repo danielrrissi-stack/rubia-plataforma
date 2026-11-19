@@ -28,7 +28,7 @@ $actions = static function (array $row) use ($canWrite, $isStaff): string {
             . '<details><summary>Remover</summary><form method="post" action="' . e(url('/medidas/' . $id . '/remover')) . '">'
             . csrf_field()
             . '<label for="motivo-' . $id . '">Motivo da remoção</label>'
-            . '<input type="text" id="motivo-' . $id . '" name="motivo" required maxlength="255">'
+            . '<input type="text" id="motivo-' . $id . '" name="motivo" required maxlength="255" data-ditado>'
             . '<button type="submit" class="btn btn-quiet">Confirmar remoção</button></form></details>';
     }
     return $h;

@@ -64,7 +64,7 @@ $bookUrl = static fn (array $q): string => url('/agenda/marcar') . '?' . http_bu
       </div>
       <div class="campo">
         <label for="agenda-note">Observação (opcional)</label>
-        <input id="agenda-note" type="text" name="note" value="<?= e($note) ?>" maxlength="255">
+        <input id="agenda-note" type="text" name="note" value="<?= e($note) ?>" maxlength="255" data-ditado>
         <p class="ajuda">Só a equipe vê. Não escreva dados clínicos.</p>
       </div>
       <button type="submit" class="btn">Marcar consulta</button>
