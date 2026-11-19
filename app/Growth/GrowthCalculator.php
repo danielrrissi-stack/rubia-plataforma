@@ -99,7 +99,20 @@ final class GrowthCalculator
             return null;
         }
         $lms = $this->ref->lms('bfa', $sex, $x, $source);
-        return $lms === null ? null : Lms::valueAt($z, $lms['l'], $lms['m'], $lms['s']);
+        if ($lms === null) {
+            return null;
+        }
+        [$l, $m, $s] = [$lms['l'], $lms['m'], $lms['s']];
+        // inverso do metodo restrito (Lms::zRestricted), usado no escore Z do IMC: alem de |z| = 3, passos fixos de SD3-SD2
+        if ($z > 3) {
+            $sd3 = Lms::valueAt(3, $l, $m, $s);
+            return $sd3 + ($z - 3) * ($sd3 - Lms::valueAt(2, $l, $m, $s));
+        }
+        if ($z < -3) {
+            $sd3n = Lms::valueAt(-3, $l, $m, $s);
+            return $sd3n + ($z + 3) * (Lms::valueAt(-2, $l, $m, $s) - $sd3n);
+        }
+        return Lms::valueAt($z, $l, $m, $s);
     }
 
     /** < 731 dias medido em pe: +0,7 cm; >= 731 dias medido deitado: -0,7 cm. */

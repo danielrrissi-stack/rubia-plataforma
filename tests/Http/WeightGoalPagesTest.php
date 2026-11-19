@@ -132,6 +132,9 @@ final class WeightGoalPagesTest extends DbTestCase
         $this->assertSame([$this->future('-50 days'), 100], [$j['path'][0][0], (int) $j['path'][0][1]]);
         $this->assertSame([$this->future('+50 days'), 90], [$j['path'][1][0], (int) $j['path'][1][1]]);
         $this->assertNull($j['trend']);
+        $page = $this->get($this->url($p))->body;
+        $this->assertStringContainsString('esperado em ' . fmt_date($this->future('-20 days')) . ' no caminho', $page);
+        $this->assertStringNotContainsString('esperado hoje', $page);
         $this->measure($p, $this->future('-10 days'), 99.0);
         $j = json_decode($this->get($this->url($p, '.json'))->body, true);
         $this->assertCount(2, $j['trend']);

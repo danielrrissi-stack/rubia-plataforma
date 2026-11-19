@@ -54,6 +54,20 @@ final class TimelinePeriodTest extends DbTestCase
         $this->assertSame('2026-10-01', $this->resolve('visita')['from']);
     }
 
+    public function test_nutritionist_reference_uses_only_her_visits(): void
+    {
+        $nutri = $this->makeUser('nutricionista');
+        $this->appt('2026-11-09 10:00:00', 'realizada'); // da medica: a nutricionista nao ve
+        $this->db->insert('clinical_entries', ['patient_id' => $this->patient['id'], 'kind' => 'evolucao', 'payload' => '{}', 'encounter_date' => '2026-11-12', 'created_by' => $this->medico['id']]);
+        $r = TimelinePeriod::resolve((int) $this->patient['id'], 'visita', self::TODAY, (int) $nutri['id']);
+        $this->assertNull($r['from']);
+        $this->db->insert('appointments', [
+            'professional_id' => $nutri['id'], 'patient_id' => $this->patient['id'], 'starts_at' => '2026-10-20 10:00:00',
+            'ends_at' => '2026-10-20 11:00:00', 'kind' => 'retorno', 'status' => 'realizada', 'created_by' => $this->medico['id'],
+        ]);
+        $this->assertSame('2026-10-20', TimelinePeriod::resolve((int) $this->patient['id'], 'visita', self::TODAY, (int) $nutri['id'])['from']);
+    }
+
     public function test_fixed_periods(): void
     {
         $this->assertSame('2026-08-19', $this->resolve('3m')['from']);

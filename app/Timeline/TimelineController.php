@@ -35,7 +35,8 @@ final class TimelineController
             throw new HttpException(404);
         }
         $today = date('Y-m-d');
-        $period = TimelinePeriod::resolve($id, (string) $r->input('periodo', 'visita'), $today);
+        $only = $user['role'] === 'nutricionista' ? (int) $user['id'] : null;
+        $period = TimelinePeriod::resolve($id, (string) $r->input('periodo', 'visita'), $today, $only);
         Container::audit()->record((int) $user['id'], 'view', 'patients', $id, $id, null, ['section' => 'linha_do_tempo', 'periodo' => $period['choice']], $r);
         return Response::html(View::render('Timeline/views/index.php', [
             'patient' => $patient, 'period' => $period,

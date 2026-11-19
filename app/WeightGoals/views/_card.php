@@ -21,7 +21,7 @@ $fmtV = static function (float $v, string $kind): string {
       <?php if ($last['bmi'] !== null): ?> (IMC <?= e(fmt_num($last['bmi'], 1)) ?><?= $kind === 'peso' && $last['z'] !== null ? ', escore-z ' . e(($last['z'] > 0 ? '+' : '') . fmt_num($last['z'], 2)) : '' ?>)<?php endif; ?>
     <?php endif; ?></p>
   <p><span class="selo<?= in_array($st, ['atras', 'prazo_vencido'], true) ? ' selo-alerta' : '' ?>"><?= e(WeightGoalProgress::LABELS[$st]) ?></span>
-    <?php if ($pr['expected'] !== null && !in_array($st, ['aguardando', 'atingida'], true)): ?> esperado hoje no caminho: <?= e($fmtV($pr['expected'], $kind)) ?><?php endif; ?></p>
+    <?php if ($pr['expected'] !== null && !in_array($st, ['aguardando', 'atingida'], true)): ?> esperado em <?= e(fmt_date($last['on'])) ?> no caminho: <?= e($fmtV($pr['expected'], $kind)) ?><?php endif; ?></p>
   <?php $tt = WeightGoalProgress::trendText($pr); if ($tt !== null): ?><p class="ajuda"><?= e($tt) ?></p><?php endif; ?>
   <?php if ($wgLink): ?><p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $wg['patientId'] . '/meta-peso')) ?>">Ver meta</a></p><?php endif; ?>
 <?php endif; ?>
