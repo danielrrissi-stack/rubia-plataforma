@@ -222,6 +222,13 @@ final class DemoSeed
             $this->measure($pid, $this->day($off), ['weight_kg' => 88.0 - $i * 1.2, 'height_cm' => 170.0 + $i, 'position' => 'em_pe'], 'equipe', $doc);
         }
         Container::clinicalEntries()->add($pid, 'evolucao', ['anamnese' => 'Adolescente motivado; pratica futebol duas vezes por semana.'], null, $this->day(-30), $doc);
+        $rx = Container::prescriptions()->create($pid, [
+            'drug_name' => 'Metformina', 'route' => 'oral', 'start_date' => $this->day(-60), 'family_logs' => 1,
+            'dose' => '500 mg', 'frequency' => '1x ao dia, no jantar', 'instructions' => 'Tomar junto com a refeição.',
+        ], $this->u['medico'], $this->day(-60), $this->r);
+        foreach ([-2, -1, 0] as $off) {
+            Container::medicationLogs()->record($rx, $this->day($off) . ' 19:30', null, $this->fresh('responsavel'), $this->day($off) . ' 20:00', $this->r);
+        }
         return $pid;
     }
 
@@ -274,6 +281,10 @@ final class DemoSeed
             'guidance_text' => 'Comer devagar. Água: 2 litros por dia.',
         ], $doc);
         Container::mealPlans()->publish($plan, $doc);
+        $walk = Container::goals()->create($pid, ['family_text' => 'Caminhar 30 minutos', 'emoji' => '🚶', 'category' => 'atividade', 'times_per_week' => 5, 'start_date' => $this->day(-14)], $doc, $this->r);
+        foreach ([-3, -2, 0] as $off) {
+            Container::goals()->check($walk, $this->day($off), $this->fresh('paciente'), $this->day($off), $this->r);
+        }
         $patient = $this->db->one('SELECT * FROM patients WHERE id = ?', [$pid]);
         Container::weightGoals()->create($pid, ['kind' => 'peso', 'start_on' => $this->day(-182), 'start_value' => 112.0, 'target_value' => 92.0,
             'target_date' => $this->day(120), 'notes' => 'Meta combinada na consulta.'], $patient, $this->today, $doc, $this->r);
