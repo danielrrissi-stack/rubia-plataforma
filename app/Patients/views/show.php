@@ -88,7 +88,8 @@ $pid = (int) $patient['id'];
     <?php endif; ?>
     <?php if ($treatmentCard['review'] !== null): ?><p>Próxima avaliação: <?= e(fmt_date($treatmentCard['review'])) ?></p><?php endif; ?>
     <?php if ($treatmentCard['pending'] > 0): ?><p><strong><?= e($treatmentCard['pending']) ?></strong> <?= $treatmentCard['pending'] === 1 ? 'relato' : 'relatos' ?> da família para ver</p><?php endif; ?>
-    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/tratamento')) ?>">Ver tratamento</a></p></section><?php endif; ?>
+    <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/tratamento')) ?>">Ver tratamento</a>
+      <?php if (!empty($canEvolucao)): ?><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/evolucao')) ?>">Evolução</a><?php endif; ?></p></section><?php endif; ?>
   <?php if ($goalsCard !== null): $gp = $goalsCard['panel']; $nw = count($gp['weeks']); ?><section class="cartao" id="cartao-metas"><h2>Metas</h2>
     <?php if ($gp['rows'] === []): ?><p class="ajuda">Nenhuma meta ativa.</p><?php else: ?>
       <table class="grade-metas">

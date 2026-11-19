@@ -42,6 +42,7 @@ final class TimelineController
             'patient' => $patient, 'period' => $period,
             'result' => TimelineBuilder::events($user, $id, $period['from'], $today),
             'weightGoal' => WeightGoalController::card($user, $id, $today),
+            'canEvolucao' => \App\Evolution\EvolutionAccess::canView($user, $id),
             'title' => 'Linha do tempo', 'userName' => $user['name'], 'active' => '/pacientes',
         ], 'Layout/views/layout.php'));
     }

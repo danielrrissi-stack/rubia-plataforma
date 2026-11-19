@@ -25,4 +25,5 @@ $fmtV = static function (float $v, string $kind): string {
   <?php $tt = WeightGoalProgress::trendText($pr); if ($tt !== null): ?><p class="ajuda"><?= e($tt) ?></p><?php endif; ?>
   <?php if ($wgLink): ?><p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $wg['patientId'] . '/meta-peso')) ?>">Ver meta</a></p><?php endif; ?>
 <?php endif; ?>
+<?php if (!empty($wg['canEvolucao'])): ?><p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $wg['patientId'] . '/evolucao')) ?>">Evolução</a></p><?php endif; ?>
 </section>

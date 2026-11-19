@@ -440,6 +440,17 @@ Só a **médica** e a **nutricionista** (com o paciente liberado) usam estas tel
 - Situação: **No caminho** (até 1 kg, ou 0,2 de escore-z, do caminho), **À frente**, **Atrás**, **Meta atingida** ou **Prazo vencido**. Medições feitas pela família contam e aparecem marcadas.
 - **Trocar** a meta encerra a anterior (fica no histórico como "substituída"); **Encerrar meta** tira a meta ativa. Nada é apagado.
 
+## Painel de evolução
+
+Só a médica. Na ficha, cartão **Tratamento** ou **Meta de peso** → **Evolução** (ou pela Linha do tempo).
+- Curva de **peso** (adulto) ou **escore-z do IMC** (até 19 anos e 1 mês) com as **faixas de dose** de cada remédio no mesmo calendário.
+  Bolinha cheia = pesagem no consultório; vazia = em casa. Pesagem de criança sem altura usa a última altura dos 90 dias anteriores.
+- **Ritmo por dose** (kg/semana ou queda de escore-z em 4 semanas) e o aviso **"Perda de peso estabilizou nesta dose"**, olhando as
+  últimas 4 semanas (ou desde a última mudança de dose; são precisas 3 pesagens em 14 dias).
+- **Critério por paciente** no fim da página: kg/semana (padrão 0,2) ou % do peso em 4 semanas (padrão 1%) para adulto; queda de
+  escore-z em 4 semanas (padrão 0,05) para criança.
+- **Metabolismo** (clique para abrir): cintura, pressão, glicemia, HbA1c, insulina, triglicerídeos, HDL e TGP, nas mesmas datas.
+
 ## Ditado por voz
 
 Todo campo de texto longo do sistema (evolução, anamnese, observações, plano alimentar, diário…) e os campos curtos de texto livre (texto para a família e para a criança, títulos, motivos, orientações, observações do portal) têm o botão **🎤** ao lado (Chrome, Edge e Safari; no Firefox não aparece). Clique, fale e clique em **■** para parar; o texto entra no fim do campo e só é salvo pelo botão de salvar da tela. Campos de nome, busca, número, data, código e e-mail não têm microfone.
@@ -574,3 +585,9 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.
 14. **A atualização do ditado por voz** não tem migração. Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/`
    para `public_html/rubia.med.br/` (novo `dictation.js` e CSS). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
+15. **A atualização do painel de evolução** traz a migração `015_evolution_settings.sql`. Faça **backup do banco** antes.
+   Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
+   `database/migrations/015_evolution_settings.sql` e logo depois, na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('015_evolution_settings.sql');`
+   Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/`
+   (novo `evolution-chart.js` e CSS). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**

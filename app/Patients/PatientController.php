@@ -91,6 +91,7 @@ final class PatientController
             'agendaCard' => \App\Agenda\AgendaCards::forStaff($user, $id, date('Y-m-d H:i')),
             'weightGoalCard' => \App\WeightGoals\WeightGoalController::card($user, $id, $today),
             'canTimeline' => \App\Timeline\TimelineController::canOpen($user, $id),
+            'canEvolucao' => \App\Evolution\EvolutionAccess::canView($user, $id),
             'adult' => Age::years((string) $patient['birth_date'], $today) >= 18,
             'professional' => Container::users()->find((int) $patient['responsible_professional_id']),
             'guardians' => $gate->check($user, 'view', Policy::CADASTRO, $id) ? Container::guardians()->forPatient($id) : [],
