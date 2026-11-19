@@ -7,3 +7,4 @@ storage/*
 .phpunit.cache/
 config/.install.lock
 dist/
+config/config.demo.php
