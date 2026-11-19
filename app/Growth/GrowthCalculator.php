@@ -83,6 +83,38 @@ final class GrowthCalculator
         return $out;
     }
 
+    /** IMC que corresponde ao escore Z do IMC para a idade (mesma fonte OMS de indicators()); null fora das curvas. */
+    public function bmiForZ(string $sex, string $birth, string $onYmd, float $z): ?float
+    {
+        $days = Age::days($birth, $onYmd);
+        $months = Age::months($birth, $onYmd);
+        if ($days < 0) {
+            return null;
+        }
+        if ($days <= self::WHO2006_MAX_DAYS) {
+            [$source, $x] = ['who2006', (float) $days];
+        } elseif ($months < self::WHO2007_MAX_MONTHS) {
+            [$source, $x] = ['who2007', $months];
+        } else {
+            return null;
+        }
+        $lms = $this->ref->lms('bfa', $sex, $x, $source);
+        if ($lms === null) {
+            return null;
+        }
+        [$l, $m, $s] = [$lms['l'], $lms['m'], $lms['s']];
+        // inverso do metodo restrito (Lms::zRestricted), usado no escore Z do IMC: alem de |z| = 3, passos fixos de SD3-SD2
+        if ($z > 3) {
+            $sd3 = Lms::valueAt(3, $l, $m, $s);
+            return $sd3 + ($z - 3) * ($sd3 - Lms::valueAt(2, $l, $m, $s));
+        }
+        if ($z < -3) {
+            $sd3n = Lms::valueAt(-3, $l, $m, $s);
+            return $sd3n + ($z + 3) * (Lms::valueAt(-2, $l, $m, $s) - $sd3n);
+        }
+        return Lms::valueAt($z, $l, $m, $s);
+    }
+
     /** < 731 dias medido em pe: +0,7 cm; >= 731 dias medido deitado: -0,7 cm. */
     public function correctHeight(float $cm, int $days, ?string $position): float
     {

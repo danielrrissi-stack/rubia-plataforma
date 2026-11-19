@@ -422,6 +422,24 @@ O botão do **WhatsApp** copia a mensagem e abre a conversa com o texto já pron
 - **Para a profissional:** na **véspera, às 08:00**, cada profissional recebe por e-mail as consultas do dia seguinte. Esse envio depende do **Cron de 5 minutos** (`cron/run.php`) na hospedagem.
 - Os **textos** do aviso de WhatsApp (também usado no e-mail da véspera da profissional e no lembrete da família) são configurados pela médica administradora em `/admin/agenda`. Os e-mails de marcada, cancelada e remarcada têm redação fixa (só o endereço vem das configurações).
 
+## Linha do tempo e meta de peso
+
+Só a **médica** e a **nutricionista** (com o paciente liberado) usam estas telas. A família e a criança **nunca** veem a meta de peso nem a linha do tempo.
+
+### Linha do tempo
+
+- Na ficha do paciente, clique em **Linha do tempo**. Abre mostrando tudo **desde a última visita** (a última consulta da agenda marcada como *realizada* antes de hoje; sem consulta, a última evolução).
+- Troque o período por **3 meses**, **12 meses** ou **Tudo**. Cada linha leva para a tela de origem.
+- Cada pessoa vê só o que já pode ver: a nutricionista vê medições, planos, as consultas dela e a meta de peso; não vê remédios, exames, evoluções nem metas de hábito.
+
+### Meta de peso
+
+- Na ficha, cartão **Meta de peso** → **Definir meta**. É preciso ter uma medição (peso; na criança, peso e altura no mesmo dia), que vira o ponto de partida.
+- **Adulto:** meta em kg (o IMC aparece junto). **Abaixo de 13 anos:** meta em escore-z do IMC (aparece também "≈ X kg com a altura atual"). **De 13 anos até 19:** quem registra escolhe kg ou escore-z. Na meta em escore-z, o prazo não pode passar do fim das curvas da OMS (19 anos e 1 mês).
+- O gráfico mostra as medições, o **caminho combinado** (tracejado, da partida até o alvo no prazo) e, a partir da **5ª medição**, a **tendência**.
+- Situação: **No caminho** (até 1 kg, ou 0,2 de escore-z, do caminho), **À frente**, **Atrás**, **Meta atingida** ou **Prazo vencido**. Medições feitas pela família contam e aparecem marcadas.
+- **Trocar** a meta encerra a anterior (fica no histórico como "substituída"); **Encerrar meta** tira a meta ativa. Nada é apagado.
+
 ## 6. Limites legais
 
 - O sistema foi feito **seguindo os requisitos** da Resolução CFM 1.821/2007 e da LGPD: identificação do profissional,
@@ -538,3 +556,10 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    Requer a extensão **`dom`** do PHP (quase sempre já ativa): cPanel → "Selecionar versão do PHP" → Extensões → `dom` marcada. O verificador do instalador avisa se faltar.
    Extraia o zip **dentro de `rubia_app`** como nas outras versões. Esta versão **não muda `public/`**: não é preciso copiar nada para `public_html/rubia.med.br/`.
    O PDF guarda um cache de fontes em `cache/dompdf`, dentro da pasta de dados (criada sozinha). Para usar: na receita ou no plano publicado, abra **Imprimir** e clique em **Baixar PDF**.
+13. **A atualização da linha do tempo e da meta de peso (Fase 4d)** traz a migração `014_weight_goals.sql`. Não há seeds nesta versão.
+   Faça **backup do banco** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
+   `database/migrations/014_weight_goals.sql` e logo depois, na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('014_weight_goals.sql');`
+   Extraia o zip **dentro de `rubia_app`**, nunca na pasta do site. Esta versão **muda `public/`** (novo `weight-goal-chart.js`):
+   a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site).
+   **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.

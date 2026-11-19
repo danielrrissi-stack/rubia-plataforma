@@ -142,4 +142,25 @@ final class GrowthCalculatorTest extends DbTestCase
         $r = $this->calc->indicators('F', $birth, $on, 60.0, 165.0, 'em_pe', 55.0);
         $this->assertSame(['bfa' => null, 'wfa' => null, 'hfa' => null, 'wflh' => null, 'hcfa' => null], $r);
     }
+
+    public function test_bmi_for_z_round_trips(): void
+    {
+        $bmi = $this->calc->bmiForZ('M', '2016-05-10', '2026-05-10', 1.0);
+        $this->assertNotNull($bmi);
+        $h = 140.0;
+        $kg = $bmi * ($h / 100) ** 2;
+        $r = $this->calc->indicators('M', '2016-05-10', '2026-05-10', $kg, $h, 'em_pe', null);
+        $this->assertEqualsWithDelta(1.0, $r['bfa']['z'], 0.01);
+        $this->assertNull($this->calc->bmiForZ('M', '2000-01-01', '2026-05-10', 1.0));
+    }
+
+    public function test_bmi_for_z_round_trips_beyond_three(): void
+    {
+        foreach ([3.5, 4.0, 4.5, -3.5, -4.0] as $target) {
+            $bmi = $this->calc->bmiForZ('M', '2016-05-10', '2026-05-10', $target);
+            $kg = $bmi * 1.4 ** 2;
+            $r = $this->calc->indicators('M', '2016-05-10', '2026-05-10', $kg, 140.0, 'em_pe', null);
+            $this->assertEqualsWithDelta($target, $r['bfa']['z'], 0.01, (string) $target);
+        }
+    }
 }

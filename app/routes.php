@@ -34,6 +34,8 @@ use App\Medications\PrescriptionPrintController;
 use App\Portal\PortalController;
 use App\Records\RecordController;
 use App\Users\UserController;
+use App\Timeline\TimelineController;
+use App\WeightGoals\WeightGoalController;
 
 require_once __DIR__ . '/middleware.php';
 
@@ -152,6 +154,11 @@ $router->post('/pacientes/{id:\d+}/maioridade', [AccessGrantController::class, '
 
 $router->get('/pacientes/{id:\d+}/crescimento', [GrowthController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/curvas.json', [GrowthController::class, 'curves'], $authMw);
+$router->get('/pacientes/{id:\d+}/linha-do-tempo', [TimelineController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/meta-peso', [WeightGoalController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/meta-peso.json', [WeightGoalController::class, 'data'], $authMw);
+$router->post('/pacientes/{id:\d+}/meta-peso', [WeightGoalController::class, 'store'], $authMw);
+$router->post('/pacientes/{id:\d+}/meta-peso/encerrar', [WeightGoalController::class, 'end'], $authMw);
 $router->get('/pacientes/{id:\d+}/medidas/nova', [GrowthController::class, 'create'], $authMw);
 $router->post('/pacientes/{id:\d+}/medidas/nova', [GrowthController::class, 'store'], $authMw);
 $router->get('/medidas/{id:\d+}/corrigir', [GrowthController::class, 'edit'], $authMw);

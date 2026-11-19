@@ -11,6 +11,7 @@ $pid = (int) $patient['id'];
   <?= e(\App\Growth\Age::label($patient['birth_date'], $today)) ?> (nascimento <?= e(fmt_date($patient['birth_date'])) ?>) ·
   <?= $patient['sex'] === 'F' ? 'Feminino' : 'Masculino' ?>
 </p>
+<?php if ($canTimeline): ?><p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/linha-do-tempo')) ?>">Linha do tempo</a></p><?php endif; ?>
 <?php if ($canEdit || $canAcessoProf || $canChildAccount): ?>
   <p><?php if ($canEdit): ?><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/editar')) ?>">Editar cadastro</a>
      <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/responsaveis')) ?>">Responsáveis</a><?php endif; ?>
@@ -59,6 +60,7 @@ $pid = (int) $patient['id'];
       <p>Última medida: <?= e(fmt_date($growth['date'])) ?><?php if ($growth['bmi'] !== null): ?> · IMC <?= e(fmt_num($growth['bmi'], 1)) ?><?= $growth['status'] ? ' — ' . e($growth['status']) : '' ?><?php endif; ?></p>
     <?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/crescimento')) ?>">Ver crescimento</a></p></section><?php endif; ?>
+  <?php if ($weightGoalCard !== null) { $wg = $weightGoalCard; include dirname(__DIR__, 2) . '/WeightGoals/views/_card.php'; } ?>
   <?php if ($canProntuario): ?><section class="cartao" id="cartao-prontuario"><h2>Prontuário</h2>
     <?php if ($evolutions === []): ?><p class="ajuda">Nenhuma evolução registrada.</p><?php else: $last = $evolutions[0]; $dx = (string) (json_decode((string) $last['payload'], true)['diagnostico'] ?? ''); ?>
       <p><?= count($evolutions) ?> evolução(ões) · última em <?= e(fmt_date($last['encounter_date'])) ?><?= $dx !== '' ? ' — ' . e(mb_strimwidth($dx, 0, 120, '…')) : '' ?></p>
