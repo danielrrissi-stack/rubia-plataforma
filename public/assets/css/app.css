@@ -289,6 +289,15 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .ditado-status { display: block; color: var(--tinta-suave); font-size: .875rem; }
 .ditado-status:empty { display: none; }
 
+/* Cartoes (pagina do paciente e demais telas): caixa propria com faixa colorida no titulo */
+.cartao { background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: var(--raio);
+  padding: 0 1rem .5rem; margin: 0 0 1.5rem; box-shadow: 0 1px 3px rgba(31, 43, 39, .12); overflow-x: auto; min-width: 0; }
+.cartao > h2:first-child { background: var(--salvia-clara); color: var(--salvia-escura); border-bottom: 2px solid var(--salvia);
+  margin: 0 -1rem .75rem; padding: .6rem 1rem; font-size: 1.25rem; }
+.cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1.25rem; margin: 1.5rem 0; }
+.cartoes > .cartao { margin: 0; }
+#cartao-metas { grid-column: 1 / -1; } /* grade de semanas precisa da largura toda */
+
 /* Prontuario: cada grupo e um cartao com faixa colorida de cabecalho (titulo + botao do grupo) */
 .pront-item { background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: var(--raio);
   padding: 0 1rem .5rem; margin: 0 0 1.5rem; box-shadow: 0 1px 3px rgba(31, 43, 39, .12); overflow: hidden; }
