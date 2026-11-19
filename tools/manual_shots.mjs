@@ -111,6 +111,12 @@ async function shoot(p, shot) {
   const out = join(ROOT, 'public/assets/manual', shot.file);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, Buffer.from(data, 'base64'));
+  // Copia reduzida para o PDF (tools/manual_pdf.php), fora de public/ e fora do pacote.
+  const small = await p.s('Page.captureScreenshot', { format: 'jpeg', quality: 55, captureBeyondViewport: true,
+    clip: { x: 0, y: 0, width: vp.width, height: h, scale: shot.width === 'mobile' ? 0.8 : 0.55 } });
+  const outSmall = join(ROOT, 'storage/demo/pdf-img', shot.file);
+  mkdirSync(dirname(outSmall), { recursive: true });
+  writeFileSync(outSmall, Buffer.from(small.data, 'base64'));
   const final = await p.evalJs('location.pathname + location.search');
   const warn = final !== shot.url ? `  (atenção: abriu ${final})` : '';
   console.log(`ok ${shot.file}${warn}`);
