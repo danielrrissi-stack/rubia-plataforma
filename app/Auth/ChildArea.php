@@ -29,7 +29,8 @@ final class ChildArea
     public static function allows(string $method, string $path, ?int $patientId): bool
     {
         if (self::allowsWithPendingPassword($method, $path)
-            || $path === '/portal/conta' || str_starts_with($path, '/portal/conta/')) {
+            || $path === '/portal/conta' || str_starts_with($path, '/portal/conta/')
+            || ($method === 'GET' && ($path === '/ajuda' || $path === '/ajuda/crianca'))) {
             return true;
         }
         if ($patientId === null) {
