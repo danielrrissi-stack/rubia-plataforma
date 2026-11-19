@@ -217,8 +217,24 @@ final class RecordPagesTest extends DbTestCase
         $this->loginAs($m);
         $res = $this->get('/pacientes/' . $p['id'] . '/prontuario/evolucao');
         $this->assertSame(200, $res->status);
-        $this->assertStringContainsString('<script src="/assets/js/dictation.js"></script>', $res->body);
+        $this->assertMatchesRegularExpression('#<script src="/assets/js/dictation\.js\?v=[0-9a-f]{8}"></script>#', $res->body);
         $this->assertSame(6, substr_count($res->body, '<textarea')); // o JS poe o microfone em cada um
         $this->assertStringNotContainsString('data-sem-ditado', $res->body);
+    }
+
+    public function testEachHistoryGroupIsACardWithItsOwnButton(): void
+    {
+        $m = $this->makeUser('medico');
+        $p = $this->makePatient(['birth_date' => '1990-04-02']);
+        $this->loginAs($m);
+        $this->post('/pacientes/' . $p['id'] . '/prontuario/alergias', ['texto' => 'Dipirona']);
+        $body = $this->get('/pacientes/' . $p['id'] . '/prontuario')->body;
+        // vazio: cartao apagado, com o botao Registrar no cabecalho do proprio grupo
+        $this->assertMatchesRegularExpression('#<section class="cartao pront-item pront-vazio">\s*<div class="pront-topo"><h3>Comorbidades</h3>\s*<a class="btn" href="/pacientes/' . $p['id'] . '/prontuario/comorbidades">Registrar</a></div>#', $body);
+        $this->assertMatchesRegularExpression('#<section class="cartao pront-item pront-vazio">\s*<div class="pront-topo"><h3>Antecedentes</h3>\s*<a class="btn" href="/pacientes/' . $p['id'] . '/prontuario/antecedentes">Registrar</a></div>#', $body);
+        // preenchido: cartao destacado, sem Registrar
+        $this->assertMatchesRegularExpression('#<section class="cartao pront-item">\s*<div class="pront-topo"><h3>Alergias</h3></div>#', $body);
+        $this->assertStringNotContainsString('/prontuario/alergias">Registrar', $body);
+        $this->assertStringContainsString('Dipirona', $body);
     }
 }

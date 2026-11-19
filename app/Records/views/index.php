@@ -25,17 +25,15 @@ $actions = static function (array $row, bool $canEdit) use ($pid): void {
 
 <h2>Histórico</h2>
 <?php foreach ($history as $kind => $rows): ?>
-<section class="cartao">
-  <h3><?= e($labels[$kind]) ?></h3>
+<section class="cartao pront-item<?= $rows === [] ? ' pront-vazio' : '' ?>">
+  <div class="pront-topo"><h3><?= e($labels[$kind]) ?></h3><?php if ($canEdit && $rows === []): ?>
+    <a class="btn" href="<?= e(url('/pacientes/' . $pid . '/prontuario/' . $kind)) ?>">Registrar</a><?php endif; ?></div>
   <?php if ($rows === []): ?><p class="ajuda">Nada registrado.</p><?php endif; ?>
   <?php foreach ($rows as $row): ?>
     <p class="ajuda"><?= e($meta($row)) ?></p>
     <?php include __DIR__ . '/_content.php'; ?>
     <?php $actions($row, $canEdit); ?>
   <?php endforeach; ?>
-  <?php if ($canEdit && $rows === []): ?>
-    <p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/prontuario/' . $kind)) ?>">Registrar</a></p>
-  <?php endif; ?>
 </section>
 <?php endforeach; ?>
 
@@ -43,8 +41,8 @@ $actions = static function (array $row, bool $canEdit) use ($pid): void {
 <?php if ($canEdit): ?><p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/prontuario/evolucao')) ?>">Nova evolução</a></p><?php endif; ?>
 <?php if ($evolutions === []): ?><p>Nenhuma evolução registrada.</p><?php endif; ?>
 <?php foreach ($evolutions as $row): ?>
-<section class="cartao">
-  <h3>Evolução de <?= e(fmt_date($row['encounter_date'])) ?></h3>
+<section class="cartao pront-item">
+  <div class="pront-topo"><h3>Evolução de <?= e(fmt_date($row['encounter_date'])) ?></h3></div>
   <p class="ajuda"><?= e($meta($row)) ?></p>
   <?php include __DIR__ . '/_content.php'; ?>
   <?php $actions($row, $canEdit); ?>

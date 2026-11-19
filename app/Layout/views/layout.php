@@ -45,7 +45,7 @@ $flashErr = \App\Core\Session::flash('erro');
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e(isset($title) ? $title . ' · Dra. Rubia' : 'Dra. Rubia') ?></title>
-<link rel="stylesheet" href="<?= e(url('/assets/css/app.css')) ?>">
+<link rel="stylesheet" href="<?= e(asset('/assets/css/app.css')) ?>">
 </head>
 <body class="clinico">
 <a class="skip" href="#conteudo">Ir para o conteúdo</a>
@@ -69,6 +69,6 @@ $flashErr = \App\Core\Session::flash('erro');
   <?php if ($flashErr): ?><p class="aviso aviso-erro" role="alert"><?= e($flashErr) ?></p><?php endif; ?>
   <?= $content ?>
 </main>
-<script src="<?= e(url('/assets/js/dictation.js')) ?>"></script>
+<script src="<?= e(asset('/assets/js/dictation.js')) ?>"></script>
 </body>
 </html>

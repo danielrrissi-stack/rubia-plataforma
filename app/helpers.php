@@ -14,6 +14,14 @@ function url(string $path = '/'): string
     return rtrim($base, '/') . '/' . ltrim($path, '/');
 }
 
+/** URL de arquivo de public/ com ?v=<hash do conteudo>: depois de uma instalacao o navegador busca o arquivo novo. */
+function asset(string $path): string
+{
+    $file = APP_ROOT . '/public/' . ltrim($path, '/');
+    $hash = is_file($file) ? md5_file($file) : false;
+    return url($path) . ($hash ? '?v=' . substr($hash, 0, 8) : '');
+}
+
 function csrf_field(): string
 {
     return '<input type="hidden" name="_csrf" value="' . e(\App\Core\Csrf::token()) . '">';

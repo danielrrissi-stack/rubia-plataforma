@@ -61,7 +61,7 @@ final class DictationFieldsTest extends TestCase
     public function test_layouts_load_dictation_script(): void
     {
         foreach (['layout.php', 'layout_portal.php'] as $l) {
-            $this->assertStringContainsString("url('/assets/js/dictation.js')", (string) file_get_contents(__DIR__ . '/../../app/Layout/views/' . $l), $l);
+            $this->assertStringContainsString("asset('/assets/js/dictation.js')", (string) file_get_contents(__DIR__ . '/../../app/Layout/views/' . $l), $l);
         }
     }
 }

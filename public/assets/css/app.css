@@ -288,3 +288,14 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .btn-ditar:hover, .btn-ditar[aria-pressed="true"] { background: var(--salvia-clara); }
 .ditado-status { display: block; color: var(--tinta-suave); font-size: .875rem; }
 .ditado-status:empty { display: none; }
+
+/* Prontuario: cada grupo e um cartao com faixa colorida de cabecalho (titulo + botao do grupo) */
+.pront-item { background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: var(--raio);
+  padding: 0 1rem .5rem; margin: 0 0 1.5rem; box-shadow: 0 1px 3px rgba(31, 43, 39, .12); overflow: hidden; }
+.pront-topo { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap;
+  background: var(--salvia-clara); border-bottom: 2px solid var(--salvia); margin: 0 -1rem .75rem; padding: .6rem 1rem; }
+.pront-topo h3 { margin: 0; color: var(--salvia-escura); }
+.pront-vazio { border-left-color: #b9c0b5; }
+.pront-vazio .pront-topo { background: #eef0eb; border-bottom-color: #b9c0b5; }
+.pront-vazio .pront-topo h3 { color: var(--tinta-suave); }
+.pront-item > form { margin-bottom: .5rem; }
