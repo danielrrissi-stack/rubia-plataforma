@@ -36,7 +36,9 @@ final class PdfRenderer
         $options->setIsJavascriptEnabled(false);
         $options->setDefaultFont('DejaVu Sans');
         $options->setChroot([$this->libDir]);
-        $options->setFontDir($cache);
+        // fontDir fica nas fontes da biblioteca (so leitura): o Dompdf faz `require` de um arquivo
+        // dessa pasta, entao ela nunca pode ser a pasta gravavel (nem o temp compartilhado da hospedagem).
+        $options->setFontDir($this->libDir . '/vendor/dompdf/dompdf/lib/fonts');
         $options->setFontCache($cache);
         $options->setTempDir($cache);
         $dompdf = new Dompdf($options);

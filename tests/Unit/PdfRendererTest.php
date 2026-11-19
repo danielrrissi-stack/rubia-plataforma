@@ -63,6 +63,17 @@ final class PdfRendererTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $pdf);
     }
 
+    public function test_never_executes_php_from_the_writable_cache_dir(): void
+    {
+        $dir = $this->tmp . '/cache';
+        mkdir($dir, 0700, true);
+        file_put_contents($dir . '/dompdf_font_family_cache.php', '<?php $GLOBALS["rubia_planted"] = true; return [];');
+        unset($GLOBALS['rubia_planted']);
+        $pdf = $this->renderer($dir)->render('T', '<p>x</p>');
+        $this->assertStringStartsWith('%PDF-', $pdf);
+        $this->assertArrayNotHasKey('rubia_planted', $GLOBALS);
+    }
+
     public function test_remote_resources_are_not_fetched(): void
     {
         $pdf = $this->renderer($this->tmp . '/cache')->render('T', '<p>x</p><img src="http://127.0.0.1:9/x.png">');
