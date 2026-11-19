@@ -83,4 +83,17 @@ final class TimelinePagesTest extends DbTestCase
         $this->db->insert('professional_access', ['patient_id' => $this->patient['id'], 'professional_id' => $nutri['id'], 'granted_by' => $this->medico['id']]);
         $this->assertSame(200, $this->get($this->url())->status);
     }
+
+    public function test_family_and_child_accounts_never_open_timeline(): void
+    {
+        $adult = $this->makeUser('paciente');
+        $this->db->run('UPDATE patients SET user_id = ? WHERE id = ?', [$adult['id'], $this->patient['id']]);
+        $guardian = $this->makeUser('responsavel');
+        $this->db->insert('guardian_links', ['patient_id' => $this->patient['id'], 'user_id' => $guardian['id'], 'relationship' => 'mãe', 'created_by' => $this->medico['id']]);
+        foreach ([$adult, $guardian, $this->makeUser('crianca')] as $u) {
+            $this->loginAs($u);
+            $this->assertContains($this->get($this->url())->status, [302, 403], (string) $u['role']);
+            $this->assertNotSame(200, $this->get($this->url('?periodo=tudo'))->status, (string) $u['role']);
+        }
+    }
 }

@@ -27,7 +27,7 @@ $pid = (int) $patient['id'];
     <?php foreach ($result['events'] as $ev): ?>
       <tr><td><?= e(fmt_date($ev['date'])) ?></td>
         <td><span class="selo"><?= e($ev['label']) ?></span></td>
-        <td><a href="<?= e($ev['link']) ?>"><?= e($ev['text']) ?></a><?php if ($ev['badge'] !== null): ?> <span class="selo selo-familia"><?= e($ev['badge']) ?></span><?php endif; ?></td></tr>
+        <td><?php if ($ev['link'] !== null): ?><a href="<?= e($ev['link']) ?>"><?= e($ev['text']) ?></a><?php else: ?><?= e($ev['text']) ?><?php endif; ?><?php if ($ev['badge'] !== null): ?> <span class="selo selo-familia"><?= e($ev['badge']) ?></span><?php endif; ?></td></tr>
     <?php endforeach; ?>
     </tbody>
   </table>

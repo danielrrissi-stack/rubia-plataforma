@@ -99,7 +99,7 @@ final class PortalExamsTest extends DbTestCase
         $res = $this->get('/portal/p/' . $pid . '/exames');
         $this->assertSame(200, $res->status);
         $this->assertStringContainsString('Ainda não há exames liberados pela Dra. Rubia.', $res->body);
-        $this->assertStringNotContainsString('140', $res->body);
+        $this->assertStringNotContainsString('LDL', $res->body); // o token aleatorio da pagina pode conter "140"
         $this->assertStringNotContainsString('/portal/p/' . $pid . '/exames', $this->get('/portal/p/' . $pid)->body);
     }
 
@@ -128,7 +128,7 @@ final class PortalExamsTest extends DbTestCase
         $this->assertSame($food->status, $res->status);
         $this->assertSame(302, $res->status);
         $this->assertSame('/portal', $res->headers['Location']);
-        $this->assertStringNotContainsString('140', $res->body);
+        $this->assertStringNotContainsString('LDL', $res->body); // o token aleatorio da pagina pode conter "140"
         $this->assertStringNotContainsString('esperado', $res->body);
     }
 

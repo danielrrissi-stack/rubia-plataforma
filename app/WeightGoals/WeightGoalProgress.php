@@ -98,6 +98,7 @@ final class WeightGoalProgress
         return match ($t['kind']) {
             'nao_aproxima' => 'Nesse ritmo, não se aproxima do alvo.',
             'mais_de_5_anos' => 'Nesse ritmo, levaria mais de 5 anos.',
+            'ja_deveria' => 'Pela média das medições já estaria no alvo, mas a última medição ainda não chegou lá.',
             default => 'Nesse ritmo, chega ao alvo em ' . substr($t['date'], 5, 2) . '/' . substr($t['date'], 0, 4)
                 . ($t['onTime'] ? ', antes do prazo.' : ', depois do prazo.'),
         };
@@ -131,6 +132,11 @@ final class WeightGoalProgress
         $limit = Age::days($startOn, (new \DateTimeImmutable($today))->modify('+5 years')->format('Y-m-d'));
         if ($cross > $limit) {
             return ['a' => $a, 'b' => $b, 'kind' => 'mais_de_5_anos', 'date' => null, 'onTime' => null];
+        }
+        $todayX = Age::days($startOn, $today);
+        if ($cross <= $todayX) {
+            // a reta cruza o alvo antes de hoje (atingiu e voltou, por exemplo): nao mostrar data passada
+            return ['a' => $a, 'b' => $b, 'kind' => 'ja_deveria', 'date' => null, 'onTime' => null];
         }
         $date = (new \DateTimeImmutable($startOn, new \DateTimeZone('UTC')))->modify(($cross >= 0 ? '+' : '') . $cross . ' days')->format('Y-m-d');
         return ['a' => $a, 'b' => $b, 'kind' => 'chega', 'date' => $date, 'onTime' => $date <= $deadline];

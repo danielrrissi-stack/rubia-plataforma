@@ -74,4 +74,12 @@ final class TimelinePeriodTest extends DbTestCase
         $this->assertSame('2025-11-19', $this->resolve('12m')['from']);
         $this->assertNull($this->resolve('tudo')['from']);
     }
+
+    public function test_month_periods_clamp_to_end_of_month(): void
+    {
+        $pid = (int) $this->patient['id'];
+        $this->assertSame('2026-02-28', TimelinePeriod::resolve($pid, '3m', '2026-05-31')['from']);
+        $this->assertSame('2027-02-28', TimelinePeriod::resolve($pid, '12m', '2028-02-29')['from']);
+        $this->assertSame('2026-04-30', TimelinePeriod::resolve($pid, '3m', '2026-07-31')['from']);
+    }
 }

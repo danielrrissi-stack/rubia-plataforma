@@ -181,4 +181,52 @@ final class WeightGoalPagesTest extends DbTestCase
             $this->assertStringNotContainsString('Meta de peso', $res->body, $s);
         }
     }
+
+    public function test_equivalent_kg_uses_age_and_corrected_height_of_last_measurement(): void
+    {
+        $kid = $this->patient('2022-01-15');
+        Container::measurements()->create((int) $kid['id'], ['measured_on' => '2025-11-10', 'weight_kg' => 16.0, 'height_cm' => 100.0, 'position' => 'deitado'], 'equipe', (int) $this->medico['id']);
+        $this->db->insert('weight_goals', ['patient_id' => $kid['id'], 'kind' => 'imc_z', 'start_on' => '2025-11-10', 'start_value' => 0.9, 'target_value' => 0.5,
+            'target_date' => $this->future('+6 months'), 'created_by' => $this->medico['id']]);
+        $card = \App\WeightGoals\WeightGoalController::card($this->medico, (int) $kid['id'], date('Y-m-d'));
+        $bmi = Container::growth()->bmiForZ('F', '2022-01-15', '2025-11-10', 0.5);
+        $this->assertEqualsWithDelta($bmi * 0.993 ** 2, $card['equivalentKg'], 1e-9);
+    }
+
+    public function test_page_query_count_does_not_grow_with_old_goals(): void
+    {
+        $p = $this->patient('1990-04-02');
+        $this->measure($p, $this->future('-3 days'), 92.0);
+        $this->loginAs($this->medico);
+        $old = function (int $n) use ($p): void {
+            for ($i = 0; $i < $n; $i++) {
+                $this->db->insert('weight_goals', ['patient_id' => $p['id'], 'kind' => 'peso', 'start_on' => $this->future('-3 days'), 'start_value' => 92, 'target_value' => 85,
+                    'target_date' => $this->future('+6 months'), 'created_by' => $this->medico['id'], 'ended_at' => date('Y-m-d H:i:s'), 'ended_by' => $this->medico['id'], 'end_reason' => 'encerrada']);
+            }
+        };
+        $count = function () use ($p): int {
+            $before = (int) $this->db->one("SHOW SESSION STATUS LIKE 'Questions'")['Value'];
+            $this->assertSame(200, $this->get($this->url($p))->status);
+            return (int) $this->db->one("SHOW SESSION STATUS LIKE 'Questions'")['Value'] - $before;
+        };
+        $old(1);
+        $small = $count();
+        $old(4);
+        $this->assertSame($small, $count());
+    }
+
+    public function test_revoked_release_closes_goal_and_timeline(): void
+    {
+        $p = $this->patient('1990-04-02');
+        $this->measure($p, $this->future('-3 days'), 92.0);
+        $nutri = $this->makeUser('nutricionista');
+        $this->db->insert('professional_access', ['patient_id' => $p['id'], 'professional_id' => $nutri['id'], 'granted_by' => $this->medico['id']]);
+        $this->loginAs($nutri);
+        $this->assertSame(200, $this->get($this->url($p))->status);
+        $this->db->run('UPDATE professional_access SET revoked_at = NOW() WHERE patient_id = ? AND professional_id = ?', [$p['id'], $nutri['id']]);
+        $this->assertSame(403, $this->get($this->url($p))->status);
+        $this->assertSame(403, $this->get($this->url($p, '.json'))->status);
+        $this->assertSame(403, $this->post($this->url($p), ['alvo' => '85', 'prazo' => $this->future('+6 months')])->status);
+        $this->assertSame(403, $this->get('/pacientes/' . $p['id'] . '/linha-do-tempo')->status);
+    }
 }
