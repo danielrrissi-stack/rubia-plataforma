@@ -299,3 +299,13 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .pront-vazio .pront-topo { background: #eef0eb; border-bottom-color: #b9c0b5; }
 .pront-vazio .pront-topo h3 { color: var(--tinta-suave); }
 .pront-item > form { margin-bottom: .5rem; }
+
+/* Tabelas: faixa no cabecalho, linha entre registros e fundo alternado.
+   O fundo alternado fica no <tr>: celulas com cor propria (ex.: exame alterado) continuam por cima. */
+.tabela { width: 100%; border-collapse: collapse; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio);
+  margin: 0 0 1rem; }
+.tabela th, .tabela td { padding: .55rem .75rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--linha); }
+.tabela thead th { background: var(--salvia-clara); color: var(--salvia-escura); border-bottom: 2px solid var(--salvia); font-weight: 600; }
+.tabela tbody tr:nth-child(even) { background: #f3f7f4; }
+.tabela tbody tr:hover { background: var(--salvia-clara); }
+.tabela tbody tr:last-child td { border-bottom: 0; }

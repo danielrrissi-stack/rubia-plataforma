@@ -11,7 +11,7 @@
 <?php if ($patients === []): ?>
   <p>Nenhum paciente encontrado.</p>
 <?php else: ?>
-<table class="tabela">
+<div class="tabela-rolagem"><table class="tabela">
   <thead><tr><th>Nome</th><th>Idade</th><th>Sexo</th></tr></thead>
   <tbody>
   <?php foreach ($patients as $p): ?>
@@ -22,5 +22,5 @@
     </tr>
   <?php endforeach; ?>
   </tbody>
-</table>
+</table></div>
 <?php endif; ?>
