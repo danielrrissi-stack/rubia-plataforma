@@ -107,7 +107,7 @@ $filled = array_values(array_filter($ranges, fn (array $x): bool => $x['start_ti
     <div class="campo"><label for="f-hi">Das (opcional)</label><input id="f-hi" type="time" name="start_time" value="<?= e((string) ($closureVals['start_time'] ?? '')) ?>"></div>
     <div class="campo"><label for="f-hf">Às (opcional)</label><input id="f-hf" type="time" name="end_time" value="<?= e((string) ($closureVals['end_time'] ?? '')) ?>"></div>
   </div>
-  <div class="campo"><label for="f-motivo">Motivo (opcional)</label><input id="f-motivo" type="text" name="reason" value="<?= e((string) ($closureVals['reason'] ?? '')) ?>" maxlength="120"></div>
+  <div class="campo"><label for="f-motivo">Motivo (opcional)</label><input id="f-motivo" type="text" name="reason" value="<?= e((string) ($closureVals['reason'] ?? '')) ?>" maxlength="120" data-ditado></div>
   <p class="ajuda">Sem horário = dia inteiro. Consultas já marcadas no período não são canceladas: continuam na agenda, destacadas, para remarcar.</p>
   <button type="submit" class="btn">Lançar fechamento</button>
 </form>

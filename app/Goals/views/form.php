@@ -34,9 +34,9 @@ $v = static fn (string $k): string => (string) ($values[$k] ?? '');
   <?= csrf_field() ?>
   <?php if ($v('template_id') !== ''): ?><input type="hidden" name="template_id" value="<?= e($v('template_id')) ?>"><?php endif; ?>
   <div class="campo"><label for="family_text">Texto para a família</label>
-    <input type="text" id="family_text" name="family_text" value="<?= e($v('family_text')) ?>" maxlength="160" required></div>
+    <input type="text" id="family_text" name="family_text" value="<?= e($v('family_text')) ?>" maxlength="160" required data-ditado></div>
   <div class="campo"><label for="child_text">Texto para a criança (opcional)</label>
-    <input type="text" id="child_text" name="child_text" value="<?= e($v('child_text')) ?>" maxlength="160">
+    <input type="text" id="child_text" name="child_text" value="<?= e($v('child_text')) ?>" maxlength="160" data-ditado>
     <p class="ajuda">Se ficar vazio, a criança vê o texto da família.</p></div>
   <div class="campo"><label for="emoji">Emoji</label>
     <input type="text" id="emoji" name="emoji" value="<?= e($v('emoji')) ?>" maxlength="16" size="4" required></div>

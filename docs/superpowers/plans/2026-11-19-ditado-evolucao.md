@@ -31,8 +31,8 @@
 
 ### Task 2: `dictation.js` + CSS
 **Files:** Create `public/assets/js/dictation.js`, `tests/js/dictation.test.js`; Modify `public/assets/css/app.css`
-- [ ] Testes Node (`node --test tests/js`): `apply('', 'paciente refere dor vírgula melhora ponto')` → `'Paciente refere dor, melhora.'`; `apply('Texto.', 'nova linha conduta mantida')` → `'Texto.\nConduta mantida'`; `apply('abc', 'def')` → `'abc def'`; `apply('a', 'ponto e vírgula b interrogação')` → `'a; b?'`; `apply('x', 'dois pontos y')` → `'x: y'`.
+- [ ] Testes Node (`node --test "tests/js/*.test.js"`): `apply('', 'paciente refere dor vírgula melhora ponto')` → `'Paciente refere dor, melhora.'`; `apply('Texto.', 'nova linha conduta mantida')` → `'Texto.\nConduta mantida'`; `apply('abc', 'def')` → `'abc def'`; `apply('a', 'ponto e vírgula b interrogação')` → `'a; b?'`; `apply('x', 'dois pontos y')` → `'x: y'`.
 - [ ] Rodar → FAIL. Implementar `DictationText.apply` e o controlador do navegador (um reconhecedor por vez; só `isFinal` acrescenta; prévia `interim`; erros `not-allowed`/`service-not-allowed` → "Microfone bloqueado — libere o acesso nas configurações do navegador.", demais → "Não foi possível ditar agora."; corta em `maxlength`; dispara `input`). Rodar → PASS. Commit.
 
 ### Task 3: README (deploy: copiar public/) e suíte completa
-- [ ] Nota no README; `php tools/phpunit.phar` e `node --test tests/js` verdes; commit.
+- [ ] Nota no README; `php tools/phpunit.phar` e `node --test "tests/js/*.test.js"` verdes; commit.

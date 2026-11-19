@@ -10,7 +10,7 @@
   <?= csrf_field() ?>
   <input type="hidden" name="modo" value="<?= e($mode) ?>">
   <p class="campo"><label for="titulo">Título do modelo *</label>
-    <input id="titulo" name="titulo" value="<?= e($title_value) ?>" maxlength="150" required></p>
+    <input id="titulo" name="titulo" value="<?= e($title_value) ?>" maxlength="150" required data-ditado></p>
   <p class="ajuda">Depois de criar, você abre o editor para montar o conteúdo.</p>
   <p><button type="submit" class="btn">Criar e abrir o editor</button></p>
 </form>

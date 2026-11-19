@@ -22,7 +22,7 @@ $v = static fn (string $k): string => (string) ($values[$k] ?? '');
   <div class="campo"><label for="instructions">Orientação (opcional)</label>
     <textarea id="instructions" name="instructions" rows="2" maxlength="1000"><?= e($v('instructions')) ?></textarea></div>
   <div class="campo"><label for="reason">Motivo da mudança (opcional)</label>
-    <input type="text" id="reason" name="reason" value="<?= e($v('reason')) ?>" maxlength="200"></div>
+    <input type="text" id="reason" name="reason" value="<?= e($v('reason')) ?>" maxlength="200" data-ditado></div>
   <button type="submit" class="btn">Salvar</button>
   <a class="btn btn-quiet" href="<?= e(url('/prescricoes/' . $rid)) ?>">Cancelar</a>
 </form>

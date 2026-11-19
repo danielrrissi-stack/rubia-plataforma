@@ -282,7 +282,9 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .agenda-faixas input[type=time], .agenda-linha input[type=time] { min-height: 2.5rem; padding: .4rem; font: inherit; border: 1px solid #aeb6ac; border-radius: var(--raio); }
 .agenda-linha { display: flex; flex-wrap: wrap; gap: 0 1rem; }
 
-/* Ditado por voz na evolucao */
-.btn-ditar { padding: .15rem .6rem; font-size: .875rem; margin-left: .5rem; }
-.btn-ditar[aria-pressed="true"] { background: var(--salvia-clara); }
-.ditado-status { display: block; color: var(--tinta-suave); font-size: .875rem; min-height: 1.2em; }
+/* Ditado por voz (dictation.js) */
+.btn-ditar { background: transparent; border: 1px solid var(--linha); border-radius: 999px; padding: .1rem .45rem; margin-left: .35rem;
+  font-size: 1rem; line-height: 1.4; cursor: pointer; vertical-align: top; }
+.btn-ditar:hover, .btn-ditar[aria-pressed="true"] { background: var(--salvia-clara); }
+.ditado-status { display: block; color: var(--tinta-suave); font-size: .875rem; }
+.ditado-status:empty { display: none; }

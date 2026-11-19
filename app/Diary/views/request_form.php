@@ -45,7 +45,7 @@ $mask = (int) ($values['weekdays'] ?? 0);
   <div class="campo"><label for="end_date">Término (opcional)</label>
     <input type="date" id="end_date" name="end_date" value="<?= e($v('end_date')) ?>"></div>
   <div class="campo"><label for="guidance">Orientação (opcional)</label>
-    <input type="text" id="guidance" name="guidance" value="<?= e($v('guidance')) ?>" maxlength="255">
+    <input type="text" id="guidance" name="guidance" value="<?= e($v('guidance')) ?>" maxlength="255" data-ditado>
     <p class="ajuda">Aparece para a família junto do pedido.</p></div>
   <?php if ($canSecret): ?>
     <input type="hidden" name="secret_shown" value="1">

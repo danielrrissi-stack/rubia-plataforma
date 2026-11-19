@@ -440,13 +440,14 @@ Só a **médica** e a **nutricionista** (com o paciente liberado) usam estas tel
 - Situação: **No caminho** (até 1 kg, ou 0,2 de escore-z, do caminho), **À frente**, **Atrás**, **Meta atingida** ou **Prazo vencido**. Medições feitas pela família contam e aparecem marcadas.
 - **Trocar** a meta encerra a anterior (fica no histórico como "substituída"); **Encerrar meta** tira a meta ativa. Nada é apagado.
 
-## Ditado por voz na evolução
+## Ditado por voz
 
-Na tela da evolução, cada campo tem o botão **🎤 Ditar** (Chrome, Edge e Safari; no Firefox o botão não aparece). Clique, fale e clique em **■ Parar**; o texto entra no fim do campo e só é salvo com **Salvar evolução**.
+Todo campo de texto longo do sistema (evolução, anamnese, observações, plano alimentar, diário…) e os campos curtos de texto livre (texto para a família e para a criança, títulos, motivos, orientações, observações do portal) têm o botão **🎤** ao lado (Chrome, Edge e Safari; no Firefox não aparece). Clique, fale e clique em **■** para parar; o texto entra no fim do campo e só é salvo pelo botão de salvar da tela. Campos de nome, busca, número, data, código e e-mail não têm microfone.
+- Campo curto novo com texto livre: acrescente `data-ditado` ao `<input type="text">`. Para tirar o microfone de um `<textarea>`: `data-sem-ditado`.
 - Pontuação falada: "vírgula", "ponto" / "ponto final", "dois pontos", "ponto e vírgula", "interrogação", "nova linha" / "parágrafo".
 - O reconhecimento é do navegador: **o áudio vai para o Google (Chrome), a Microsoft (Edge) ou a Apple (Safari)**. O sistema não grava áudio. Revise o texto antes de salvar.
 - Se o navegador perguntar, permita o microfone para `rubia.med.br`.
-- Testes da parte de texto (só no desenvolvimento): `node --test tests/js`.
+- Testes da parte de texto (só no desenvolvimento): `node --test "tests/js/*.test.js"`.
 
 ## 6. Limites legais
 
@@ -571,5 +572,5 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    Extraia o zip **dentro de `rubia_app`**, nunca na pasta do site. Esta versão **muda `public/`** (novo `weight-goal-chart.js`):
    a cópia do **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` é **obrigatória**. Copie o conteúdo, nunca para `public_html/` em si (é outro site).
    **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`** (`$APP_ROOT = '/home2/USUARIO/rubia_app';`), porque a cópia substitui o arquivo.
-14. **A atualização do ditado na evolução** não tem migração. Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/`
+14. **A atualização do ditado por voz** não tem migração. Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/`
    para `public_html/rubia.med.br/` (novo `dictation.js` e CSS). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**

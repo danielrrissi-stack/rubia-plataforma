@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { apply } = require('../../public/assets/js/dictation.js');
+const { apply, qualifies } = require('../../public/assets/js/dictation.js');
 
 test('pontuacao falada e maiuscula no inicio', () => {
   assert.strictEqual(apply('', 'paciente refere dor vírgula melhora ponto'), 'Paciente refere dor, melhora.');
@@ -33,4 +33,18 @@ test('ponto final e paragrafo', () => {
 
 test('respeita o limite de caracteres', () => {
   assert.strictEqual(apply('abc', 'defgh', 6), 'abc de');
+});
+
+test('campo de uma linha troca nova linha por espaco', () => {
+  assert.strictEqual(apply('Retorno', 'nova linha em 30 dias', 0, true), 'Retorno em 30 dias');
+});
+
+test('quais campos recebem o microfone', () => {
+  assert.strictEqual(qualifies({ tag: 'TEXTAREA' }), true);
+  assert.strictEqual(qualifies({ tag: 'TEXTAREA', semDitado: true }), false);
+  assert.strictEqual(qualifies({ tag: 'TEXTAREA', readOnly: true }), false);
+  assert.strictEqual(qualifies({ tag: 'TEXTAREA', disabled: true }), false);
+  assert.strictEqual(qualifies({ tag: 'INPUT', type: 'text' }), false);
+  assert.strictEqual(qualifies({ tag: 'INPUT', type: 'text', ditado: true }), true);
+  assert.strictEqual(qualifies({ tag: 'INPUT', type: 'email', ditado: true }), false);
 });

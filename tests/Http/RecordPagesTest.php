@@ -210,18 +210,15 @@ final class RecordPagesTest extends DbTestCase
         $this->assertStringContainsString('Obesidade &lt;b&gt;grau', $body);
     }
 
-    public function testEvolutionFormHasHiddenDictationControls(): void
+    public function testEvolutionFormLoadsDictation(): void
     {
         $m = $this->makeUser('medico');
         $p = $this->makePatient();
         $this->loginAs($m);
         $res = $this->get('/pacientes/' . $p['id'] . '/prontuario/evolucao');
         $this->assertSame(200, $res->status);
-        foreach (['anamnese', 'exame_fisico', 'diagnostico', 'conduta', 'plano_terapeutico', 'encaminhamentos'] as $f) {
-            $this->assertMatchesRegularExpression('/<button type="button"[^>]*data-dictate="' . $f . '"[^>]*hidden/', $res->body, $f);
-        }
-        $this->assertMatchesRegularExpression('/id="ditado-aviso"[^>]*hidden/', $res->body);
-        $this->assertStringContainsString('O ditado usa o reconhecimento de voz do navegador: o áudio vai para o Google (Chrome), a Microsoft (Edge) ou a Apple (Safari). Revise o texto antes de salvar.', $res->body);
         $this->assertStringContainsString('<script src="/assets/js/dictation.js"></script>', $res->body);
+        $this->assertSame(6, substr_count($res->body, '<textarea')); // o JS poe o microfone em cada um
+        $this->assertStringNotContainsString('data-sem-ditado', $res->body);
     }
 }

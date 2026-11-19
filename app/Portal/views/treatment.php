@@ -43,7 +43,7 @@ $base = '/portal/p/' . $pid . '/tratamento';
         <div class="campo"><label for="hora-<?= $id ?>">Hora</label>
           <input type="time" id="hora-<?= $id ?>" name="hora" value="<?= e($mine ? (string) $values['hora'] : $nowTime) ?>" required></div>
         <div class="campo"><label for="obs-<?= $id ?>">Observação (opcional)</label>
-          <input type="text" id="obs-<?= $id ?>" name="observacao" maxlength="200" value="<?= e($mine ? (string) $values['observacao'] : '') ?>"></div>
+          <input type="text" id="obs-<?= $id ?>" name="observacao" maxlength="200" value="<?= e($mine ? (string) $values['observacao'] : '') ?>" data-ditado></div>
         <button type="submit" class="btn">Registrar dose</button>
       </form>
     <?php endif; ?>
