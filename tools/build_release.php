@@ -12,27 +12,8 @@ if (PHP_SAPI !== 'cli') {
 
 $root = dirname(__DIR__);
 
-/** Caminhos (relativos, com /) que nunca entram no pacote. Terminando em / = pasta inteira. */
-$excludePrefixes = [
-    'tests/', 'docs/', '.git/', '.superpowers/', '.phpunit.cache/', 'dist/',
-    'tools/phpunit.phar', 'tools/make_icons.php',
-    'config/config.php', 'config/config.test.php', 'config/.install.lock',
-    'o que fazer.txt', 'phpunit.xml', '.gitignore', '.gitattributes',
-];
-/** Em storage/ só entram estes arquivos (a pasta precisa existir, vazia e protegida). */
-$storageKeep = ['storage/.htaccess', 'storage/.gitkeep'];
-
-$isExcluded = static function (string $rel) use ($excludePrefixes, $storageKeep): bool {
-    if (str_starts_with($rel, 'storage/')) {
-        return !preg_match('#^storage/(.*/)?\.gitkeep$#', $rel) && !in_array($rel, $storageKeep, true);
-    }
-    foreach ($excludePrefixes as $p) {
-        if ($rel === $p || (str_ends_with($p, '/') && str_starts_with($rel, $p))) {
-            return true;
-        }
-    }
-    return false;
-};
+require_once __DIR__ . '/release_filter.php';
+$isExcluded = static fn (string $rel): bool => release_is_excluded($rel);
 
 $distDir = $root . '/dist';
 if (!is_dir($distDir) && !mkdir($distDir, 0775, true)) {

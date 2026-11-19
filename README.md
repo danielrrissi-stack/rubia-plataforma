@@ -460,6 +460,34 @@ Todo campo de texto longo do sistema (evolução, anamnese, observações, plano
 - Se o navegador perguntar, permita o microfone para `rubia.med.br`.
 - Testes da parte de texto (só no desenvolvimento): `node --test "tests/js/*.test.js"`.
 
+## Manual de utilização
+
+Cada perfil tem o seu manual em **Ajuda** (menu do painel e topo do portal): médica, nutricionista, secretária, responsável,
+paciente adulto e criança. Cada um vê só o próprio manual; a **médica administradora** abre os seis (links no topo da página)
+para treinar a equipe e mandar o PDF às famílias antes do primeiro acesso. Cada manual tem o botão **Baixar PDF**.
+
+- O conteúdo fica em `app/Help/content/<perfil>.php` (dados: seções com título, passos, dica e fotos). Seções comuns:
+  `_equipe.php` (toda a equipe), `_clinica.php` (médica e nutricionista) e `_familia.php` (responsável e paciente).
+  **O manual da nutricionista não pode citar medicamentos, exames, evolução nem receita** (teste `HelpManualTest`).
+- **As fotos e os PDFs vêm de uma clínica fictícia local**, nunca de rubia.med.br. Todos os nomes são inventados e cada
+  manual avisa: "Todos os nomes, pacientes e números deste manual são fictícios…".
+- `public/assets/manual/` (fotos + PDFs) precisa ficar em até 8 MB (teste `HelpAssetsTest`).
+
+Para refazer as fotos e os PDFs depois de mudar uma tela (máquina de desenvolvimento):
+
+```
+source tools/env.sh
+# uma vez: mariadb-install-db.exe --datadir="$(cygpath -w "$PWD/storage/demo-db")" --port=3307
+#          cp config/config.demo.example.php config/config.demo.php
+start_demo_db                                                  # banco SEPARADO (porta 3307), só localhost
+APP_ENV=demo php tools/demo/seed.php                           # recria a clínica fictícia (recusa outro banco)
+APP_ENV=demo php -S 127.0.0.1:8001 -t public tools/demo/router.php   # em outro terminal
+node tools/manual_shots.mjs                                    # todas as fotos (ou --only medica)
+php tools/manual_pdf.php                                       # os seis PDFs
+```
+
+Nada disso vai no pacote: `tools/demo/`, `tools/manual_*` e `config/config.demo.php` ficam fora do zip.
+
 ## 6. Limites legais
 
 - O sistema foi feito **seguindo os requisitos** da Resolução CFM 1.821/2007 e da LGPD: identificação do profissional,
@@ -591,3 +619,6 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    `INSERT INTO schema_migrations (name) VALUES ('015_evolution_settings.sql');`
    Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/`
    (novo `evolution-chart.js` e CSS). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
+16. **A atualização do manual de utilização** não tem migração. Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de
+   `rubia_app/public/` para `public_html/rubia.med.br/` (nova pasta `assets/manual/` com fotos e PDFs, e CSS).
+   **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**

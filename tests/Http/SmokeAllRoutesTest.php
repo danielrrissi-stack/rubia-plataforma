@@ -113,6 +113,8 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/portal/p/{id}/diario/registros/{diaryEntryId}/editar' => [302, 302, 302, 200, 404, 302],
         '/portal/p/{id}/diario/fotos/{diaryEntryId}'   => [302, 302, 302, 200, 404, 302],
         '/portal/conta'                          => [302, 302, 302, 200, 200, 200], // C: trocar a propria senha
+        '/ajuda'                                 => [200, 200, 200, 200, 200, 200],
+        '/ajuda/{perfil}'                        => [200, 403, 403, 403, 403, 302], // manual da medica: so ela (admin)
         '/senha/trocar'                            => [302, 302, 302, 302, 302, 302], // sem senha provisoria volta para /
         '/pacientes/{id}/acesso-crianca'           => [200, 403, 403, 403, 403, 302], // so medico; C vai para a area dele
         '/metas-modelo'                            => [200, 200, 403, 403, 403, 302], // medico e nutricionista; C vai para a area dele
@@ -294,6 +296,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'token' => 'token-inexistente',
                 'nome' => 'backup-20200101-000000.rbk',
                 'kind' => 'evolucao',
+                'perfil' => 'medica',
                 'planId' => (string) $this->fx['plan'],
                 'foodId' => '53',
                 'templateId' => (string) $this->fx['template'],

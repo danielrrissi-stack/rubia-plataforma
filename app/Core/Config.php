@@ -55,7 +55,8 @@ final class Config
     {
         if (self::$data === null) {
             $env = getenv('APP_ENV') ?: ($_ENV['APP_ENV'] ?? '');
-            $file = dirname(__DIR__, 2) . '/config/' . ($env === 'test' ? 'config.test.php' : 'config.php');
+            $name = match ($env) { 'test' => 'config.test.php', 'demo' => 'config.demo.php', default => 'config.php' };
+            $file = dirname(__DIR__, 2) . '/config/' . $name;
             self::$data = is_file($file) ? (require $file) : [];
         }
         return self::$data;

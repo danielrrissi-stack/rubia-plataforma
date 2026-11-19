@@ -326,3 +326,16 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 #evolucao-metabolismo > summary { cursor: pointer; font-weight: 600; color: var(--salvia-escura); padding: .6rem 0; }
 #evolucao-metabolismo h3 { font-size: 1rem; margin: .75rem 0 .25rem; }
 .periodos { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+
+/* Manual de utilizacao (/ajuda) */
+.portal-ajuda { margin-left: auto; margin-right: 1rem; }
+.manual { max-width: 60rem; }
+.manual-ficticio { font-weight: 600; }
+.manual-perfis ul { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; list-style: none; padding: 0; }
+.manual-indice ol { columns: 2 16rem; }
+.manual-foto { margin: 1rem 0; }
+.manual-foto img { display: block; max-width: 100%; height: auto; border: 1px solid var(--linha); border-radius: var(--raio); }
+.manual-foto-mobile img { max-width: min(100%, 390px); }
+.manual-foto figcaption { font-size: .9rem; color: var(--tinta-suave); margin-top: .35rem; }
+.manual-passos li { margin: .35rem 0; }
+.manual-topo { font-size: .9rem; }

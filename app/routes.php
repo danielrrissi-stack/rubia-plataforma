@@ -277,4 +277,7 @@ $router->post('/portal/p/{id:\d+}/diario/registros/{diaryEntryId:\d+}/editar', [
 $router->post('/portal/p/{id:\d+}/diario/registros/{diaryEntryId:\d+}/remover', [PortalDiaryController::class, 'remove'], $authMw);
 $router->get('/portal/p/{id:\d+}/diario/fotos/{diaryEntryId:\d+}', [PortalDiaryController::class, 'photo'], $authMw);
 $router->get('/portal/conta', [PortalController::class, 'account'], $authMw);
+
+$router->get('/ajuda', [\App\Help\HelpController::class, 'index'], $authMw);
+$router->get('/ajuda/{perfil:[a-z]+}', [\App\Help\HelpController::class, 'show'], $authMw);
 $router->post('/portal/conta/senha', [PortalController::class, 'changePassword'], $authMw);

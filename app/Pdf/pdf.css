@@ -22,3 +22,13 @@ ul { margin: 1mm 0 2mm; padding-left: 6mm; }
 li { margin: 0.6mm 0; }
 .ajuda { color: #444; font-size: 9.5pt; }
 .plano-orientacoes { margin-top: 5mm; }
+/* Manual de utilizacao */
+.manual-capa h1 { font-size: 22pt; margin-top: 30mm; }
+.manual-marca { color: #2f6b5f; font-weight: bold; }
+.manual-aviso { border: 0.4mm solid #8f3d1f; background: #f8e9e2; padding: 3mm; margin: 6mm 0; font-weight: bold; }
+.manual-secao { page-break-before: always; }
+.manual-dica { background: #e3eee9; padding: 2mm; margin: 2mm 0; }
+.manual-foto { margin: 3mm 0; page-break-inside: avoid; }
+.manual-foto img { border: 0.3mm solid #999; }
+.manual-foto-desktop img { width: 100%; }
+.manual-foto-mobile img { width: 62mm; }

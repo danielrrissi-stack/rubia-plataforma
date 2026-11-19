@@ -22,6 +22,9 @@ final class Database
                 $this->cfg['host'] ?? '127.0.0.1',
                 $this->cfg['name'] ?? ''
             );
+            if (!empty($this->cfg['port'])) {
+                $dsn .= ';port=' . (int) $this->cfg['port']; // banco local da clinica ficticia (3307)
+            }
             $this->pdo = new PDO($dsn, $this->cfg['user'] ?? '', $this->cfg['pass'] ?? '', [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
