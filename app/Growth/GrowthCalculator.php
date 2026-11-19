@@ -83,6 +83,25 @@ final class GrowthCalculator
         return $out;
     }
 
+    /** IMC que corresponde ao escore Z do IMC para a idade (mesma fonte OMS de indicators()); null fora das curvas. */
+    public function bmiForZ(string $sex, string $birth, string $onYmd, float $z): ?float
+    {
+        $days = Age::days($birth, $onYmd);
+        $months = Age::months($birth, $onYmd);
+        if ($days < 0) {
+            return null;
+        }
+        if ($days <= self::WHO2006_MAX_DAYS) {
+            [$source, $x] = ['who2006', (float) $days];
+        } elseif ($months < self::WHO2007_MAX_MONTHS) {
+            [$source, $x] = ['who2007', $months];
+        } else {
+            return null;
+        }
+        $lms = $this->ref->lms('bfa', $sex, $x, $source);
+        return $lms === null ? null : Lms::valueAt($z, $lms['l'], $lms['m'], $lms['s']);
+    }
+
     /** < 731 dias medido em pe: +0,7 cm; >= 731 dias medido deitado: -0,7 cm. */
     public function correctHeight(float $cm, int $days, ?string $position): float
     {

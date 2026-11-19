@@ -1,0 +1,21 @@
+CREATE TABLE weight_goals (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT UNSIGNED NOT NULL,
+    kind ENUM('peso','imc_z') NOT NULL,
+    start_on DATE NOT NULL,
+    start_value DECIMAL(7,3) NOT NULL,
+    target_value DECIMAL(7,3) NOT NULL,
+    target_date DATE NOT NULL,
+    notes VARCHAR(500) NULL,
+    created_by INT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ended_at DATETIME NULL,
+    ended_by INT UNSIGNED NULL,
+    end_reason ENUM('substituida','encerrada') NULL,
+    active_flag TINYINT AS (IF(ended_at IS NULL, 1, NULL)) STORED,
+    UNIQUE KEY uq_weight_goals_active (patient_id, active_flag),
+    KEY idx_weight_goals_patient (patient_id, created_at),
+    CONSTRAINT fk_weight_goals_patient FOREIGN KEY (patient_id) REFERENCES patients(id),
+    CONSTRAINT fk_weight_goals_creator FOREIGN KEY (created_by) REFERENCES users(id),
+    CONSTRAINT fk_weight_goals_ender FOREIGN KEY (ended_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

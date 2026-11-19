@@ -48,6 +48,7 @@ use App\Patients\PatientRepository;
 use App\Pdf\PdfRenderer;
 use App\Records\ClinicalEntryRepository;
 use App\Users\UserRepository;
+use App\WeightGoals\WeightGoalRepository;
 
 /** Servicos compartilhados (singletons preguicosos). Testes usam set()/reset(). */
 final class Container
@@ -311,5 +312,10 @@ final class Container
     public static function reminderRound(): ReminderRound
     {
         return self::$items['reminderRound'] ??= new ReminderRound(self::db(), self::appointments(), self::reminderText(), self::agendaMailer(), self::mailer(), self::agendaAccess());
+    }
+
+    public static function weightGoals(): WeightGoalRepository
+    {
+        return self::$items['weightGoals'] ??= new WeightGoalRepository(self::db(), self::audit());
     }
 }
