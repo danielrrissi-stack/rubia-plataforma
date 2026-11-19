@@ -99,7 +99,7 @@ final class TimelineBuilderTest extends DbTestCase
         $this->assertSame(['consulta', 'medicao', 'meta_peso', 'plano'], $types);
         $visits = array_values(array_filter($r['events'], fn ($e) => $e['type'] === 'consulta'));
         $this->assertCount(1, $visits); // so a dela
-        $this->assertStringContainsString('faltou', $visits[0]['text']);
+        $this->assertStringContainsString('Faltou', $visits[0]['text']);
     }
 
     public function test_all_and_limit(): void
@@ -109,5 +109,55 @@ final class TimelineBuilderTest extends DbTestCase
         $three = $this->events($this->medico, null, 3);
         $this->assertCount(3, $three['events']);
         $this->assertTrue($three['truncated']);
+    }
+
+    public function test_visit_link_only_when_user_can_open_it(): void
+    {
+        $visits = array_values(array_filter($this->events($this->medico)['events'], fn ($e) => $e['type'] === 'consulta'));
+        $byDate = array_column($visits, null, 'date');
+        $this->assertStringContainsString('Realizada', $byDate['2026-10-05']['text']);
+        $this->assertNotNull($byDate['2026-10-05']['link']); // a propria agenda
+        $this->assertStringContainsString('Faltou', $byDate['2026-10-06']['text']);
+        $this->assertNull($byDate['2026-10-06']['link']); // agenda da nutricionista: medica nao administradora nao abre
+        $admin = $this->makeUser('medico', ['is_admin' => 1]);
+        $visits = array_values(array_filter($this->events($admin)['events'], fn ($e) => $e['type'] === 'consulta' && $e['date'] === '2026-10-06'));
+        $this->assertNotNull($visits[0]['link']);
+    }
+
+    public function test_query_count_does_not_grow_with_records(): void
+    {
+        $count = function (): int {
+            $before = $this->questions();
+            $this->events($this->medico, null);
+            return $this->questions() - $before;
+        };
+        $kid = $this->makePatient(['birth_date' => '2018-03-01', 'created_by' => $this->medico['id'], 'responsible_professional_id' => $this->medico['id']]);
+        $this->patient = $kid;
+        $this->addRecords(2);
+        $count(); // carrega as tabelas da OMS (uma vez por requisicao)
+        $small = $count();
+        $this->addRecords(5);
+        $this->assertSame($small, $count());
+    }
+
+    private int $recordSeq = 0;
+
+    private function addRecords(int $n): void
+    {
+        $pid = (int) $this->patient['id'];
+        $mid = (int) $this->medico['id'];
+        for ($i = 0; $i < $n; $i++) {
+            $k = ++$this->recordSeq;
+            $rx = $this->db->insert('prescriptions', ['patient_id' => $pid, 'drug_name' => 'Remedio ' . $k, 'route' => 'oral', 'start_date' => '2026-01-0' . min(9, $k), 'created_by' => $mid]);
+            $this->db->insert('prescription_doses', ['prescription_id' => $rx, 'effective_date' => '2026-01-01', 'dose' => '1 cp', 'frequency' => '1x', 'created_by' => $mid]);
+            Container::measurements()->create($pid, ['measured_on' => '2025-0' . min(9, $k) . '-1' . $k % 10, 'weight_kg' => 30.0 + $k, 'height_cm' => 130.0 + $k], 'equipe', $mid);
+            $this->db->insert('weight_goals', ['patient_id' => $pid, 'kind' => 'peso', 'start_on' => '2025-01-01', 'start_value' => 31, 'target_value' => 29,
+                'target_date' => '2025-12-01', 'created_by' => $mid, 'ended_at' => '2025-06-0' . min(9, $k) . ' 10:00:00', 'ended_by' => $mid, 'end_reason' => 'encerrada']);
+        }
+    }
+
+    private function questions(): int
+    {
+        return (int) $this->db->one("SHOW SESSION STATUS LIKE 'Questions'")['Value'];
     }
 }

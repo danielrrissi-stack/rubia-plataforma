@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Timeline;
 
 use App\Access\Policy;
+use App\Agenda\AgendaStatus;
 use App\Core\Container;
 use App\Growth\AdultAnthropometry;
 use App\Growth\Age;
@@ -26,7 +27,7 @@ final class TimelineBuilder
         'evolucao' => 'Evolução', 'consulta' => 'Consulta',
     ];
 
-    /** @return array{events: list<array{date:string,type:string,label:string,text:string,link:string,badge:?string}>, truncated:bool} */
+    /** @return array{events: list<array{date:string,type:string,label:string,text:string,link:?string,badge:?string}>, truncated:bool} */
     public static function events(array $user, int $patientId, ?string $from, string $today, int $limit = 200): array
     {
         $gate = Container::gate();
@@ -37,10 +38,10 @@ final class TimelineBuilder
         $base = '/pacientes/' . $patientId;
         $doctor = Clinician::is($user);
         $ev = [];
-        $add = static function (string $date, string $type, string $text, string $link, ?string $badge = null) use (&$ev, $from, $today): void {
+        $add = static function (string $date, string $type, string $text, ?string $link, ?string $badge = null) use (&$ev, $from, $today): void {
             $date = substr($date, 0, 10);
             if (($from === null || $date >= $from) && $date <= $today) {
-                $ev[] = ['date' => $date, 'type' => $type, 'label' => self::TYPES[$type], 'text' => $text, 'link' => url($link), 'badge' => $badge];
+                $ev[] = ['date' => $date, 'type' => $type, 'label' => self::TYPES[$type], 'text' => $text, 'link' => $link === null ? null : url($link), 'badge' => $badge];
             }
         };
 
@@ -60,8 +61,9 @@ final class TimelineBuilder
         if ($doctor && $gate->check($user, 'view', Policy::MEDICAMENTOS, $patientId)) {
             self::medications($patientId, $base, $today, $add);
         }
+        $measurements = Container::measurements()->current($patientId);
         if ($gate->check($user, 'view', Policy::ANTROPOMETRIA, $patientId)) {
-            self::measurements($patient, $base, $add);
+            self::measurements($patient, $measurements, $base, $add);
         }
         if (Staff::is($user) && $gate->check($user, 'view', Policy::NUTRICAO, $patientId)) {
             foreach (Container::db()->all(
@@ -81,7 +83,7 @@ final class TimelineBuilder
             }
         }
         if (WeightGoalAccess::canView($user, $patientId)) {
-            self::weightGoals($patient, $base, $today, $add);
+            self::weightGoals($patient, $measurements, $base, $today, $add);
         }
 
         $order = array_flip(array_keys(self::TYPES));
@@ -108,10 +110,15 @@ final class TimelineBuilder
             $sql .= ' AND a.professional_id = ?';
             $params[] = (int) $user['id'];
         }
+        $access = Container::agendaAccess();
+        $canOpen = [];
         foreach (Container::db()->all($sql, $params) as $a) {
+            $prof = (int) $a['professional_id'];
+            $canOpen[$prof] ??= $access->canManageExisting($user, $prof);
+            // sem link quando a pessoa nao gerencia aquela agenda (a pagina da consulta daria 404)
             $add((string) $a['starts_at'], 'consulta',
-                ($a['kind'] === 'primeira' ? 'Primeira consulta' : 'Retorno') . ' com ' . $a['professional_name'] . ' — ' . $a['status'],
-                '/agenda/consultas/' . $a['id']);
+                ($a['kind'] === 'primeira' ? 'Primeira consulta' : 'Retorno') . ' com ' . $a['professional_name'] . ' — ' . AgendaStatus::label((string) $a['status']),
+                $canOpen[$prof] ? '/agenda/consultas/' . $a['id'] : null);
         }
     }
 
@@ -142,8 +149,16 @@ final class TimelineBuilder
     private static function medications(int $patientId, string $base, string $today, callable $add): void
     {
         $db = Container::db();
+        $byRx = [];
+        foreach ($db->all(
+            'SELECT d.* FROM prescription_doses d JOIN prescriptions p ON p.id = d.prescription_id
+             WHERE p.patient_id = ? AND p.deleted_at IS NULL ORDER BY d.effective_date, d.id',
+            [$patientId],
+        ) as $d) {
+            $byRx[(int) $d['prescription_id']][] = $d;
+        }
         foreach ($db->all('SELECT * FROM prescriptions WHERE patient_id = ? AND deleted_at IS NULL', [$patientId]) as $p) {
-            $doses = $db->all('SELECT * FROM prescription_doses WHERE prescription_id = ? ORDER BY effective_date, id', [(int) $p['id']]);
+            $doses = $byRx[(int) $p['id']] ?? [];
             $name = (string) $p['drug_name'];
             $add((string) $p['start_date'], 'remedio', 'Início: ' . $name . ($doses !== [] ? ' ' . $doses[0]['dose'] : ''), $base . '/tratamento');
             for ($i = 1, $n = count($doses); $i < $n; $i++) {
@@ -161,11 +176,11 @@ final class TimelineBuilder
         }
     }
 
-    private static function measurements(array $patient, string $base, callable $add): void
+    private static function measurements(array $patient, array $measurements, string $base, callable $add): void
     {
         $birth = (string) $patient['birth_date'];
         $prevWeight = null;
-        foreach (Container::measurements()->current((int) $patient['id']) as $m) {
+        foreach ($measurements as $m) {
             $on = substr((string) $m['measured_on'], 0, 10);
             $parts = [];
             $w = $m['weight_kg'] === null ? null : (float) $m['weight_kg'];
@@ -198,7 +213,7 @@ final class TimelineBuilder
         }
     }
 
-    private static function weightGoals(array $patient, string $base, string $today, callable $add): void
+    private static function weightGoals(array $patient, array $measurements, string $base, string $today, callable $add): void
     {
         $link = $base . '/meta-peso';
         foreach (Container::weightGoals()->history((int) $patient['id']) as $g) {
@@ -209,7 +224,7 @@ final class TimelineBuilder
                 $add((string) $g['ended_at'], 'meta_peso', $g['end_reason'] === 'substituida' ? 'Meta trocada' : 'Meta encerrada', $link);
             }
             $until = $g['ended_at'] === null ? null : substr((string) $g['ended_at'], 0, 10);
-            [$points, $progress] = WeightGoalController::evaluate($g, $patient, $today, $until);
+            [$points, $progress] = WeightGoalController::evaluate($g, $patient, $today, $until, $measurements);
             if ($progress['reachedOn'] !== null) {
                 $hit = null;
                 foreach ($points as $pt) {

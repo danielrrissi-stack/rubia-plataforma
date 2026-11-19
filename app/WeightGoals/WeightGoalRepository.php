@@ -37,7 +37,12 @@ final class WeightGoalRepository
     {
         $row = $this->clean($d, $patient, $today);
         return $this->db->transaction(function () use ($patientId, $row, $uid, $r): int {
+            // trava a linha do paciente: dois envios ao mesmo tempo (clique duplo) passam um de cada vez
+            $this->db->one('SELECT id FROM patients WHERE id = ? FOR UPDATE', [$patientId]);
             $current = $this->active($patientId);
+            if ($current !== null && self::same($current, $row)) {
+                return (int) $current['id']; // a mesma meta enviada de novo: nada muda
+            }
             if ($current !== null) {
                 $this->close($current, 'substituida', $uid, $r);
             }
@@ -63,6 +68,21 @@ final class WeightGoalRepository
             [$uid, $reason, (int) $goal['id']],
         );
         $this->audit->record($uid, 'end', 'weight_goals', (int) $goal['id'], (int) $goal['patient_id'], $goal, $this->find((int) $goal['id']), $r);
+    }
+
+    private static function same(array $goal, array $row): bool
+    {
+        foreach (['kind', 'start_on', 'start_value', 'target_value', 'target_date', 'notes'] as $k) {
+            $a = $goal[$k] === null ? null : (string) $goal[$k];
+            $b = $row[$k] === null ? null : (string) $row[$k];
+            if (in_array($k, ['start_value', 'target_value'], true) && $a !== null && $b !== null) {
+                [$a, $b] = [number_format((float) $a, 3, '.', ''), number_format((float) $b, 3, '.', '')];
+            }
+            if ($a !== $b) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** @return array<string,mixed> linha pronta para gravar */

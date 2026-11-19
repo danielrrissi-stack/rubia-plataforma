@@ -105,6 +105,16 @@ final class WeightGoalProgressTest extends TestCase
         $this->assertSame('Nesse ritmo, levaria mais de 5 anos.', WeightGoalProgress::trendText($r));
     }
 
+    public function test_trend_crossing_before_today_is_not_a_past_date(): void
+    {
+        // atingiu no dia 20 e voltou a subir: a reta cruza o alvo no dia 42, antes de hoje (dia 50)
+        $pts = [$this->p(0, 100), $this->p(10, 95), $this->p(20, 89), $this->p(30, 92), $this->p(40, 93)];
+        $r = WeightGoalProgress::compute($this->goal(), $pts, self::TODAY);
+        $this->assertSame('ja_deveria', $r['trend']['kind']);
+        $this->assertNull($r['trend']['date']);
+        $this->assertSame('Pela média das medições já estaria no alvo, mas a última medição ainda não chegou lá.', WeightGoalProgress::trendText($r));
+    }
+
     public function test_labels(): void
     {
         $this->assertSame('À frente do caminho', WeightGoalProgress::LABELS['a_frente']);

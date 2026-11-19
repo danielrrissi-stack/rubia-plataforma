@@ -113,7 +113,7 @@ final class WeightGoalController
      * Cartao "Meta de peso" (ficha, pagina da meta e linha do tempo). null se o usuario nao pode ver.
      * @return ?array{goal:?array, progress:?array, points:list<array>, canEdit:bool, equivalentKg:?float, targetBmi:?float, patientId:int}
      */
-    public static function card(array $user, int $patientId, string $today): ?array
+    public static function card(array $user, int $patientId, string $today, ?array $measurements = null): ?array
     {
         if (!WeightGoalAccess::canView($user, $patientId)) {
             return null;
@@ -125,29 +125,34 @@ final class WeightGoalController
         if ($goal === null || $patient === null) {
             return $out;
         }
-        [$points, $progress] = self::evaluate($goal, $patient, $today);
+        $measurements ??= Container::measurements()->current($patientId);
+        [$points, $progress] = self::evaluate($goal, $patient, $today, null, $measurements);
         $out['points'] = $points;
         $out['progress'] = $progress;
-        $height = null;
-        foreach (array_reverse(Container::measurements()->current($patientId)) as $m) {
-            if ($m['height_cm'] !== null) {
-                $height = (float) $m['height_cm'];
+        $last = null;
+        foreach (array_reverse($measurements) as $m) {
+            if ($m['height_cm'] !== null && $m['superseded_at'] === null && $m['deleted_at'] === null) {
+                $last = $m;
                 break;
             }
         }
-        if ($height !== null && $goal['kind'] === WeightGoalKind::IMC_Z) {
-            $bmi = Container::growth()->bmiForZ((string) $patient['sex'], (string) $patient['birth_date'], $today, (float) $goal['target_value']);
+        if ($last !== null && $goal['kind'] === WeightGoalKind::IMC_Z) {
+            // idade e altura (com a correcao deitado/em pe) da propria medicao, como no escore-z
+            $on = substr((string) $last['measured_on'], 0, 10);
+            $height = Container::growth()->correctHeight((float) $last['height_cm'], Age::days((string) $patient['birth_date'], $on), $last['position']);
+            $bmi = Container::growth()->bmiForZ((string) $patient['sex'], (string) $patient['birth_date'], $on, (float) $goal['target_value']);
             $out['equivalentKg'] = $bmi === null ? null : $bmi * ($height / 100) ** 2;
-        } elseif ($height !== null) {
-            $out['targetBmi'] = AdultAnthropometry::bmi((float) $goal['target_value'], $height);
+        } elseif ($last !== null) {
+            $out['targetBmi'] = AdultAnthropometry::bmi((float) $goal['target_value'], (float) $last['height_cm']);
         }
         return $out;
     }
 
     /** @return array{0:list<array>,1:array} pontos (desde a partida) e situacao */
-    public static function evaluate(array $goal, array $patient, string $today, ?string $untilYmd = null): array
+    public static function evaluate(array $goal, array $patient, string $today, ?string $untilYmd = null, ?array $measurements = null): array
     {
-        $points = WeightGoalPoints::build((string) $goal['kind'], $patient, Container::measurements()->current((int) $patient['id']), (string) $goal['start_on']);
+        $measurements ??= Container::measurements()->current((int) $patient['id']);
+        $points = WeightGoalPoints::build((string) $goal['kind'], $patient, $measurements, (string) $goal['start_on']);
         if ($untilYmd !== null) {
             $points = array_values(array_filter($points, static fn (array $p): bool => $p['on'] <= $untilYmd));
         }
@@ -171,11 +176,11 @@ final class WeightGoalController
                 continue;
             }
             $until = substr((string) $g['ended_at'], 0, 10);
-            $history[] = ['goal' => $g, 'progress' => self::evaluate($g, $patient, $today, $until)[1]];
+            $history[] = ['goal' => $g, 'progress' => self::evaluate($g, $patient, $today, $until, $current)[1]];
         }
         return Response::html(View::render('WeightGoals/views/index.php', [
             'patient' => $patient, 'errors' => $errors, 'values' => $values,
-            'card' => self::card($user, $id, $today), 'allowed' => $allowed, 'starts' => $starts,
+            'card' => self::card($user, $id, $today, $current), 'allowed' => $allowed, 'starts' => $starts,
             'zLimit' => in_array(WeightGoalKind::IMC_Z, $allowed, true) ? WeightGoalKind::zDeadlineLimit((string) $patient['birth_date']) : null,
             'history' => $history,
             'title' => 'Meta de peso', 'userName' => $user['name'], 'active' => '/pacientes',

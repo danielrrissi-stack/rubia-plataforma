@@ -25,9 +25,9 @@ final class TimelinePeriod
         $d = new \DateTimeImmutable($today, new \DateTimeZone('UTC'));
         switch ($choice) {
             case '3m':
-                return ['choice' => $choice, 'from' => $d->modify('-3 months')->format('Y-m-d'), 'ref' => null, 'label' => 'Últimos 3 meses', 'days' => null];
+                return ['choice' => $choice, 'from' => self::monthsBack($d, 3), 'ref' => null, 'label' => 'Últimos 3 meses', 'days' => null];
             case '12m':
-                return ['choice' => $choice, 'from' => $d->modify('-12 months')->format('Y-m-d'), 'ref' => null, 'label' => 'Últimos 12 meses', 'days' => null];
+                return ['choice' => $choice, 'from' => self::monthsBack($d, 12), 'ref' => null, 'label' => 'Últimos 12 meses', 'days' => null];
             case 'tudo':
                 return ['choice' => $choice, 'from' => null, 'ref' => null, 'label' => 'Tudo', 'days' => null];
         }
@@ -52,5 +52,13 @@ final class TimelinePeriod
             return ['choice' => $choice, 'from' => null, 'ref' => null, 'label' => 'Sem visita anterior — mostrando tudo', 'days' => null];
         }
         return ['choice' => $choice, 'from' => $ref, 'ref' => $ref, 'label' => 'Desde a última visita', 'days' => Age::days($ref, $today)];
+    }
+
+    /** Mesmo dia N meses antes; se o mes nao tem esse dia, o ultimo dia do mes (31/05 - 3 meses = 28/02). */
+    private static function monthsBack(\DateTimeImmutable $d, int $months): string
+    {
+        $first = $d->modify('first day of this month')->modify('-' . $months . ' months');
+        $day = min((int) $d->format('j'), (int) $first->format('t'));
+        return $first->format('Y-m-') . sprintf('%02d', $day);
     }
 }

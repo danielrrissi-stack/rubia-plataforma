@@ -111,6 +111,18 @@ final class WeightGoalRepositoryTest extends DbTestCase
         $this->assertSame('peso', Container::weightGoals()->find($id)['kind']);
     }
 
+    public function test_same_goal_sent_twice_is_saved_once(): void
+    {
+        $p = $this->patient('1990-04-02');
+        $first = $this->create($p);
+        $second = $this->create($p);
+        $this->assertSame($first, $second);
+        $this->assertCount(1, Container::weightGoals()->history((int) $p['id']));
+        $other = $this->create($p, ['target_value' => 80.0]);
+        $this->assertNotSame($first, $other);
+        $this->assertCount(2, Container::weightGoals()->history((int) $p['id']));
+    }
+
     public function test_db_allows_only_one_active(): void
     {
         $p = $this->patient('1990-04-02');
