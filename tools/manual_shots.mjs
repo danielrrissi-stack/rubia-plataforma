@@ -1,7 +1,7 @@
 // Fotos das telas do manual, tiradas da clinica FICTICIA local (nunca de rubia.med.br).
 // Uso (Git Bash), com o banco e o servidor de demonstracao no ar:
 //   source tools/env.sh; start_demo_db; APP_ENV=demo php tools/demo/seed.php
-//   APP_ENV=demo php -S 127.0.0.1:8001 -t public    (em outro terminal)
+//   APP_ENV=demo php -S 127.0.0.1:8001 -t public tools/demo/router.php    (em outro terminal)
 //   node tools/manual_shots.mjs [--base http://127.0.0.1:8001] [--only medica]
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, rmSync, mkdtempSync } from 'node:fs';
@@ -15,7 +15,7 @@ const { totp, viewport, groupByLogin } = require('./manual_shots_lib.js');
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const PORT = 9333;
-const MAX_HEIGHT = 1800;
+const MAX_HEIGHT = 1500;
 
 const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
@@ -106,7 +106,7 @@ async function shoot(p, shot) {
   await p.go(shot.url);
   if (await p.evalJs('document.querySelectorAll("canvas").length') > 0) { await sleep(1200); } // Chart.js
   const h = Math.min(MAX_HEIGHT, Math.max(vp.height, await p.evalJs('document.documentElement.scrollHeight')));
-  const { data } = await p.s('Page.captureScreenshot', { format: 'jpeg', quality: 75, captureBeyondViewport: true,
+  const { data } = await p.s('Page.captureScreenshot', { format: 'jpeg', quality: 62, captureBeyondViewport: true,
     clip: { x: 0, y: 0, width: vp.width, height: h, scale: 1 } });
   const out = join(ROOT, 'public/assets/manual', shot.file);
   mkdirSync(dirname(out), { recursive: true });

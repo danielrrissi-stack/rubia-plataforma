@@ -1,9 +1,16 @@
 <?php
 declare(strict_types=1);
 
-/** Manual do perfil secretaria. */
-$equipe = (require __DIR__ . '/_equipe.php')('secretaria', 'secretaria');
+/** Manual da secretaria: cadastro, responsaveis e agenda. */
+$e = (require __DIR__ . '/_equipe.php')('secretaria', 'secretaria');
 
 return [
-    $equipe['entrar'],
+    $e['entrar'],
+    $e['pacientes'],
+    $e['ficha'],
+    $e['cadastrar'],
+    $e['responsaveis'],
+    $e['agenda'],
+    $e['horarios'],
+    $e['ditado'],
 ];

@@ -11,7 +11,7 @@ return [
         'user' => 'root',
         'pass' => '',
     ],
-    'base_url'     => 'http://localhost:8001',
+    'base_url'     => 'http://127.0.0.1:8001',
     'storage_path' => __DIR__ . '/../storage/demo',
     'mail' => [
         'from'      => 'demo@localhost',

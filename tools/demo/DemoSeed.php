@@ -202,6 +202,9 @@ final class DemoSeed
         ], $doc);
         Container::mealPlans()->publish($plan, $doc);
         $this->labs($pid, $this->day(-35), ['glicemia' => '88', 'triglicerides' => '132', 'hdl' => '41'], true);
+        $patient = $this->db->one('SELECT * FROM patients WHERE id = ?', [$pid]);
+        Container::weightGoals()->create($pid, ['kind' => 'imc_z', 'start_on' => $this->day(-300), 'start_value' => 2.6, 'target_value' => 1.8,
+            'target_date' => $this->day(240), 'notes' => null], $patient, $this->today, $doc, $this->r);
         return $pid;
     }
 
