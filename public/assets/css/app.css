@@ -281,3 +281,8 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .agenda-horarios-livres { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem; }
 .agenda-faixas input[type=time], .agenda-linha input[type=time] { min-height: 2.5rem; padding: .4rem; font: inherit; border: 1px solid #aeb6ac; border-radius: var(--raio); }
 .agenda-linha { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+
+/* Ditado por voz na evolucao */
+.btn-ditar { padding: .15rem .6rem; font-size: .875rem; margin-left: .5rem; }
+.btn-ditar[aria-pressed="true"] { background: var(--salvia-clara); }
+.ditado-status { display: block; color: var(--tinta-suave); font-size: .875rem; min-height: 1.2em; }
