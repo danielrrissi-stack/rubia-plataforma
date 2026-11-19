@@ -5,7 +5,8 @@ use App\Timeline\TimelinePeriod;
 $pid = (int) $patient['id'];
 ?>
 <h1>Linha do tempo — <?= e($patient['social_name'] ?: $patient['full_name']) ?></h1>
-<p><a href="<?= e(url('/pacientes/' . $pid)) ?>">&larr; Voltar ao paciente</a></p>
+<p><a href="<?= e(url('/pacientes/' . $pid)) ?>">&larr; Voltar ao paciente</a><?php if (!empty($canEvolucao)): ?>
+  · <a href="<?= e(url('/pacientes/' . $pid . '/evolucao')) ?>">Evolução</a><?php endif; ?></p>
 
 <nav class="abas" aria-label="Período">
 <?php foreach (TimelinePeriod::CHOICES as $key => $label): ?>

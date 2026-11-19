@@ -55,7 +55,7 @@ final class TimelinePeriod
     }
 
     /** Mesmo dia N meses antes; se o mes nao tem esse dia, o ultimo dia do mes (31/05 - 3 meses = 28/02). */
-    private static function monthsBack(\DateTimeImmutable $d, int $months): string
+    public static function monthsBack(\DateTimeImmutable $d, int $months): string
     {
         $first = $d->modify('first day of this month')->modify('-' . $months . ' months');
         $day = min((int) $d->format('j'), (int) $first->format('t'));

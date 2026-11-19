@@ -159,6 +159,9 @@ $router->get('/pacientes/{id:\d+}/meta-peso', [WeightGoalController::class, 'ind
 $router->get('/pacientes/{id:\d+}/meta-peso.json', [WeightGoalController::class, 'data'], $authMw);
 $router->post('/pacientes/{id:\d+}/meta-peso', [WeightGoalController::class, 'store'], $authMw);
 $router->post('/pacientes/{id:\d+}/meta-peso/encerrar', [WeightGoalController::class, 'end'], $authMw);
+$router->get('/pacientes/{id:\d+}/evolucao', [\App\Evolution\EvolutionController::class, 'index'], $authMw);
+$router->get('/pacientes/{id:\d+}/evolucao.json', [\App\Evolution\EvolutionController::class, 'data'], $authMw);
+$router->post('/pacientes/{id:\d+}/evolucao/criterio', [\App\Evolution\EvolutionController::class, 'saveSettings'], $authMw);
 $router->get('/pacientes/{id:\d+}/medidas/nova', [GrowthController::class, 'create'], $authMw);
 $router->post('/pacientes/{id:\d+}/medidas/nova', [GrowthController::class, 'store'], $authMw);
 $router->get('/medidas/{id:\d+}/corrigir', [GrowthController::class, 'edit'], $authMw);

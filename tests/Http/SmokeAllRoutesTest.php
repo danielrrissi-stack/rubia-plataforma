@@ -51,6 +51,8 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/linha-do-tempo'           => [200, 200, 403, 403, 403, 302], // so medica e nutricionista
         '/pacientes/{id}/meta-peso'                => [200, 200, 403, 403, 403, 302], // so equipe
         '/pacientes/{id}/meta-peso.json'           => [200, 200, 403, 403, 403, 302],
+        '/pacientes/{id}/evolucao'                 => [200, 403, 403, 403, 403, 302], // so a medica
+        '/pacientes/{id}/evolucao.json'            => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/medidas/nova'             => [200, 200, 403, 403, 403, 302],
         '/medidas/{id}/corrigir'                   => [200, 200, 403, 403, 403, 302],
         '/medidas/{id}/versoes'                    => [200, 200, 403, 403, 403, 302],

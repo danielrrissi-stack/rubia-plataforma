@@ -27,7 +27,7 @@ final class MigratorTest extends TestCase
         }
 
         $migrator = new Migrator($db, APP_ROOT . '/database/migrations');
-        $this->assertCount(14, $migrator->migrate());
+        $this->assertCount(15, $migrator->migrate());
         $this->assertSame([], $migrator->migrate());
 
         $tables = array_column($db->all('SHOW TABLES'), 'Tables_in_rubia_test');

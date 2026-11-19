@@ -121,7 +121,8 @@ final class WeightGoalController
         $patient = Container::patients()->find($patientId);
         $goal = Container::weightGoals()->active($patientId);
         $out = ['goal' => $goal, 'progress' => null, 'points' => [], 'canEdit' => WeightGoalAccess::canEdit($user, $patientId),
-            'equivalentKg' => null, 'targetBmi' => null, 'patientId' => $patientId];
+            'equivalentKg' => null, 'targetBmi' => null, 'patientId' => $patientId,
+            'canEvolucao' => \App\Evolution\EvolutionAccess::canView($user, $patientId)];
         if ($goal === null || $patient === null) {
             return $out;
         }
