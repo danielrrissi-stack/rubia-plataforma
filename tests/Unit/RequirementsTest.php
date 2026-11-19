@@ -38,4 +38,10 @@ final class RequirementsTest extends TestCase
         $names = array_column(Requirements::check(sys_get_temp_dir()), 'item');
         $this->assertContains('Extensão fileinfo', $names);
     }
+
+    public function test_lists_dom_extension_for_pdf(): void
+    {
+        $names = array_column(Requirements::check(sys_get_temp_dir()), 'item');
+        $this->assertContains('Extensão dom', $names);
+    }
 }

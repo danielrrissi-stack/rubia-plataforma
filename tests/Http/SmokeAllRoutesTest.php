@@ -66,6 +66,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/trechos.json'                            => [200, 200, 403, 403, 403, 302],
         '/planos/{planId}'                         => [200, 200, 403, 403, 403, 302],
         '/planos/{planId}/imprimir'                => [200, 200, 403, 403, 403, 302],
+        '/planos/{planId}/pdf'                     => [200, 200, 403, 403, 403, 302],
         '/planos/{planId}/editar'                  => [302, 302, 403, 403, 403, 302], // publicado redireciona para show
         '/pacientes/{id}/prontuario'               => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/prontuario/{kind}'        => [200, 403, 403, 403, 403, 302],
@@ -84,6 +85,7 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/tratamento/nova'          => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/receita'                  => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/receita/imprimir'         => [302, 403, 403, 403, 403, 302], // sem p[] volta para a escolha
+        '/pacientes/{id}/receita/pdf'              => [302, 403, 403, 403, 403, 302], // idem
         '/admin/receita'                           => [200, 403, 403, 403, 403, 302], // so is_admin (M e admin no fixture)
         '/admin/agenda'                            => [200, 403, 403, 403, 403, 302], // so medica administradora
         '/pacientes/{id}/efeitos/novo'             => [200, 403, 403, 403, 403, 302],

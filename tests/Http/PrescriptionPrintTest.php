@@ -186,4 +186,79 @@ final class PrescriptionPrintTest extends DbTestCase
         $this->assertSame(302, $res->status);
         $this->assertSame('', $this->db->one("SELECT value FROM settings WHERE `key` = 'rx_clinic_name'")['value']);
     }
+
+    public function test_pdf_downloads_with_patient_filename(): void
+    {
+        [$med, $p] = $this->setupDoctor();
+        $pid = (int) $p['id'];
+        $a = $this->rx($pid, $med, 'Metformina', 'oral');
+        $res = $this->get('/pacientes/' . $pid . '/receita/pdf', ['p' => [(string) $a]]);
+        $this->assertSame(200, $res->status);
+        $this->assertStringStartsWith('%PDF-', $res->body);
+        $this->assertSame('application/pdf', $res->headers['Content-Type']);
+        $name = $p['social_name'] ?: $p['full_name'];
+        $this->assertStringContainsString(rawurlencode('Receita - ' . $name . ' - ' . date('d-m-Y') . '.pdf'), $res->headers['Content-Disposition']);
+    }
+
+    public function test_pdf_without_items_redirects_like_print(): void
+    {
+        [$med, $p] = $this->setupDoctor();
+        $pid = (int) $p['id'];
+        $other = $this->makePatient(['birth_date' => '2015-05-10', 'sex' => 'F']);
+        $foreign = $this->rx((int) $other['id'], $med, 'Droga Alheia', 'oral');
+        $none = $this->get('/pacientes/' . $pid . '/receita/pdf');
+        $this->assertSame(302, $none->status);
+        $this->assertSame('/pacientes/' . $pid . '/receita', $none->headers['Location']);
+        $alien = $this->get('/pacientes/' . $pid . '/receita/pdf', ['p' => [(string) $foreign]]);
+        $this->assertSame(302, $alien->status);
+        $this->assertSame('/pacientes/' . $pid . '/receita', $alien->headers['Location']);
+    }
+
+    public function test_pdf_forbidden_for_non_doctor(): void
+    {
+        [, $p] = $this->setupDoctor();
+        foreach (['nutricionista', 'secretaria'] as $role) {
+            $this->loginAs($this->makeUser($role, ['totp_enabled' => 1]));
+            $this->assertSame(403, $this->get('/pacientes/' . $p['id'] . '/receita/pdf', ['p' => ['1']])->status, $role);
+        }
+    }
+
+    public function test_pdf_audited(): void
+    {
+        [$med, $p] = $this->setupDoctor();
+        $pid = (int) $p['id'];
+        $a = $this->rx($pid, $med, 'Metformina', 'oral');
+        $this->get('/pacientes/' . $pid . '/receita/pdf', ['p' => [(string) $a]]);
+        $row = $this->db->one("SELECT after_json FROM audit_log WHERE action = 'view' AND entity = 'prescriptions' AND patient_id = ? AND after_json LIKE '%pdf%'", [$pid]);
+        $this->assertNotNull($row);
+        $after = json_decode((string) $row['after_json'], true);
+        $this->assertTrue($after['pdf']);
+        $this->assertArrayNotHasKey('print', $after);
+        $this->assertSame([$a], array_map('intval', $after['ids']));
+    }
+
+    public function test_rx_doc_escapes_instructions(): void
+    {
+        $html = \App\Core\View::render('Medications/views/_rx_doc.php', [
+            'patient' => ['id' => 1, 'social_name' => null, 'full_name' => 'Ana & Cia'],
+            'groups' => ['oral' => [['id' => 1, 'drug_name' => 'Droga <X>', 'current' => ['dose' => '1 mg', 'frequency' => '1x', 'instructions' => "Tomar <1> & beber\nágua"]]]],
+            'head' => ['rx_clinic_name' => '', 'rx_address' => '', 'rx_phone' => '', 'rx_city' => ''],
+            'doctorName' => 'Dra', 'register' => '', 'dateText' => '18 de novembro de 2026',
+        ], null);
+        $this->assertStringContainsString('Tomar &lt;1&gt; &amp; beber', $html);
+        $this->assertStringContainsString('<br', $html);
+        $this->assertStringContainsString('Droga &lt;X&gt;', $html);
+        $this->assertStringContainsString('Ana &amp; Cia', $html);
+        $this->assertStringNotContainsString('data-print', $html);
+    }
+
+    public function test_print_page_links_pdf_with_same_items(): void
+    {
+        [$med, $p] = $this->setupDoctor();
+        $pid = (int) $p['id'];
+        $a = $this->rx($pid, $med, 'Metformina', 'oral');
+        $body = $this->get('/pacientes/' . $pid . '/receita/imprimir', ['p' => [(string) $a]])->body;
+        $this->assertStringContainsString('Baixar PDF', $body);
+        $this->assertStringContainsString(e(url('/pacientes/' . $pid . '/receita/pdf?' . http_build_query(['p' => [(string) $a]]))), $body);
+    }
 }

@@ -45,6 +45,7 @@ use App\Patients\ConsentService;
 use App\Patients\GuardianRepository;
 use App\Patients\MajorityService;
 use App\Patients\PatientRepository;
+use App\Pdf\PdfRenderer;
 use App\Records\ClinicalEntryRepository;
 use App\Users\UserRepository;
 
@@ -112,6 +113,14 @@ final class Container
     public static function gate(): Gate
     {
         return self::$items['gate'] ??= new Gate(self::policy(), self::patientScope(), self::audit());
+    }
+
+    public static function pdf(): PdfRenderer
+    {
+        return self::$items['pdf'] ??= new PdfRenderer(
+            APP_ROOT . '/lib/dompdf',
+            rtrim((string) Config::get('storage_path', APP_ROOT . '/storage'), '/\\') . '/cache/dompdf',
+        );
     }
 
     public static function backups(): BackupService

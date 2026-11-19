@@ -190,6 +190,7 @@ $router->post('/trechos/{snippetId:\d+}/excluir', [TemplateController::class, 's
 $router->post('/planos/previa',[MealPlanController::class, 'preview'], $authMw);
 $router->get('/planos/{planId:\d+}', [MealPlanController::class, 'show'], $authMw);
 $router->get('/planos/{planId:\d+}/imprimir', [MealPlanController::class, 'print'], $authMw);
+$router->get('/planos/{planId:\d+}/pdf', [MealPlanController::class, 'pdf'], $authMw);
 $router->get('/planos/{planId:\d+}/editar', [MealPlanController::class, 'edit'], $authMw);
 $router->post('/planos/{planId:\d+}/editar', [MealPlanController::class, 'save'], $authMw);
 $router->post('/planos/{planId:\d+}/publicar', [MealPlanController::class, 'publish'], $authMw);
@@ -223,6 +224,7 @@ $router->get('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::cla
 $router->post('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'create'], $authMw);
 $router->get('/pacientes/{id:\d+}/receita', [PrescriptionPrintController::class, 'choose'], $authMw);
 $router->get('/pacientes/{id:\d+}/receita/imprimir', [PrescriptionPrintController::class, 'print'], $authMw);
+$router->get('/pacientes/{id:\d+}/receita/pdf', [PrescriptionPrintController::class, 'pdf'], $authMw);
 $router->get('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/efeitos/novo', [AdverseEventController::class, 'create'], $authMw);
 $router->post('/efeitos/{eventId:\d+}/ciente', [AdverseEventController::class, 'review'], $authMw);
