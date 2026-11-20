@@ -339,3 +339,14 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .manual-foto figcaption { font-size: .9rem; color: var(--tinta-suave); margin-top: .35rem; }
 .manual-passos li { margin: .35rem 0; }
 .manual-topo { font-size: .9rem; }
+
+/* Atestados */
+.atestado-tipos { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.atestado-previa { max-width: 46rem; }
+.atestado-previa .atestado-cabecalho, .atestado-previa .atestado-titulo, .atestado-previa .atestado-rodape { text-align: center; }
+.atestado-previa .atestado-cabecalho { border-bottom: 1px solid currentColor; padding-bottom: .5rem; margin-bottom: 1rem; }
+.atestado-previa .atestado-cabecalho h1 { font-size: 1.15rem; margin: 0; }
+.atestado-previa .atestado-titulo { font-size: 1rem; letter-spacing: .1em; }
+.atestado-previa .atestado-corpo p { text-align: justify; line-height: 1.6; }
+.atestado-previa .atestado-rodape { margin-top: 1.5rem; }
+.atestado-previa .atestado-contato { font-size: .85rem; margin-top: 1rem; }

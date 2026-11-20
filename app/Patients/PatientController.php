@@ -87,6 +87,7 @@ final class PatientController
             'labSummary' => $canExames ? self::labSummary($id) : null,
             'treatmentCard' => \App\Medications\PrescriptionController::card($user, $id, $today),
             'goalsCard' => \App\Goals\GoalController::card($user, $id, $today),
+            'certificatesCard' => \App\Certificates\CertificateController::card($user, $id),
             'diaryCard' => \App\Diary\DiaryController::card($user, $id, $today),
             'agendaCard' => \App\Agenda\AgendaCards::forStaff($user, $id, date('Y-m-d H:i')),
             'weightGoalCard' => \App\WeightGoals\WeightGoalController::card($user, $id, $today),

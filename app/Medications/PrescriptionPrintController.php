@@ -149,6 +149,12 @@ final class PrescriptionPrintController
     /** @return array<string,string> as 4 chaves, vazias quando nao gravadas */
     private function settings(): array
     {
+        return self::headSettings();
+    }
+
+    /** Cabecalho da receita (tambem usado nos atestados). @return array<string,string> */
+    public static function headSettings(): array
+    {
         $out = array_fill_keys(array_keys(self::SETTINGS), '');
         foreach (Container::db()->all('SELECT `key`, value FROM settings') as $row) {
             if (array_key_exists($row['key'], $out)) {

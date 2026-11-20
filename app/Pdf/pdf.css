@@ -32,3 +32,12 @@ li { margin: 0.6mm 0; }
 .manual-foto img { border: 0.3mm solid #999; }
 .manual-foto-desktop img { width: 100%; }
 .manual-foto-mobile img { width: 62mm; }
+
+.atestado-cabecalho { text-align: center; border-bottom: 0.3mm solid #000; padding-bottom: 2mm; margin-bottom: 8mm; }
+.atestado-cabecalho h1 { margin: 0; letter-spacing: 0.05em; }
+.atestado-titulo { text-align: center; letter-spacing: 0.12em; margin: 6mm 0 8mm; }
+.atestado-corpo p { text-align: justify; margin: 0 0 4mm; line-height: 1.6; }
+.atestado-rodape { margin-top: 14mm; text-align: center; page-break-inside: avoid; }
+.atestado-data { margin-bottom: 14mm; }
+.atestado-contato { margin-top: 10mm; font-size: 9pt; }
+.atestado-anulado { border: 0.6mm solid #000; text-align: center; font-weight: bold; padding: 2mm; margin-bottom: 4mm; letter-spacing: 0.1em; }

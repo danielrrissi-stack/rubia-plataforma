@@ -92,6 +92,10 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/receita/imprimir'         => [302, 403, 403, 403, 403, 302], // sem p[] volta para a escolha
         '/pacientes/{id}/receita/pdf'              => [302, 403, 403, 403, 403, 302], // idem
         '/admin/receita'                           => [200, 403, 403, 403, 403, 302], // so is_admin (M e admin no fixture)
+        '/pacientes/{id}/atestados'                => [200, 403, 403, 403, 403, 302], // so a medica; C vai para a area dele
+        '/pacientes/{id}/atestados/novo'           => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/atestados/{certId}'       => [200, 403, 403, 403, 403, 302],
+        '/pacientes/{id}/atestados/{certId}/pdf'   => [200, 403, 403, 403, 403, 302],
         '/admin/agenda'                            => [200, 403, 403, 403, 403, 302], // so medica administradora
         '/pacientes/{id}/efeitos/novo'             => [200, 403, 403, 403, 403, 302],
         '/prescricoes/{prescriptionId}'            => [200, 403, 403, 403, 403, 302],
@@ -250,6 +254,7 @@ final class SmokeAllRoutesTest extends DbTestCase
             ], $admin, $today, new Request('POST', '/')),
             'diaryEntry' => $this->diaryEntry((int) $child['id'], $admin, $resp, $today),
             'card' => $this->publishedCard((int) $admin['id']),
+            'certificate' => Container::certificates()->create((int) $child['id'], (int) $admin['id'], 'aptidao', $today, ['data' => $today], '<p>Atestado fumaca</p>', null),
             'secretaria_id' => (int) $sec['id'],
         ];
     }
@@ -307,6 +312,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'requestId' => (string) $this->fx['diaryRequest'],
                 'diaryEntryId' => (string) $this->fx['diaryEntry'],
                 'cardId' => (string) $this->fx['card'],
+                'certId' => (string) $this->fx['certificate'],
                 'testId' => (string) Container::labCatalog()->findByCode('ldl')['id'],
                 'collectionId' => (string) $this->fx['collection'],
                 'prescriptionId' => (string) $this->fx['prescription'],
