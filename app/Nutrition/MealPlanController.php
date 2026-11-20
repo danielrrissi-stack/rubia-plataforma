@@ -229,7 +229,12 @@ final class MealPlanController
         if ($errors !== [] || $structure === null) {
             return Response::json(['ok' => false, 'errors' => $errors], 422);
         }
-        $base = isset($post['revisao']) && is_string($post['revisao']) && ctype_digit($post['revisao']) ? (int) $post['revisao'] : null;
+        // Nunca troca o formato do rascunho: um editor desatualizado (v1) gravaria um dia por cima de todos os dias.
+        $stored = is_array($plan['structure'] ?? null) ? $plan['structure'] : null;
+        if (PlanDays::isMulti($stored) !== PlanDays::isMulti($structure)) {
+            return Response::json(['ok' => false, 'errors' => ['Não foi possível salvar: o formato do plano mudou. Recarregue a página.']], 422);
+        }
+        $base =isset($post['revisao']) && is_string($post['revisao']) && ctype_digit($post['revisao']) ? (int) $post['revisao'] : null;
         $auto = ($post['auto'] ?? '') === '1';
         try {
             $res = Container::mealPlans()->saveDraft((int) $plan['id'], [

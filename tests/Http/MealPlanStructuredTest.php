@@ -236,10 +236,47 @@ final class MealPlanStructuredTest extends DbTestCase
         ]);
     }
 
-    public function testSaveV2RoundTrip(): void
+    /** Rascunho por dias (v2), como o da Sugestao: 2 dias a partir de $start. */
+    private function newV2Draft(int $pid, int $by, string $start = '2026-11-23', int $n = 2): int
+    {
+        $days = [];
+        for ($i = 0; $i < $n; $i++) {
+            $days[] = ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]])]];
+        }
+        $structure = (new \App\Nutrition\MealPlanResolver(Container::foods()))->resolve(['v' => 2, 'start' => $start, 'days' => $days], true);
+        return Container::mealPlans()->createDraft($pid, 'estruturado', ['title' => 'Plano por dias', 'structure' => $structure], $by);
+    }
+
+    public function testSaveRejectsV1OverV2(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->newV2Draft((int) $p['id'], (int) $doc['id']);
+        $before = $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]);
+        $res = $this->save($planId, [$this->meal([['food_id' => 53, 'qty' => '50', 'measure_id' => null]])]);
+        $this->assertSame(422, $res->status, $res->body);
+        $j = json_decode($res->body, true);
+        $this->assertFalse($j['ok']);
+        $this->assertSame(['Não foi possível salvar: o formato do plano mudou. Recarregue a página.'], $j['errors']);
+        $after = $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]);
+        $this->assertSame($before, $after);
+        $this->assertSame(2, Container::mealPlans()->find($planId)['structure']['v']);
+    }
+
+    public function testSaveRejectsV2OverV1(): void
     {
         [, $p] = $this->setupDoctor();
         $planId = $this->newStructured((int) $p['id']);
+        $before = $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]);
+        $res = $this->saveV2($planId, '2026-11-23', [['meals' => [$this->meal([['food_id' => 53, 'qty' => '50', 'measure_id' => null]])]]]);
+        $this->assertSame(422, $res->status, $res->body);
+        $this->assertSame(['Não foi possível salvar: o formato do plano mudou. Recarregue a página.'], json_decode($res->body, true)['errors']);
+        $this->assertSame($before, $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]));
+    }
+
+    public function testSaveV2RoundTrip(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->newV2Draft((int) $p['id'], (int) $doc['id']);
         $res = $this->saveV2($planId, '2026-11-23', [
             ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]])]],
             ['meals' => [$this->meal([['food_id' => 53, 'qty' => '50', 'measure_id' => null, 'note' => '', 'subs' => []]])]],
@@ -263,8 +300,8 @@ final class MealPlanStructuredTest extends DbTestCase
 
     public function testEditorDataV2HasDayLabels(): void
     {
-        [, $p] = $this->setupDoctor();
-        $planId = $this->newStructured((int) $p['id']);
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->newV2Draft((int) $p['id'], (int) $doc['id'], '2026-12-28', 6);
         $this->assertSame(200, $this->saveV2($planId, '2026-12-28', [
             ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]])]],
             ['meals' => [$this->meal([], 'Almoço')]],

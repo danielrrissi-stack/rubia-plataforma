@@ -46,8 +46,13 @@
     return { name: String(m.name || ''), time: String(m.time || ''), note: String(m.note || ''), options: options };
   }
   // Plano por dias (v2): uma aba por dia; "meals" aponta sempre para as refeicoes do dia aberto. v1: sem abas.
-  var PD = window.PlanDaysJs || null;
-  var multi = data.v === 2 && Array.isArray(data.days) && data.days.length > 0 && !!PD;
+  // plan-days.js e opcional aqui: sem ele (arquivo faltando no servidor) o plano por dias continua por dias,
+  // senao o editor salvaria um dia so por cima de todos. Os rotulos vem do servidor.
+  var PD = window.PlanDaysJs || {
+    dayLabel: function (startYmd, i) { return 'Dia ' + (Number(i) + 1); },
+    offTarget: function (kcal, m) { return typeof m === 'number' && m > 0 && Math.abs(Number(kcal) - m) > 0.10 * m; }
+  };
+  var multi = data.v === 2 && Array.isArray(data.days) && data.days.length > 0;
   var start = multi ? String(data.start || '') : '';
   var days = multi ? data.days.map(function (d, i) {
     return { label: String(d.label || PD.dayLabel(start, i)), meals: mapMeals(d.meals) };
@@ -346,7 +351,7 @@
     var copyBtn = document.getElementById('pe-copiar');
     copyBtn.disabled = !from;
     copyBtn.setAttribute('data-confirm', from ? 'Substituir as refeições de ' + days[cur].label + ' pelas de ' + from.label + '?' : '');
-    document.getElementById('pe-limpar-dia').setAttribute('data-confirm', 'Limpar os alimentos de todas as refeições de ' + days[cur].label + '?');
+    document.getElementById('pe-limpar-dia').setAttribute('data-confirm', 'Limpar ' + days[cur].label + '? Todos os alimentos do dia saem e cada refeição fica só com uma opção, vazia (nome e horário continuam).');
   }
   function openDay(i, focusTab) {
     if (!days[i]) return;
