@@ -155,6 +155,16 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .pe-barra { height: .55rem; background: var(--salvia-clara); border-radius: 999px; overflow: hidden; }
 .pe-barra-cheia { height: 100%; width: 0; background: var(--salvia); transition: width .2s; }
 .pe-barra-cheia.pe-barra-acima { background: var(--alerta); }
+.pe-dias { display: flex; flex-wrap: wrap; gap: .35rem; margin: 0 0 .6rem; }
+.pe-dia { display: flex; flex-direction: column; align-items: center; min-width: 4.6rem; padding: .35rem .55rem; border: 1px solid var(--linha); border-radius: var(--raio); background: var(--papel); color: var(--tinta); font: inherit; cursor: pointer; }
+.pe-dia-nome { font-weight: 600; }
+.pe-dia-kcal { font-size: .8rem; color: var(--tinta-suave); }
+.pe-dia-atual { border-color: var(--salvia-escura); background: var(--salvia-clara); box-shadow: inset 0 -3px 0 var(--salvia-escura); }
+.pe-dia-fora { border-color: var(--alerta); background: var(--alerta-fundo); }
+.pe-dia-fora .pe-dia-kcal { color: var(--alerta); font-weight: 600; }
+.pe-dia-atual.pe-dia-fora { box-shadow: inset 0 -3px 0 var(--alerta); }
+.pe-dias-acoes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; margin-bottom: .8rem; }
+.pe-dias-acoes .pe-campo { margin: 0; }
 .pe-refeicao { margin-bottom: 1rem; }
 .pe-refeicao-topo, .pe-linha { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; }
 .pe-campo { display: flex; flex-direction: column; font-size: .85rem; color: var(--tinta-suave); gap: .15rem; }
