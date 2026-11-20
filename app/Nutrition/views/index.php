@@ -30,6 +30,14 @@ $modes = ['texto' => 'Texto', 'estruturado' => 'Estruturado'];
     <a class="btn btn-quiet" href="<?= e(url('/planos/' . $current['id'])) ?>">Abrir</a>
     <a class="btn btn-quiet" href="<?= e(url('/planos/' . $current['id'] . '/imprimir')) ?>">Imprimir</a>
   </p>
+  <?php if ($canEdit && $draft === null && is_array($current['structure']) && \App\Nutrition\PlanDays::isMulti($current['structure'])
+      && \App\Nutrition\PlanDays::remainingFrom($current['structure'], date('Y-m-d')) <= 4): ?>
+  <p class="ajuda">Este plano termina em <?= e(fmt_date(\App\Nutrition\PlanDays::lastDate($current['structure']))) ?>.</p>
+  <form method="post" action="<?= e(url('/planos/' . $current['id'] . '/continuacao')) ?>">
+    <?= csrf_field() ?>
+    <button type="submit" class="btn">Gerar continuação agora</button>
+  </form>
+  <?php endif; ?>
 <?php endif; ?>
 </section>
 

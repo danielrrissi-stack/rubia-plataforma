@@ -136,6 +136,7 @@ Um caminho errado faz o site dar erro 500 ("Failed opening required …/app/boot
    (ex.: `/opt/cpanel/ea-php83/root/usr/bin/php` quando a conta usa uma versão específica do PHP).
 
    Ela envia os e-mails pendentes (convites, redefinição de senha) e gera o backup diário automaticamente.
+   O mesmo Cron de 5 minutos também monta, uma vez por dia a partir das 06:00, a continuação dos planos alimentares por dias que estão terminando (rascunho para revisar, com aviso por e-mail).
 9. **Conferir.** Acesse `https://rubia.med.br`, entre com o e-mail e a senha da médica e configure o 2FA (veja a seção 3).
    Se algo falhar, o registro de erros fica em `storage/logs/app.log` (dentro da pasta de dados).
 

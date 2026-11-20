@@ -204,6 +204,48 @@ final class DietSuggestionTest extends DbTestCase
         }
     }
 
+    private function publishedFrom(array $doc, array $p, string $start): array
+    {
+        $sug = (new \App\Diets\DietController())->buildSuggestion((int) $p['id'], 'adulto', 1800, $start, 14);
+        $id = Container::mealPlans()->createDraft((int) $p['id'], 'estruturado', ['title' => $sug['title'], 'structure' => $sug['structure']],
+            (int) $doc['id'], null, null, null, $sug['code'], 14);
+        Container::mealPlans()->publish($id, (int) $doc['id']);
+        return Container::mealPlans()->find($id);
+    }
+
+    public function testContinueNowButton(): void
+    {
+        [$doc, $p] = $this->doctorWith(30);
+        $pid = (int) $p['id'];
+        $draft = $this->publishedFrom($doc, $p, date('Y-m-d', strtotime('-10 days')));
+        $body = $this->get('/pacientes/' . $pid . '/plano')->body;
+        $this->assertStringContainsString('Gerar continuação agora', $body);
+        $this->assertStringContainsString('action="/planos/' . $draft['id'] . '/continuacao"', $body);
+
+        $cont = $this->planFrom($this->post('/planos/' . $draft['id'] . '/continuacao', []));
+        $this->assertSame(2, (int) $cont['structure']['v']);
+        $this->assertCount(18, $cont['structure']['days']);
+        $this->assertSame(0, (int) $cont['auto_generated']);
+        $this->assertSame((int) $draft['id'], (int) $cont['source_plan_id']);
+        $this->assertStringNotContainsString('Gerar continuação agora', $this->get('/pacientes/' . $pid . '/plano')->body);
+        // continuacao ainda aberta: leva para ela
+        $again = $this->post('/planos/' . $draft['id'] . '/continuacao', []);
+        $this->assertSame('/planos/' . $cont['id'] . '/editar', $again->headers['Location']);
+        // descartada: gera outra
+        Container::mealPlans()->discard((int) $cont['id'], (int) $doc['id']);
+        $other = $this->planFrom($this->post('/planos/' . $draft['id'] . '/continuacao', []));
+        $this->assertNotSame((int) $cont['id'], (int) $other['id']);
+
+        // faltando 5 dias: sem botao
+        [$doc2, $p2] = $this->doctorWith(30);
+        $d2 = $this->publishedFrom($doc2, $p2, date('Y-m-d', strtotime('-9 days')));
+        $this->assertStringNotContainsString('Gerar continuação agora', $this->get('/pacientes/' . $p2['id'] . '/plano')->body);
+
+        // nutricionista sem liberacao: 403
+        $this->loginAs($this->makeUser('nutricionista'));
+        $this->assertSame(403, $this->post('/planos/' . $d2['id'] . '/continuacao', [])->status);
+    }
+
     public function testLibraryShowListsSevenDays(): void
     {
         $this->doctorWith(30);

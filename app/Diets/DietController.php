@@ -14,6 +14,7 @@ use App\Growth\Age;
 use App\Nutrition\InvalidPlanException;
 use App\Nutrition\MealPlanCalculator;
 use App\Nutrition\MealPlanResolver;
+use App\Nutrition\PlanDays;
 use App\Nutrition\Staff;
 
 /** Dietas prontas: consulta (equipe), "Sugestao da semana" no paciente e restricoes alimentares. */
@@ -153,11 +154,7 @@ final class DietController
         $band = DietBuilder::bandForAge(Age::years((string) $patient['birth_date'], date('Y-m-d')));
         $goal = Container::energyGoals()->current($pid);
         $goalKcal = $goal === null ? null : (int) $goal['get_kcal'];
-        $kcal = null;
-        if ($band !== null) {
-            [$lo, $hi] = DietBuilder::BANDS[$band];
-            $kcal = $goalKcal === null ? $lo + 500 : (int) max($lo, min($hi, round($goalKcal / 100) * 100));
-        }
+        $kcal = $band === null ? null : self::suggestedKcal($band, $goalKcal);
         $allergy = null;
         if (Container::gate()->check($user, 'view', Policy::HISTORICO, $pid)) {
             $texts = [];
@@ -175,6 +172,49 @@ final class DietController
             'levels' => ['infantil' => DietBuilder::levels('infantil'), 'adulto' => DietBuilder::levels('adulto')],
             'restrictions' => Container::foodRestrictions()->get($pid), 'allergyText' => $allergy,
         ];
+    }
+
+    /** Calorias da sugestao: a meta arredondada a 100 e limitada a versao; sem meta, o minimo da versao + 500. */
+    public static function suggestedKcal(string $band, ?int $goalKcal): int
+    {
+        [$lo, $hi] = DietBuilder::BANDS[$band];
+        return $goalKcal === null ? $lo + 500 : (int) max($lo, min($hi, round($goalKcal / 100) * 100));
+    }
+
+    /** POST /planos/{planId}/continuacao: monta agora a continuacao do plano por dias publicado. */
+    public function continueNow(Request $r): Response
+    {
+        $user = $r->attributes['user'];
+        $plan = Container::mealPlans()->find((int) $r->params['planId']) ?? throw new HttpException(404);
+        $pid = (int) $plan['patient_id'];
+        Staff::assert($user, $r, $pid);
+        Container::gate()->authorize($user, 'edit', Policy::NUTRICAO, $pid, $r);
+        $back = Response::redirect('/pacientes/' . $pid . '/plano');
+        if ($plan['status'] !== 'publicado' || !is_array($plan['structure']) || !PlanDays::isMulti($plan['structure'])) {
+            Session::flash('erro', 'Só é possível continuar um plano por dias publicado.');
+            return $back;
+        }
+        $contId = (int) ($plan['continuation_draft_id'] ?? 0);
+        if ($contId > 0) {
+            $cont = Container::mealPlans()->find($contId);
+            if ($cont !== null && $cont['status'] === 'rascunho' && $cont['discarded_at'] === null) {
+                Session::flash('ok', 'A continuação deste plano já está em rascunho.');
+                return Response::redirect('/planos/' . $contId . '/editar');
+            }
+        }
+        try {
+            $draftId = Container::planContinuation()->generate((int) $plan['id'], (int) $user['id'], false, date('Y-m-d'));
+        } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
+        } catch (InvalidPlanException $e) {
+            Session::flash('erro', 'Não foi possível gerar a continuação: ' . implode(' ', $e->errors));
+            return $back;
+        } catch (\RuntimeException $e) {
+            Session::flash('erro', $e->getMessage());
+            return $back;
+        }
+        Session::flash('ok', 'Continuação criada como rascunho. Revise e publique.');
+        return Response::redirect('/planos/' . $draftId . '/editar');
     }
 
     /**

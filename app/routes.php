@@ -212,6 +212,7 @@ $router->post('/planos/{planId:\d+}/publicar', [MealPlanController::class, 'publ
 $router->post('/planos/{planId:\d+}/encerrar', [MealPlanController::class, 'end'], $authMw);
 $router->post('/planos/{planId:\d+}/descartar', [MealPlanController::class, 'discard'], $authMw);
 $router->post('/planos/{planId:\d+}/novo-rascunho', [MealPlanController::class, 'newDraft'], $authMw);
+$router->post('/planos/{planId:\d+}/continuacao', [\App\Diets\DietController::class, 'continueNow'], $authMw);
 
 $router->get('/pacientes/{id:\d+}/prontuario',[RecordController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/prontuario/{kind}', [RecordController::class, 'form'], $authMw);
