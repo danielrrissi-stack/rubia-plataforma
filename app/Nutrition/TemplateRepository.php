@@ -25,13 +25,19 @@ final class TemplateRepository
         });
     }
 
-    public function fromPlan(int $planId, string $title, int $by, ?Request $r = null): int
+    public function fromPlan(int $planId, string $title, int $by, ?Request $r = null, ?int $day = null): int
     {
         $plan = $this->db->one('SELECT * FROM meal_plans WHERE id = ?', [$planId]);
         if ($plan === null) {
             throw new \RuntimeException('Plano não encontrado.');
         }
         $structure = $plan['structure_json'] === null ? null : json_decode((string) $plan['structure_json'], true);
+        if (is_array($structure) && PlanDays::isMulti($structure)) {
+            if ($day === null || $day < 0 || $day >= count((array) ($structure['days'] ?? []))) {
+                throw new \RuntimeException('Escolha o dia para salvar como modelo.');
+            }
+            $structure = PlanDays::dayStructure($structure, $day);
+        }
         return $this->create([
             'title' => $title, 'mode' => (string) $plan['mode'],
             'body_text' => $plan['body_text'], 'guidance_text' => $plan['guidance_text'],

@@ -18,8 +18,8 @@ $family = !$withTotals;
   <?php if ($plan['status'] !== 'rascunho'): ?><a class="btn" href="<?= e(url('/planos/' . $plan['id'] . '/pdf')) ?>">Baixar PDF</a><?php endif; ?>
   <a href="<?= e(url('/planos/' . $plan['id'])) ?>">Voltar</a></p>
 <?php require __DIR__ . '/_plan_doc.php'; ?>
-<?php if ($withTotals && $plan['mode'] === 'estruturado'): $day = MealPlanCalculator::day((array) $plan['structure']); $pc = MealPlanCalculator::macroPercents($day); ?>
-<section class="plano-totais"><h3>Totais do dia (Opção 1 de cada refeição)</h3>
+<?php if ($withTotals && $plan['mode'] === 'estruturado'): $multi = \App\Nutrition\PlanDays::isMulti((array) $plan['structure']); $day = MealPlanCalculator::plan((array) $plan['structure'])['average']; $pc = MealPlanCalculator::macroPercents($day); ?>
+<section class="plano-totais"><h3><?= $multi ? 'Média dos dias' : 'Totais do dia' ?> (Opção 1 de cada refeição)</h3>
   <table class="tabela"><tbody>
     <tr><th>Energia</th><td><?= e(fmt_num($day['kcal'], 0)) ?> kcal</td></tr>
     <tr><th>Proteínas</th><td><?= e(fmt_num($day['protein'], 1)) ?> g (<?= e(fmt_num($pc['protein'], 1)) ?>%)</td></tr>

@@ -144,8 +144,15 @@ final class TemplateController
         }
         Staff::assert($user, $r, (int) $plan['patient_id']);
         Container::gate()->authorize($user, 'edit', Policy::NUTRICAO, (int) $plan['patient_id'], $r);
+        $dia = $r->post['dia'] ?? null;
+        $diaIdx = is_string($dia) && preg_match('/^\d{1,3}$/', $dia) === 1 ? (int) $dia : null;
+        if ($plan['mode'] === 'estruturado' && \App\Nutrition\PlanDays::isMulti((array) $plan['structure'])
+            && ($diaIdx === null || $diaIdx >= count((array) ($plan['structure']['days'] ?? [])))) {
+            Session::flash('erro', 'Escolha o dia para salvar como modelo.');
+            return Response::redirect('/planos/' . $plan['id']);
+        }
         try {
-            Container::mealPlanTemplates()->fromPlan((int) $plan['id'], self::str($r->post['titulo'] ?? null), (int) $user['id'], $r);
+            Container::mealPlanTemplates()->fromPlan((int) $plan['id'], self::str($r->post['titulo'] ?? null), (int) $user['id'], $r, $diaIdx);
             Session::flash('ok', 'Modelo criado a partir do plano. Ele não leva dados do paciente.');
         } catch (\PDOException $e) {
             throw $e; // erro de banco nunca vai para a tela

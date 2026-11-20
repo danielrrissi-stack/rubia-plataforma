@@ -23,8 +23,10 @@ final class MealPlanRepository
         ?int $sourceTemplateId = null,
         ?int $sourcePlanId = null,
         ?string $sourceDietCode = null,
+        ?int $planDays = null,
+        bool $auto = false,
     ): int {
-        return $this->db->transaction(function () use ($patientId, $mode, $data, $by, $r, $sourceTemplateId, $sourcePlanId, $sourceDietCode): int {
+        return $this->db->transaction(function () use ($patientId, $mode, $data, $by, $r, $sourceTemplateId, $sourcePlanId, $sourceDietCode, $planDays, $auto): int {
             $this->lockPatient($patientId);
             $existing = $this->db->one(
                 "SELECT id FROM meal_plans WHERE patient_id = ? AND status = 'rascunho' AND discarded_at IS NULL FOR UPDATE",
@@ -44,12 +46,15 @@ final class MealPlanRepository
                 'source_template_id' => $sourceTemplateId,
                 'source_plan_id' => $sourcePlanId,
                 'source_diet_code' => $sourceDietCode,
+                'plan_days' => $planDays,
+                'auto_generated' => $auto ? 1 : 0,
                 'created_by' => $by,
             ];
             $id = $this->db->insert('meal_plans', $row);
             $this->audit->record($by, 'create', 'meal_plans', $id, $patientId, null, [
                 'mode' => $mode,
                 'source_template_id' => $sourceTemplateId, 'source_plan_id' => $sourcePlanId, 'source_diet_code' => $sourceDietCode,
+                'plan_days' => $planDays, 'auto_generated' => $auto,
             ] + $this->content($row['title'], $row['body_text'], $row['guidance_text'], $data['structure'] ?? null), $r);
             return $id;
         });
@@ -72,7 +77,7 @@ final class MealPlanRepository
                 'body_text' => $src['body_text'],
                 'guidance_text' => $src['guidance_text'],
                 'structure' => $src['structure'],
-            ], $by, $r, null, $publishedPlanId);
+            ], $by, $r, null, $publishedPlanId, null, $src['plan_days'] === null ? null : (int) $src['plan_days']);
         });
     }
 
@@ -137,26 +142,15 @@ final class MealPlanRepository
             $totals = [null, null, null, null, null];
             $structure = $plan['structure'];
             if ($plan['mode'] === 'estruturado') {
-                $meals = is_array($structure) ? ($structure['meals'] ?? []) : [];
-                if ($meals === []) {
-                    throw new \RuntimeException('Plano vazio: adicione ao menos uma refeição.');
+                $structure = is_array($structure) ? $structure : [];
+                $days = PlanDays::days($structure);
+                if (PlanDays::isMulti($structure) && $days === []) {
+                    throw new \RuntimeException('Plano vazio: adicione ao menos um dia.');
                 }
-                foreach ($meals as $meal) {
-                    $options = (array) ($meal['options'] ?? []);
-                    $note = trim((string) ($meal['note'] ?? ''));
-                    if (($options[0]['items'] ?? []) === [] && $note === '' && count($options) <= 1) {
-                        throw new \RuntimeException('Refeição sem itens: ' . ($meal['name'] ?? '') . '.');
-                    }
-                    // Opcao vazia apareceria para a familia como "Opcao N" sem nada. So e aceita quando e a unica
-                    // opcao da refeicao e a refeicao tem observacao (ex.: "fruta a vontade").
-                    foreach (array_values($options) as $oi => $opt) {
-                        $optItems = (array) (((array) $opt)['items'] ?? []);
-                        if ($optItems === [] && ($note === '' || count($options) > 1)) {
-                            throw new \RuntimeException('Refeição ' . ($meal['name'] ?? '') . ': a opção ' . ($oi + 1) . ' está vazia.');
-                        }
-                    }
+                foreach ($days as $day) {
+                    $this->assertDayPublishable((array) $day['meals'], $day['date'] === null ? '' : PlanDays::shortLabel($day['date']));
                 }
-                $d = MealPlanCalculator::day($structure);
+                $d = MealPlanCalculator::plan($structure)['average'];
                 $totals = [
                     round((float) $d['kcal'], 1), round((float) $d['protein'], 1), round((float) $d['carb'], 1),
                     round((float) $d['fat'], 1), round((float) $d['fiber'], 1),
@@ -165,6 +159,12 @@ final class MealPlanRepository
                 throw new \RuntimeException('Plano vazio: escreva o plano antes de publicar.');
             }
 
+            if ($plan['plan_days'] === null && $plan['source_plan_id'] !== null) {
+                $src = $this->db->one('SELECT status, plan_days, continuation_draft_id FROM meal_plans WHERE id = ? FOR UPDATE', [(int) $plan['source_plan_id']]);
+                if ($src !== null && $src['status'] === 'publicado' && (int) $src['continuation_draft_id'] === $planId && $src['plan_days'] !== null) {
+                    $this->db->run('UPDATE meal_plans SET plan_days = ? WHERE id = ?', [(int) $src['plan_days'], $planId]);
+                }
+            }
             $this->db->run(
                 "UPDATE meal_plans SET status = 'substituido', superseded_at = NOW()
                  WHERE patient_id = ? AND status = 'publicado'",
@@ -184,6 +184,29 @@ final class MealPlanRepository
                 $r,
             );
         });
+    }
+
+    /** @param array<int,array> $meals */
+    private function assertDayPublishable(array $meals, string $prefix): void
+    {
+        if ($meals === []) {
+            throw new \RuntimeException($prefix . 'Plano vazio: adicione ao menos uma refeição.');
+        }
+        foreach ($meals as $meal) {
+            $options = (array) ($meal['options'] ?? []);
+            $note = trim((string) ($meal['note'] ?? ''));
+            if (($options[0]['items'] ?? []) === [] && $note === '' && count($options) <= 1) {
+                throw new \RuntimeException($prefix . 'Refeição sem itens: ' . ($meal['name'] ?? '') . '.');
+            }
+            // Opcao vazia apareceria para a familia como "Opcao N" sem nada. So e aceita quando e a unica
+            // opcao da refeicao e a refeicao tem observacao (ex.: "fruta a vontade").
+            foreach (array_values($options) as $oi => $opt) {
+                $optItems = (array) (((array) $opt)['items'] ?? []);
+                if ($optItems === [] && ($note === '' || count($options) > 1)) {
+                    throw new \RuntimeException($prefix . 'Refeição ' . ($meal['name'] ?? '') . ': a opção ' . ($oi + 1) . ' está vazia.');
+                }
+            }
+        }
     }
 
     public function end(int $planId, string $reason, int $by, ?Request $r = null): void

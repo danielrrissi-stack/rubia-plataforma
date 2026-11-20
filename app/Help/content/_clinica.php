@@ -42,13 +42,18 @@ return static function (string $slug, string $as): array {
         'plano' => [
             'id' => 'plano',
             'title' => 'Plano alimentar',
-            'intro' => 'O plano começa como rascunho. Só depois de publicado a família vê no portal.',
+            'intro' => 'O plano começa como rascunho. Só depois de publicado a família vê no portal. Se ninguém publicar a continuação a tempo, a família continua vendo os últimos 7 dias publicados, em ciclo.',
             'steps' => [
                 'Na ficha, no cartão "Plano alimentar", clique em "Ver plano alimentar".',
                 'Em "Novo plano", escolha o "Modo" (Texto ou Estruturado) e como começar ("Em branco", "Cópia do plano vigente" ou um "Modelo"). Clique em "Criar rascunho".',
+                'Para um cardápio de vários dias, use o cartão "Sugestão de cardápio": escolha a "Duração" (7 ou 14 dias; o padrão é 14) e o "Início" (o padrão é hoje) e clique em "Gerar sugestão". O sistema cria um rascunho chamado "Plano alimentar – dd/mm a dd/mm" e abre o editor.',
+                'No editor há uma aba para cada dia ("Seg 23/11", "Ter 24/11"...), com o total de calorias do dia. O dia que fica mais de 10 % longe da meta aparece destacado. Em cada dia, "Copiar de outro dia" repete um cardápio e "Limpar dia" esvazia o dia.',
                 'Escreva o plano. No modo estruturado, busque os alimentos da tabela TACO e as medidas caseiras.',
-                'Quando estiver pronto, abra o rascunho e clique em "Publicar". A família passa a ver o plano no portal.',
-                'Abra o plano vigente para "Imprimir", gerar o PDF, "Salvar como modelo" ou "Editar (novo rascunho a partir deste)".',
+                'Quando estiver pronto, abra o rascunho e clique em "Publicar". A família passa a ver o plano no portal: hoje e os próximos 6 dias, nas abas "Hoje", "Amanhã", "Qua 26/11"..., e a "Lista de compras" desses 7 dias. A família não vê calorias.',
+                'Continuação automática: a partir das 06:00, quando faltam 4 dias ou menos para o plano acabar, o sistema monta um rascunho de continuação (os dias que restam mais 7 ou 14 dias novos, com a meta de energia e as restrições atuais) e avisa por e-mail quem publicou o plano (ou, se não der, os médicos). Abra o rascunho, revise e publique.',
+                'No painel, o cartão "Planos para revisar" mostra cada plano que está terminando: pendente, "vencido" (em vermelho: ninguém publicou a continuação e a família está vendo os últimos 7 dias se repetirem), "há um rascunho aberto" ou "sem continuação". Use "Gerar continuação agora" no cartão, ou na página do plano quando faltarem 4 dias ou menos e não houver rascunho.',
+                'Se você descartar um rascunho de continuação, o sistema não gera outro sozinho para aquele plano: use "Gerar continuação agora".',
+                'Abra o plano vigente para "Imprimir", gerar o PDF, "Salvar como modelo" (num plano de vários dias, escolha o "dia" que vira modelo) ou "Editar (novo rascunho a partir deste)".',
             ],
             'images' => [
                 $img('plano', '/pacientes/{crianca}/plano', 'Plano vigente e criação de um novo.'),
@@ -64,7 +69,7 @@ return static function (string $slug, string $as): array {
                 'Em "Trechos de texto", cadastre frases prontas para inserir nos planos.',
                 'Em "Alimentos", busque na tabela e cadastre os seus com "Novo alimento" (os da TACO não podem ser editados).',
                 'Em "Dietas prontas", consulte as 1.664 dietas da semana (por estação, de 100 em 100 kcal, versão infantil e adolescente/adulto). '
-                    . 'No plano alimentar do paciente, marque as "Restrições e alergias alimentares" e use "Gerar sugestão da semana": '
+                    . 'No plano alimentar do paciente, marque as "Restrições e alergias alimentares" e use "Gerar sugestão": '
                     . 'vira um rascunho já adaptado, para você avaliar e publicar. Ali aparecem também as alergias anotadas no histórico.',
             ],
             'images' => [$img('modelos', '/modelos-plano', 'Lista de modelos de plano.')],

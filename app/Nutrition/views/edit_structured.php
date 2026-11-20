@@ -37,7 +37,7 @@ $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
   <p><label>Título <input id="pe-titulo" value="<?= e($values['title'] ?? ($plan['title'] ?? '')) ?>" maxlength="150" required data-ditado></label></p>
 
   <section class="pe-totais" id="pe-totais" aria-labelledby="pe-totais-titulo">
-    <h2 id="pe-totais-titulo">Total do dia <span class="ajuda">(Opção 1 de cada refeição)</span></h2>
+    <h2 id="pe-totais-titulo">Total do dia <span id="pe-total-dia-rotulo"></span> <span class="ajuda">(Opção 1 de cada refeição)</span></h2>
     <p class="pe-totais-linha" aria-live="polite">
       <strong><span data-total="kcal">0</span> kcal</strong> ·
       Proteína <span data-total="protein">0</span> g (<span data-pct="protein">0</span>%) ·
@@ -73,4 +73,5 @@ $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
   <form id="pe-form-publicar" method="post" action="<?= e(url($context['publishUrl'])) ?>" hidden><?= csrf_field() ?></form>
 <?php endif; ?>
 <script src="<?= e(url('/assets/js/snippet-picker.js')) ?>" defer></script>
-<script src="<?= e(url('/assets/js/meal-plan-editor.js')) ?>" defer></script>
+<script src="<?= e(asset('/assets/js/plan-days.js')) ?>" defer></script>
+<script src="<?= e(asset('/assets/js/meal-plan-editor.js')) ?>" defer></script>

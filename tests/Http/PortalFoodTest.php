@@ -32,10 +32,10 @@ final class PortalFoodTest extends DbTestCase
         return [$g, $p, $nutri];
     }
 
-    private function item(string $name, array $subs = []): array
+    private function item(string $name, array $subs = [], int $foodId = 53): array
     {
         return [
-            'food_id' => 53, 'food_name' => $name, 'qty' => 1, 'measure_id' => 1, 'measure_name' => 'unidade',
+            'food_id' => $foodId, 'food_name' => $name, 'qty' => 1, 'measure_id' => 1, 'measure_name' => 'unidade',
             'measure_plural' => 'unidades', 'grams' => 50.0, 'note' => '', 'subs' => $subs,
             'per100' => ['kcal' => 300.0, 'protein' => 8.0, 'carb' => 58.0, 'fat' => 3.0, 'fiber' => 2.0],
         ];
@@ -94,6 +94,97 @@ final class PortalFoodTest extends DbTestCase
         $this->assertSame(1, substr_count($staff, 'valor não disponível na TACO'));
         $this->assertSame(1, substr_count($staff, 'Opção 1 <span'));
         $this->assertStringContainsString('Opção 2 <span', $staff);
+    }
+
+    /** Publica um plano v2 de $n dias comecando em $start; cada dia tem um alimento com o nome "Dia{i}". */
+    private function publishMulti(array $p, array $nutri, string $start, int $n): void
+    {
+        $days = [];
+        for ($i = 0; $i < $n; $i++) {
+            $days[] = ['meals' => [['name' => 'Café', 'time' => '', 'note' => '', 'options' => [['items' => [$this->item('Dia' . $i, [], 1000 + $i)]]]]]];
+        }
+        $repo = Container::mealPlans();
+        $id = $repo->createDraft((int) $p['id'], 'estruturado', ['title' => 'Plano dias', 'structure' => ['v' => 2, 'start' => $start, 'days' => $days]], (int) $nutri['id']);
+        $repo->publish($id, (int) $nutri['id']);
+    }
+
+    private static function ago(int $days): string
+    {
+        return date('Y-m-d', strtotime(($days >= 0 ? '-' : '+') . abs($days) . ' days'));
+    }
+
+    public function testPortalShowsOnlySevenDaysFromToday(): void
+    {
+        [$g, $p, $nutri] = $this->family();
+        $this->publishMulti($p, $nutri, self::ago(3), 14);
+        $this->loginAs($g);
+        $body = $this->get('/portal/p/' . $p['id'] . '/alimentacao')->body;
+        $this->assertSame(7, substr_count($body, '<section class="plano-dia"'));
+        $this->assertStringContainsString('id="dia-' . date('Y-m-d') . '"', $body);
+        $this->assertStringContainsString('Dia3', $body);
+        $this->assertStringNotContainsString('Dia2<', $body);
+        $this->assertStringContainsString('Dia9', $body);
+        $this->assertStringNotContainsString('Dia10', $body);
+        $this->assertStringContainsString('aria-label="Dias do cardápio"', $body);
+        $this->assertStringContainsString('href="#dia-' . date('Y-m-d') . '">Hoje<', $body);
+        $this->assertStringContainsString('>Amanhã<', $body);
+    }
+
+    public function testPortalFuturePlanStartsAtStart(): void
+    {
+        [$g, $p, $nutri] = $this->family();
+        $this->publishMulti($p, $nutri, self::ago(-5), 14);
+        $this->loginAs($g);
+        $body = $this->get('/portal/p/' . $p['id'] . '/alimentacao')->body;
+        $this->assertSame(7, substr_count($body, '<section class="plano-dia"'));
+        $this->assertStringContainsString('id="dia-' . self::ago(-5) . '"', $body);
+        $this->assertStringNotContainsString('id="dia-' . date('Y-m-d') . '"', $body);
+        $this->assertStringNotContainsString('>Hoje<', $body);
+    }
+
+    public function testPortalAfterEndCyclesLastSeven(): void
+    {
+        [$g, $p, $nutri] = $this->family();
+        $this->publishMulti($p, $nutri, self::ago(23), 14); // ultimo dia: ha 10 dias
+        $this->loginAs($g);
+        $body = $this->get('/portal/p/' . $p['id'] . '/alimentacao')->body;
+        $this->assertSame(7, substr_count($body, '<section class="plano-dia"'));
+        for ($i = 0; $i < 7; $i++) {
+            $this->assertStringContainsString('id="dia-' . self::ago(-$i) . '"', $body);
+        }
+        $this->assertStringNotContainsString('de Dia6</li>', $body);
+        $this->assertStringContainsString('de Dia7</li>', $body);
+        $this->assertStringContainsString('de Dia13</li>', $body);
+    }
+
+    public function testPortalHidesDateRangeTitleOfV2Plan(): void
+    {
+        [$g, $p, $nutri] = $this->family();
+        $this->publishMulti($p, $nutri, self::ago(23), 14); // terminou ha 10 dias
+        $title = 'Plano alimentar – ' . date('d/m', strtotime('-23 days')) . ' a ' . date('d/m', strtotime('-10 days'));
+        $this->db->run('UPDATE meal_plans SET title = ? WHERE patient_id = ?', [$title, $p['id']]);
+        $this->loginAs($g);
+        foreach (['/alimentacao', '/alimentacao/imprimir'] as $suffix) {
+            $body = $this->get('/portal/p/' . $p['id'] . $suffix)->body;
+            $this->assertStringNotContainsString($title, $body);
+            $this->assertStringContainsString('Plano alimentar', $body);
+            $this->assertStringContainsString('ublicado em ' . date('d/m/Y'), $body);
+        }
+    }
+
+    public function testPortalHasShoppingListAndNoKcal(): void
+    {
+        [$g, $p, $nutri] = $this->family();
+        $this->publishMulti($p, $nutri, date('Y-m-d'), 7);
+        $this->loginAs($g);
+        foreach (['/alimentacao', '/alimentacao/imprimir'] as $suffix) {
+            $body = $this->get('/portal/p/' . $p['id'] . $suffix)->body;
+            $this->assertStringContainsString('<h2>Lista de compras</h2>', $body);
+            $this->assertStringContainsString('class="lista-compras"', $body);
+            $this->assertStringContainsString('Dia0 — 1 unidade', $body);
+            $this->assertStringContainsString('Dia6 — 1 unidade', $body);
+            $this->assertStringNotContainsString('kcal', $body);
+        }
     }
 
     public function testDraftAndEndedNotShown(): void

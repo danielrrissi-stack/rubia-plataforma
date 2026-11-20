@@ -1,5 +1,5 @@
 <?php
-/** @var array $patient @var string $first @var ?array $plan */
+/** @var array $patient @var string $first @var ?array $plan @var ?array $week */
 $pid = (int) $patient['id'];
 ?><!doctype html>
 <html lang="pt-BR">
@@ -17,13 +17,15 @@ $pid = (int) $patient['id'];
   <h1>Dra. Rubia</h1>
   <p>Plano alimentar de <?= e($first) ?></p>
 <?php if ($plan !== null): ?>
-  <p><?= e($plan['title']) ?><?= $plan['published_at'] !== null ? ' · Publicado em ' . e(fmt_date(substr((string) $plan['published_at'], 0, 10))) . ($plan['publisher'] !== '' ? ' por ' . e($plan['publisher']) : '') : '' ?></p>
+  <p><?= $week !== null ? 'Plano alimentar' : e($plan['title']) ?><?= $plan['published_at'] !== null ? ' · Publicado em ' . e(fmt_date(substr((string) $plan['published_at'], 0, 10))) . ($plan['publisher'] !== '' ? ' por ' . e($plan['publisher']) : '') : '' ?></p>
 <?php endif; ?>
 </header>
 <?php if ($plan === null): ?>
   <p>Nenhum plano alimentar no momento.</p>
 <?php else: ?>
+  <?php if ($week !== null) { $dayIndexes = $week['indexes']; $dayDates = $week['dates']; } ?>
   <?php $family = true; require dirname(__DIR__, 2) . '/Nutrition/views/_plan_body.php'; ?>
+  <?php if ($week !== null && $week['list'] !== []): $list = $week['list']; require dirname(__DIR__, 2) . '/Nutrition/views/_shopping_list.php'; endif; ?>
 <?php endif; ?>
 <script src="<?= e(url('/assets/js/print-button.js')) ?>" defer></script>
 </body>

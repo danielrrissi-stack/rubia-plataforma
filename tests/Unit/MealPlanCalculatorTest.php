@@ -60,4 +60,15 @@ final class MealPlanCalculatorTest extends TestCase
         $this->assertSame(['protein' => 10.9, 'carb' => 79.6, 'fat' => 9.5], $p);
         $this->assertSame(['protein' => 0.0, 'carb' => 0.0, 'fat' => 0.0], MealPlanCalculator::macroPercents(['kcal' => 0, 'protein' => 0, 'carb' => 0, 'fat' => 0, 'fiber' => 0]));
     }
+
+    public function test_plan_average(): void
+    {
+        $mk = fn(float $kcal): array => ['meals' => [['options' => [['items' => [['grams' => 100.0, 'per100' => ['kcal' => $kcal, 'protein' => 0, 'carb' => 0, 'fat' => 0, 'fiber' => 0]]]]]]]];
+        $r = MealPlanCalculator::plan(['v' => 2, 'start' => '2026-11-23', 'days' => [$mk(1000.0), $mk(1200.0)]]);
+        $this->assertEqualsWithDelta(1100.0, $r['average']['kcal'], 1e-9);
+        $this->assertEqualsWithDelta(1200.0, $r['days'][1]['kcal'], 1e-9);
+        $v1 = MealPlanCalculator::plan($mk(500.0));
+        $this->assertCount(1, $v1['days']);
+        $this->assertEqualsWithDelta(500.0, $v1['average']['kcal'], 1e-9);
+    }
 }

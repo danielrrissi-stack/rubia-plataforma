@@ -6,8 +6,8 @@ use App\Diets\DietController;
 <h1>Dietas prontas</h1>
 <p><a href="<?= e(url('/modelos-plano')) ?>">Modelos de plano</a></p>
 <p class="ajuda"><?= e(number_format($total, 0, ',', '.')) ?> dietas: 52 semanas, com frutas e legumes da estação, de 100 em 100 kcal
-  (infantil 1.000 a 2.000; adolescente/adulto 1.000 a 3.000). Para usar em um paciente, abra o plano alimentar dele e clique em
-  "Gerar sugestão da semana".</p>
+  (infantil 1.000 a 2.000; adolescente/adulto 1.000 a 3.000). Cada dieta mostra os 7 dias da semana N. Para usar em um paciente,
+  abra o plano alimentar dele e clique em "Gerar sugestão", para 7 ou 14 dias.</p>
 <form method="get" action="<?= e(url('/dietas-prontas')) ?>">
   <p><label>Versão
     <select name="versao">

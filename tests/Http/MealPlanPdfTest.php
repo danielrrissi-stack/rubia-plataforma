@@ -139,4 +139,25 @@ final class MealPlanPdfTest extends DbTestCase
         $this->assertSame(200, $res->status);
         $this->assertStringStartsWith('%PDF-', $res->body);
     }
-}
+
+    public function testPdfV2HasAllDaysAndNoKcal(): void
+    {
+        [$nutri, $p] = $this->setup2();
+        $days = [];
+        for ($i = 0; $i < 14; $i++) {
+            $days[] = ['meals' => [['name' => sprintf('RefD%02dX', $i), 'time' => '', 'note' => '', 'options' => [['items' => [[
+                'food_id' => 1, 'food_name' => 'Arroz', 'qty' => 100.0, 'measure_id' => null, 'measure_name' => null,
+                'measure_plural' => null, 'grams' => 100.0, 'note' => '', 'subs' => [],
+                'per100' => ['kcal' => 130.0, 'protein' => 2.5, 'carb' => 28.0, 'fat' => 0.2, 'fiber' => 1.6],
+            ]]]]]]];
+        }
+        $id = Container::mealPlans()->createDraft((int) $p['id'], 'estruturado', ['title' => 'Por dias', 'structure' => ['v' => 2, 'start' => '2026-11-23', 'days' => $days]], (int) $nutri['id']);
+        Container::mealPlans()->publish($id, (int) $nutri['id']);
+        $html = View::render('Nutrition/views/_plan_doc.php', ['plan' => Container::mealPlans()->find($id), 'patient' => $p], null);
+        $this->assertSame(14, substr_count($html, 'class="plano-dia"'));
+        $this->assertStringContainsString('RefD13X', $html);
+        $this->assertStringNotContainsString('kcal', $html);
+        $res = $this->get('/planos/' . $id . '/pdf');
+        $this->assertSame(200, $res->status);
+        $this->assertStringStartsWith('%PDF-', $res->body);
+    }}

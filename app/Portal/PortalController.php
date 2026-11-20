@@ -10,6 +10,8 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
+use App\Nutrition\PlanDays;
+use App\Nutrition\ShoppingList;
 use App\Growth\Age;
 use App\Growth\AdultAnthropometry;
 use App\Growth\GrowthController;
@@ -124,7 +126,46 @@ final class PortalController
             'patient' => $patient,
             'first' => $this->firstName($patient),
             'plan' => $plan,
+            'week' => $this->week($plan),
         ]);
+    }
+
+    /**
+     * Plano por dias (v2): janela de 7 dias a partir de hoje, navegacao e lista de compras. Null para v1 e texto.
+     * @return ?array{indexes:list<int>, dates:list<string>, nav:list<array{date:string,label:string}>, list:list<array{name:string,text:string}>}
+     */
+    private function week(?array $plan): ?array
+    {
+        if ($plan === null || $plan['mode'] === 'texto') {
+            return null;
+        }
+        $structure = (array) ($plan['structure'] ?? []);
+        if (!PlanDays::isMulti($structure)) {
+            return null;
+        }
+        $today = date('Y-m-d');
+        $tomorrow = (new \DateTimeImmutable($today))->modify('+1 day')->format('Y-m-d');
+        $names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        $indexes = $dates = $nav = $structures = $groups = [];
+        foreach (PlanDays::window($structure, $today) as $w) {
+            $d = new \DateTimeImmutable($w['date']);
+            $indexes[] = $w['index'];
+            $dates[] = $w['date'];
+            $nav[] = ['date' => $w['date'], 'label' => $w['date'] === $today ? 'Hoje'
+                : ($w['date'] === $tomorrow ? 'Amanhã' : $names[(int) $d->format('w')] . ' ' . $d->format('d/m'))];
+            $day = PlanDays::dayStructure($structure, $w['index']);
+            $structures[] = $day;
+            foreach ((array) ($day['meals'] ?? []) as $meal) {
+                $first = ((array) ($meal['options'] ?? []))[0] ?? null;
+                foreach ((array) ($first['items'] ?? []) as $item) {
+                    $fid = (int) ($item['food_id'] ?? 0);
+                    if (!isset($groups[$fid])) {
+                        $groups[$fid] = (string) (Container::foods()->find($fid)['group_name'] ?? '');
+                    }
+                }
+            }
+        }
+        return ['indexes' => $indexes, 'dates' => $dates, 'nav' => $nav, 'list' => ShoppingList::build($structures, $groups)];
     }
 
     public function foodPrint(Request $r): Response
@@ -138,6 +179,7 @@ final class PortalController
             'patient' => $patient,
             'first' => $this->firstName($patient),
             'plan' => $plan,
+            'week' => $this->week($plan),
             'title' => 'Plano alimentar',
         ], null));
     }

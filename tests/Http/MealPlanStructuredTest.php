@@ -227,6 +227,120 @@ final class MealPlanStructuredTest extends DbTestCase
         $this->assertSame(403, $this->get('/alimentos/busca', ['q' => 'pao'])->status);
     }
 
+    private function saveV2(int $planId, string $start, array $days, string $rev = '1'): Response
+    {
+        return $this->post('/planos/' . $planId . '/editar', [
+            'titulo' => 'Plano por dias', 'orientacoes' => '',
+            'estrutura' => json_encode(['v' => 2, 'start' => $start, 'days' => $days], JSON_UNESCAPED_UNICODE),
+            'revisao' => $rev, 'auto' => '0',
+        ]);
+    }
+
+    /** Rascunho por dias (v2), como o da Sugestao: 2 dias a partir de $start. */
+    private function newV2Draft(int $pid, int $by, string $start = '2026-11-23', int $n = 2): int
+    {
+        $days = [];
+        for ($i = 0; $i < $n; $i++) {
+            $days[] = ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]])]];
+        }
+        $structure = (new \App\Nutrition\MealPlanResolver(Container::foods()))->resolve(['v' => 2, 'start' => $start, 'days' => $days], true);
+        return Container::mealPlans()->createDraft($pid, 'estruturado', ['title' => 'Plano por dias', 'structure' => $structure], $by);
+    }
+
+    public function testSaveRejectsV1OverV2(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->newV2Draft((int) $p['id'], (int) $doc['id']);
+        $before = $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]);
+        $res = $this->save($planId, [$this->meal([['food_id' => 53, 'qty' => '50', 'measure_id' => null]])]);
+        $this->assertSame(422, $res->status, $res->body);
+        $j = json_decode($res->body, true);
+        $this->assertFalse($j['ok']);
+        $this->assertSame(['Não foi possível salvar: o formato do plano mudou. Recarregue a página.'], $j['errors']);
+        $after = $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]);
+        $this->assertSame($before, $after);
+        $this->assertSame(2, Container::mealPlans()->find($planId)['structure']['v']);
+    }
+
+    public function testSaveRejectsV2OverV1(): void
+    {
+        [, $p] = $this->setupDoctor();
+        $planId = $this->newStructured((int) $p['id']);
+        $before = $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]);
+        $res = $this->saveV2($planId, '2026-11-23', [['meals' => [$this->meal([['food_id' => 53, 'qty' => '50', 'measure_id' => null]])]]]);
+        $this->assertSame(422, $res->status, $res->body);
+        $this->assertSame(['Não foi possível salvar: o formato do plano mudou. Recarregue a página.'], json_decode($res->body, true)['errors']);
+        $this->assertSame($before, $this->db->one('SELECT structure_json, revision FROM meal_plans WHERE id = ?', [$planId]));
+    }
+
+    public function testSaveV2RoundTrip(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->newV2Draft((int) $p['id'], (int) $doc['id']);
+        $res = $this->saveV2($planId, '2026-11-23', [
+            ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]])]],
+            ['meals' => [$this->meal([['food_id' => 53, 'qty' => '50', 'measure_id' => null, 'note' => '', 'subs' => []]])]],
+        ]);
+        $this->assertSame(200, $res->status, $res->body);
+        $j = json_decode($res->body, true);
+        $this->assertTrue($j['ok']);
+        $this->assertCount(2, $j['totals']['days']);
+        $this->assertEqualsWithDelta(300.0, $j['totals']['days'][0]['day']['kcal'], 1e-6);
+        $this->assertEqualsWithDelta(150.0, $j['totals']['days'][1]['day']['kcal'], 1e-6);
+        $this->assertEqualsWithDelta(150.0, $j['totals']['days'][1]['options'][0][0]['kcal'], 1e-6);
+        $this->assertArrayNotHasKey('day', $j['totals']);
+        $this->assertCount(2, $j['percents']);
+        $this->assertArrayHasKey('protein', $j['percents'][0]);
+        $this->assertEqualsWithDelta(225.0, $j['average']['kcal'], 1e-6);
+        $s = Container::mealPlans()->find($planId)['structure'];
+        $this->assertSame(2, $s['v']);
+        $this->assertSame('2026-11-23', $s['start']);
+        $this->assertCount(2, $s['days']);
+    }
+
+    public function testEditorDataV2HasDayLabels(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->newV2Draft((int) $p['id'], (int) $doc['id'], '2026-12-28', 6);
+        $this->assertSame(200, $this->saveV2($planId, '2026-12-28', [
+            ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]])]],
+            ['meals' => [$this->meal([], 'Almoço')]],
+            ['meals' => [$this->meal([], 'Ceia')]],
+            ['meals' => [$this->meal([], 'Ceia')]],
+            ['meals' => [$this->meal([], 'Ceia')]],
+            ['meals' => [$this->meal([], 'Jantar')]],
+        ])->status);
+        $edit = $this->get('/planos/' . $planId . '/editar')->body;
+        $this->assertSame(1, preg_match('/data-plano="([^"]*)"/', $edit, $mm));
+        $init = json_decode(html_entity_decode($mm[1], ENT_QUOTES, 'UTF-8'), true);
+        $this->assertSame(2, $init['v']);
+        $this->assertSame('2026-12-28', $init['start']);
+        $this->assertCount(6, $init['days']);
+        $this->assertSame('2026-12-28', $init['days'][0]['date']);
+        $this->assertSame('Seg 28/12', $init['days'][0]['label']);
+        $this->assertSame('Sáb 02/01', $init['days'][5]['label']);
+        $this->assertSame(53, $init['days'][0]['meals'][0]['options'][0]['items'][0]['food_id']);
+        $this->assertSame('Jantar', $init['days'][5]['meals'][0]['name']);
+        $this->assertSame(53, $init['foods'][0]['id']);
+        $this->assertArrayNotHasKey('meals', $init);
+        $a = strpos($edit, 'plan-days.js');
+        $b = strpos($edit, 'meal-plan-editor.js');
+        $this->assertNotFalse($a);
+        $this->assertLessThan($b, $a);
+    }
+
+    public function testV1PayloadUnchanged(): void
+    {
+        [, $p] = $this->setupDoctor();
+        $planId = $this->newStructured((int) $p['id']);
+        $edit = $this->get('/planos/' . $planId . '/editar')->body;
+        preg_match('/data-plano="([^"]*)"/', $edit, $mm);
+        $init = json_decode(html_entity_decode($mm[1], ENT_QUOTES, 'UTF-8'), true);
+        $this->assertArrayNotHasKey('v', $init);
+        $this->assertArrayNotHasKey('days', $init);
+        $this->assertCount(6, $init['meals']);
+    }
+
     private function goalRow(int $pid, int $by): array
     {
         return [
@@ -234,4 +348,57 @@ final class MealPlanStructuredTest extends DbTestCase
             'age_years' => 10, 'tmb_kcal' => 1200, 'get_kcal' => 1800, 'created_by' => $by,
         ];
     }
-}
+
+    /** Plano v2 publicado: $n dias a partir de $start, refeicao "RefDnnX" por dia. */
+    private function publishedV2(int $pid, int $by, string $start, int $n = 14): int
+    {
+        $days = [];
+        for ($i = 0; $i < $n; $i++) {
+            $days[] = ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]], sprintf('RefD%02dX', $i))]];
+        }
+        $structure = (new \App\Nutrition\MealPlanResolver(Container::foods()))->resolve(['v' => 2, 'start' => $start, 'days' => $days], true);
+        $id = Container::mealPlans()->createDraft($pid, 'estruturado', ['title' => 'Plano por dias', 'structure' => $structure], $by);
+        Container::mealPlans()->publish($id, $by);
+        return $id;
+    }
+
+    public function testShowV2ListsEveryDayWithKcal(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $id = $this->publishedV2((int) $p['id'], (int) $doc['id'], '2026-11-23');
+        $body = $this->get('/planos/' . $id)->body;
+        $this->assertSame(14, substr_count($body, 'class="plano-dia"'));
+        $this->assertStringContainsString('id="dia-2026-11-23"', $body);
+        $this->assertStringContainsString('<h2>Segunda, 23/11', $body);
+        $this->assertStringContainsString('<h2>Terça, 24/11', $body);
+        $this->assertSame(14, substr_count($body, 'kcal no dia'));
+        $this->assertStringContainsString('Média dos dias', $body);
+        $this->assertStringContainsString('<select name="dia"', $body);
+        $print = $this->get('/planos/' . $id . '/imprimir', ['totais' => '1'])->body;
+        $this->assertSame(14, substr_count($print, 'class="plano-dia"'));
+        $this->assertStringContainsString('Média dos dias', $print);
+        $plain = $this->get('/planos/' . $id . '/imprimir')->body;
+        $this->assertSame(14, substr_count($plain, 'class="plano-dia"'));
+        $this->assertStringNotContainsString('kcal', $plain);
+    }
+
+    public function testShowV2MarksToday(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $id = $this->publishedV2((int) $p['id'], (int) $doc['id'], date('Y-m-d'), 7);
+        $body = $this->get('/planos/' . $id)->body;
+        $this->assertSame(1, substr_count($body, '<span class="selo">hoje</span>'));
+    }
+
+    public function testBodyDayIndexesAndDatesOverride(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $id = $this->publishedV2((int) $p['id'], (int) $doc['id'], '2026-11-23');
+        $plan = Container::mealPlans()->find($id);
+        $html = \App\Core\View::render('Nutrition/views/_plan_body.php', ['plan' => $plan, 'family' => true, 'dayIndexes' => [9, 8], 'dayDates' => [9 => '2026-12-01', 8 => '2026-12-02']], null);
+        $this->assertSame(2, substr_count($html, 'class="plano-dia"'));
+        $this->assertLessThan(strpos($html, 'Quarta, 02/12'), strpos($html, 'Terça, 01/12'));
+        $this->assertStringContainsString('RefD09X', $html);
+        $this->assertStringNotContainsString('RefD00X', $html);
+        $this->assertStringNotContainsString('kcal', $html);
+    }}

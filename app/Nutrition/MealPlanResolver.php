@@ -18,6 +18,7 @@ final class MealPlanResolver
     private const MAX_ITEMS = 30;
     private const MAX_SUBS = 10;
     private const MAX_QTY = 5000.0;
+    private const MAX_DAYS = 31;
 
     /** @var list<string> */
     private array $errors = [];
@@ -30,6 +31,9 @@ final class MealPlanResolver
     public function resolve(array $input, bool $allowEmptyMeals = false): array
     {
         $this->errors = [];
+        if ((int) ($input['v'] ?? 1) === 2) {
+            return $this->resolveDays($input, $allowEmptyMeals);
+        }
         $meals = $input['meals'] ?? null;
         $meals = is_array($meals) ? array_values($meals) : [];
         $out = ['v' => 1, 'meals' => []];
@@ -44,6 +48,57 @@ final class MealPlanResolver
         }
         if ($this->errors !== []) {
             throw new InvalidPlanException($this->errors);
+        }
+        return $out;
+    }
+
+    private function resolveDays(array $input, bool $allowEmpty): array
+    {
+        $start = $input['start'] ?? null;
+        $start = is_string($start) ? $start : '';
+        $dt = \DateTimeImmutable::createFromFormat('!Y-m-d', $start);
+        if ($dt === false || $dt->format('Y-m-d') !== $start) {
+            $this->errors[] = 'Informe a data de início do plano (AAAA-MM-DD).';
+            $dt = null;
+        }
+        $days = $input['days'] ?? null;
+        $days = is_array($days) ? array_values($days) : [];
+        $out = ['v' => 2, 'start' => $start, 'days' => []];
+        if ($days === []) {
+            $this->errors[] = 'Informe ao menos um dia.';
+        } elseif (count($days) > self::MAX_DAYS) {
+            $this->errors[] = 'O plano pode ter no máximo ' . self::MAX_DAYS . ' dias.';
+        } else {
+            foreach ($days as $i => $day) {
+                $before = count($this->errors);
+                $out['days'][] = ['meals' => $this->meals(is_array($day) ? ($day['meals'] ?? null) : null, $allowEmpty)];
+                if ($dt !== null) {
+                    $prefix = PlanDays::shortLabel($dt->modify('+' . $i . ' days')->format('Y-m-d'));
+                    for ($e = $before, $n = count($this->errors); $e < $n; $e++) {
+                        $this->errors[$e] = $prefix . $this->errors[$e];
+                    }
+                }
+            }
+        }
+        if ($this->errors !== []) {
+            throw new InvalidPlanException($this->errors);
+        }
+        return $out;
+    }
+
+    /** @return list<array> */
+    private function meals(mixed $meals, bool $allowEmpty): array
+    {
+        $meals = is_array($meals) ? array_values($meals) : [];
+        $out = [];
+        if ($meals === []) {
+            $this->errors[] = 'Informe ao menos uma refeição.';
+        } elseif (count($meals) > self::MAX_MEALS) {
+            $this->errors[] = 'O plano pode ter no máximo ' . self::MAX_MEALS . ' refeições.';
+        } else {
+            foreach ($meals as $i => $meal) {
+                $out[] = $this->meal(is_array($meal) ? $meal : [], $i + 1, $allowEmpty);
+            }
         }
         return $out;
     }
