@@ -131,6 +131,25 @@ final class PortalDiaryTest extends DbTestCase
         $this->assertSame(7, (int) $this->db->one('SELECT glasses FROM diary_entries WHERE deleted_at IS NULL')['glasses']);
     }
 
+    public function test_day_links_only_for_days_with_something_to_record(): void
+    {
+        $n = (int) date('N');
+        $this->ask('atividade', ['weekdays' => [$n]]); // so no dia da semana de hoje
+        $this->loginAs($this->resp);
+
+        $body = $this->get($this->base(), ['dia' => $this->day(-7)])->body;
+        $this->assertStringContainsString('?dia=' . $this->today . '"', $body);
+        for ($i = 1; $i <= 6; $i++) {
+            $this->assertStringNotContainsString('?dia=' . $this->day(-$i) . '"', $body, "dia -$i sem pedido nao tem botao");
+        }
+        $this->assertStringContainsString('aria-current="date"', $body);
+
+        // dia sem pedido aberto pela URL: continua mostrando a mensagem, e o botao dos dias com pedido
+        $empty = $this->get($this->base(), ['dia' => $this->day(-1)])->body;
+        $this->assertStringContainsString('Nada para anotar neste dia.', $empty);
+        $this->assertStringContainsString('?dia=' . $this->day(-7) . '"', $empty);
+    }
+
     public function test_guardian_records_meal_with_photo_and_sees_it(): void
     {
         $req = $this->ask('alimentacao');
