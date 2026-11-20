@@ -47,40 +47,57 @@ final class PlanContinuation
             return 0;
         }
         $today = substr($now, 0, 10);
+        // 1) reserva o dia numa transacao curta (duas rodadas sobrepostas: so uma passa)
         $this->db->run('INSERT IGNORE INTO settings (`key`, value) VALUES (?, NULL)', [self::KEY]);
-        return (int) $this->db->transaction(function () use ($today): int {
+        $claimed = (bool) $this->db->transaction(function () use ($today): bool {
             $row = $this->db->one('SELECT value FROM settings WHERE `key` = ? FOR UPDATE', [self::KEY]);
             if ($row !== null && (string) $row['value'] === $today) {
-                return 0;
+                return false;
             }
-            $count = 0;
-            foreach ($this->due($today) as $plan) {
-                $planId = (int) $plan['id'];
-                $pid = (int) $plan['patient_id'];
-                $draft = $this->plans->draft($pid);
-                if ($draft !== null) {
-                    $this->db->run('UPDATE meal_plans SET continuation_draft_id = 0 WHERE id = ?', [$planId]);
-                    $this->notify($plan, (int) $draft['id'], true);
-                    continue;
-                }
-                try {
-                    $draftId = $this->generate($planId, (int) $plan['published_by'], true, $today);
-                } catch (\PDOException $e) {
-                    throw $e;
-                } catch (\RuntimeException $e) {
-                    // um plano que nao da para continuar (ex.: paciente com menos de 3 anos) nao trava os outros
-                    error_log('[continuacao] plano ' . $planId . ': ' . $e->getMessage());
-                    continue;
-                }
-                $this->notify($plan, $draftId, false);
-                $count++;
-            }
-            $this->db->run(
-                'INSERT INTO settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
-                [self::KEY, $today],
-            );
-            return $count;
+            $this->db->run('UPDATE settings SET value = ? WHERE `key` = ?', [$today, self::KEY]);
+            return true;
         });
+        if (!$claimed) {
+            return 0;
+        }
+        // 2) cada plano na sua transacao: um plano com erro nunca trava os outros (o marcador dele fica NULL e ele
+        //    volta na rodada do dia seguinte)
+        $count = 0;
+        foreach ($this->due($today) as $plan) {
+            try {
+                $created = (bool) $this->db->transaction(fn(): bool => $this->processPlan($plan, $today));
+                $count += $created ? 1 : 0;
+            } catch (\Throwable $e) {
+                error_log('[continuacao] plano ' . (int) $plan['id'] . ': ' . get_class($e) . ': ' . $e->getMessage());
+            }
+        }
+        return $count;
+    }
+
+    /** Um plano da rodada. true quando criou o rascunho de continuacao. */
+    private function processPlan(array $plan, string $today): bool
+    {
+        $planId = (int) $plan['id'];
+        $draft = $this->plans->draft((int) $plan['patient_id']);
+        if ($draft !== null) {
+            $this->db->run('UPDATE meal_plans SET continuation_draft_id = 0 WHERE id = ? AND continuation_draft_id IS NULL', [$planId]);
+            $this->notify($plan, (int) $draft['id'], true);
+            return false;
+        }
+        $by = $plan['published_by'] !== null ? (int) $plan['published_by'] : $this->firstDoctorId();
+        if ($by === null) {
+            error_log('[continuacao] plano ' . $planId . ': sem quem publicou e sem médico ativo; não gerado.');
+            return false;
+        }
+        $draftId = $this->generate($planId, $by, true, $today);
+        $this->notify($plan, $draftId, false);
+        return true;
+    }
+
+    private function firstDoctorId(): ?int
+    {
+        $row = $this->db->one("SELECT id FROM users WHERE role = 'medico' AND active = 1 ORDER BY id LIMIT 1");
+        return $row === null ? null : (int) $row['id'];
     }
 
     /** @return list<array> planos publicados v2 (decodificados) com <= 4 dias restantes e sem continuacao */
@@ -94,11 +111,15 @@ final class PlanContinuation
         );
         $out = [];
         foreach ($rows as $row) {
-            $structure = json_decode((string) $row['structure_json'], true);
-            if (is_array($structure) && PlanDays::isMulti($structure)
-                && PlanDays::remainingFrom($structure, $today) <= self::MAX_REMAINING) {
-                $row['structure'] = $structure;
-                $out[] = $row;
+            try {
+                $structure = json_decode((string) $row['structure_json'], true);
+                if (is_array($structure) && PlanDays::isMulti($structure)
+                    && PlanDays::remainingFrom($structure, $today) <= self::MAX_REMAINING) {
+                    $row['structure'] = $structure;
+                    $out[] = $row;
+                }
+            } catch (\Throwable $e) {
+                error_log('[continuacao] plano ' . (int) $row['id'] . ': ' . get_class($e) . ': ' . $e->getMessage());
             }
         }
         return $out;
@@ -153,9 +174,13 @@ final class PlanContinuation
 
         return (int) $this->db->transaction(function () use ($planId, $pid, $by, $auto, $plan, $combined, $title, $sug, $n): int {
             $this->db->one('SELECT id FROM patients WHERE id = ? FOR UPDATE', [$pid]);
-            $src = $this->db->one('SELECT status FROM meal_plans WHERE id = ? FOR UPDATE', [$planId]);
+            $src = $this->db->one('SELECT status, continuation_draft_id FROM meal_plans WHERE id = ? FOR UPDATE', [$planId]);
             if ($src === null || $src['status'] !== 'publicado') {
                 throw new \RuntimeException('Só é possível continuar um plano por dias publicado.');
+            }
+            if ($auto && $src['continuation_draft_id'] !== null) {
+                // a rodada nunca refaz: continuacao ja gerada (talvez descartada de proposito) ou aviso ja enviado
+                throw new \RuntimeException('A continuação deste plano já foi tratada.');
             }
             try {
                 $draftId = $this->plans->createDraft($pid, 'estruturado', [
@@ -190,7 +215,11 @@ final class PlanContinuation
                 . '<p><a href="' . e($link) . '">Abrir o rascunho</a></p>'
             : '<p>O plano alimentar de ' . e($first) . ' termina em ' . e($end) . '.</p>'
                 . '<p>Os próximos dias já foram montados como rascunho para você revisar e publicar: <a href="' . e($link) . '">abrir o rascunho</a>.</p>';
-        foreach ($this->recipients($plan) as $to) {
+        $recipients = $this->recipients($plan);
+        if ($recipients === []) {
+            error_log('[continuacao] plano ' . (int) $plan['id'] . ': nenhum destinatário para o aviso por e-mail.');
+        }
+        foreach ($recipients as $to) {
             $this->mailer->queue($to, $subject, $html);
         }
     }

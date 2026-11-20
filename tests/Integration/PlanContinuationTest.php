@@ -205,6 +205,59 @@ final class PlanContinuationTest extends DbTestCase
         $this->assertNotNull($plan1);
     }
 
+    public function test_one_failing_plan_does_not_block_others(): void
+    {
+        $pBad = $this->patient(['full_name' => 'Elisa Falha']);
+        $bad = $this->published($pBad, $this->day(-10));
+        $pOk = $this->patient(['full_name' => 'Fabio Certo']);
+        $ok = $this->published($pOk, $this->day(-10));
+        // publicador inexistente: o INSERT do rascunho falha por FK (PDOException, nao RuntimeException)
+        $this->db->run('SET FOREIGN_KEY_CHECKS = 0');
+        $this->db->run('UPDATE meal_plans SET published_by = 999999 WHERE id = ?', [$bad['id']]);
+        $this->db->run('SET FOREIGN_KEY_CHECKS = 1');
+        $this->assertLessThan((int) $ok['id'], (int) $bad['id'], 'o plano com erro vem antes');
+
+        $this->assertSame(1, Container::planContinuation()->runIfDue($this->today . ' 06:00'));
+        $this->assertNull(Container::mealPlans()->draft((int) $pBad['id']));
+        $this->assertNull(Container::mealPlans()->find((int) $bad['id'])['continuation_draft_id'], 'fica para o dia seguinte');
+        $this->assertNotNull(Container::mealPlans()->draft((int) $pOk['id']));
+        $q = $this->queued();
+        $this->assertCount(1, $q);
+        $this->assertSame('Plano alimentar de Fabio para revisar', $q[0]['subject']);
+        $this->assertSame($this->today, $this->db->one("SELECT value FROM settings WHERE `key` = 'plan_continuation_day'")['value']);
+    }
+
+    public function test_null_publisher_falls_back_to_doctor(): void
+    {
+        $p = $this->patient();
+        $plan = $this->published($p, $this->day(-10));
+        $this->db->run('UPDATE meal_plans SET published_by = NULL WHERE id = ?', [$plan['id']]);
+        $this->assertSame(1, Container::planContinuation()->runIfDue($this->today . ' 06:00'));
+        $first = (int) $this->db->one("SELECT id FROM users WHERE role = 'medico' AND active = 1 ORDER BY id LIMIT 1")['id'];
+        $draft = Container::mealPlans()->draft((int) $p['id']);
+        $this->assertSame($first, (int) $draft['created_by']);
+        $this->assertContains('dra.cont@example.test', array_column($this->queued(), 'to_email'));
+    }
+
+    public function test_auto_skips_when_marker_set_after_due(): void
+    {
+        $p = $this->patient();
+        $plan = $this->published($p, $this->day(-10));
+        $this->assertContains((int) $plan['id'], array_map(static fn(array $x): int => (int) $x['id'], Container::planContinuation()->due($this->today)));
+        // entre due() e generate(): continuacao criada e descartada
+        $draftId = Container::planContinuation()->generate((int) $plan['id'], (int) $this->doc['id'], false, $this->today);
+        Container::mealPlans()->discard($draftId, (int) $this->doc['id']);
+        try {
+            Container::planContinuation()->generate((int) $plan['id'], (int) $this->doc['id'], true, $this->today);
+            $this->fail('a rodada nao pode refazer a continuacao');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('A continuação deste plano já foi tratada.', $e->getMessage());
+        }
+        $this->assertNull(Container::mealPlans()->draft((int) $p['id']));
+        // o botao (auto = false) continua podendo gerar
+        $this->assertGreaterThan($draftId, Container::planContinuation()->generate((int) $plan['id'], (int) $this->doc['id'], false, $this->today));
+    }
+
     public function test_publishing_continuation_has_no_gap(): void
     {
         $p = $this->patient();
