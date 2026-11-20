@@ -484,6 +484,7 @@ final class MealPlanController
             'canEdit' => Container::gate()->check($user, 'edit', Policy::NUTRICAO, $id),
             'askDraft' => null,
             'posted' => ['modo' => 'texto', 'origem' => 'branco', 'modelo_id' => 0],
+            'dietCard' => \App\Diets\DietController::patientCard($this->patient($id), $user),
         ]);
     }
 

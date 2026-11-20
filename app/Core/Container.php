@@ -329,4 +329,14 @@ final class Container
     {
         return self::$items['evolutionSettings'] ??= new \App\Evolution\EvolutionSettingsRepository(self::db(), self::audit());
     }
+
+    public static function dietLibrary(): \App\Diets\DietLibraryRepository
+    {
+        return self::$items['dietLibrary'] ??= new \App\Diets\DietLibraryRepository(self::db());
+    }
+
+    public static function foodRestrictions(): \App\Diets\RestrictionRepository
+    {
+        return self::$items['foodRestrictions'] ??= new \App\Diets\RestrictionRepository(self::db(), self::audit());
+    }
 }

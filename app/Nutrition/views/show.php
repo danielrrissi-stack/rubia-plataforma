@@ -7,6 +7,7 @@ $family = false;
 <h1><?= e($plan['title']) ?></h1>
 <p><a href="<?= e(url('/pacientes/' . $pid . '/plano')) ?>">Voltar ao plano alimentar</a> ·
   <?= e($patient['social_name'] ?: $patient['full_name']) ?> · <span class="selo"><?= e($status[$plan['status']]) ?></span></p>
+<?php if (($plan['source_diet_code'] ?? null) !== null): ?><p class="ajuda">Origem: dieta pronta <a href="<?= e(url('/dietas-prontas/' . $plan['source_diet_code'])) ?>"><?= e($plan['source_diet_code']) ?></a> (visível só para a equipe).</p><?php endif; ?>
 <?php if ($plan['ended_at'] !== null): ?><p class="ajuda">Encerrado em <?= e(fmt_date(substr((string) $plan['ended_at'], 0, 10))) ?>: <?= e($plan['ended_reason']) ?></p><?php endif; ?>
 
 <p>

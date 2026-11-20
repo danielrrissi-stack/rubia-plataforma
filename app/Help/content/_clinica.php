@@ -63,6 +63,9 @@ return static function (string $slug, string $as): array {
                 'Clique em "Modelos" no menu. Use "Novo modelo em texto" ou "Novo modelo estruturado".',
                 'Em "Trechos de texto", cadastre frases prontas para inserir nos planos.',
                 'Em "Alimentos", busque na tabela e cadastre os seus com "Novo alimento" (os da TACO não podem ser editados).',
+                'Em "Dietas prontas", consulte as 1.664 dietas da semana (por estação, de 100 em 100 kcal, versão infantil e adolescente/adulto). '
+                    . 'No plano alimentar do paciente, marque as "Restrições e alergias alimentares" e use "Gerar sugestão da semana": '
+                    . 'vira um rascunho já adaptado, para você avaliar e publicar. Ali aparecem também as alergias anotadas no histórico.',
             ],
             'images' => [$img('modelos', '/modelos-plano', 'Lista de modelos de plano.')],
         ],

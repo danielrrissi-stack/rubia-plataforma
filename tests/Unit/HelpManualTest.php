@@ -49,7 +49,7 @@ final class HelpManualTest extends TestCase
     public function test_nutritionist_manual_explains_templates_in_detail(): void
     {
         $ids = array_column(Manual::sections('nutricionista', false), 'id');
-        $want = ['modelos', 'modelo-texto', 'modelo-estruturado', 'trechos', 'usar-modelo', 'alterar-modelos'];
+        $want = ['modelos', 'modelo-texto', 'modelo-estruturado', 'trechos', 'usar-modelo', 'dietas-prontas', 'alterar-modelos'];
         $start = array_search('modelos', $ids, true);
         $this->assertNotFalse($start);
         $this->assertSame($want, array_slice($ids, (int) $start, count($want)));

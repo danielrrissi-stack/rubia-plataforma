@@ -66,6 +66,8 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/modelos-plano/novo'                      => [200, 200, 403, 403, 403, 302],
         '/modelos-plano/{templateId}/editar'       => [200, 403, 403, 403, 403, 302], // nutricionista nao e a autora
         '/trechos'                                 => [200, 200, 403, 403, 403, 302],
+        '/dietas-prontas'                          => [200, 200, 403, 403, 403, 302],
+        '/dietas-prontas/{code}'                   => [200, 200, 403, 403, 403, 302],
         '/trechos/novo'                            => [200, 200, 403, 403, 403, 302],
         '/trechos/{snippetId}/editar'              => [200, 403, 403, 403, 403, 302],
         '/trechos.json'                            => [200, 200, 403, 403, 403, 302],
@@ -304,6 +306,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'perfil' => 'medica',
                 'planId' => (string) $this->fx['plan'],
                 'foodId' => '53',
+                'code' => '1500kcalSemana5',
                 'templateId' => (string) $this->fx['template'],
                 'snippetId' => (string) $this->fx['snippet'],
                 'entryId' => (string) $this->fx['entry'][$role],

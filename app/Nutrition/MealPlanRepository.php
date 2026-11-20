@@ -22,8 +22,9 @@ final class MealPlanRepository
         ?Request $r = null,
         ?int $sourceTemplateId = null,
         ?int $sourcePlanId = null,
+        ?string $sourceDietCode = null,
     ): int {
-        return $this->db->transaction(function () use ($patientId, $mode, $data, $by, $r, $sourceTemplateId, $sourcePlanId): int {
+        return $this->db->transaction(function () use ($patientId, $mode, $data, $by, $r, $sourceTemplateId, $sourcePlanId, $sourceDietCode): int {
             $this->lockPatient($patientId);
             $existing = $this->db->one(
                 "SELECT id FROM meal_plans WHERE patient_id = ? AND status = 'rascunho' AND discarded_at IS NULL FOR UPDATE",
@@ -42,12 +43,13 @@ final class MealPlanRepository
                 'structure_json' => $this->encode($data['structure'] ?? null),
                 'source_template_id' => $sourceTemplateId,
                 'source_plan_id' => $sourcePlanId,
+                'source_diet_code' => $sourceDietCode,
                 'created_by' => $by,
             ];
             $id = $this->db->insert('meal_plans', $row);
             $this->audit->record($by, 'create', 'meal_plans', $id, $patientId, null, [
                 'mode' => $mode,
-                'source_template_id' => $sourceTemplateId, 'source_plan_id' => $sourcePlanId,
+                'source_template_id' => $sourceTemplateId, 'source_plan_id' => $sourcePlanId, 'source_diet_code' => $sourceDietCode,
             ] + $this->content($row['title'], $row['body_text'], $row['guidance_text'], $data['structure'] ?? null), $r);
             return $id;
         });

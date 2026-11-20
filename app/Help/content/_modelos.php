@@ -90,6 +90,25 @@ return static function (string $slug, string $as): array {
             'images' => [],
         ],
         [
+            'id' => 'dietas-prontas',
+            'title' => 'Dietas prontas e "Sugestão da semana"',
+            'intro' => 'O sistema traz um banco de 1.664 dietas prontas: uma por semana do ano, com frutas e legumes da estação (sopas no frio, '
+                . 'pratos leves no calor), de 100 em 100 kcal. Há duas versões: infantil (3 a 10 anos, 1.000 a 2.000 kcal, com leite no lugar do café e lancheira) '
+                . 'e adolescente/adulto (1.000 a 3.000 kcal). Cada dieta tem um nome, como 1500kcalSemana5 ou 1500kcalSemana5Infantil.',
+            'steps' => [
+                'Na ficha do paciente, abra o "Plano alimentar". Confira primeiro o cartão "Restrições e alergias alimentares": marque lactose, alergia à proteína do leite, ovo, glúten, amendoim, castanhas, peixe, frutos do mar ou soja, e escreva outros alimentos a evitar. Clique em "Salvar restrições".',
+                'No cartão "Sugestão da semana", a versão já vem pela idade, as calorias vêm da meta de energia vigente (arredondada para a centena) e a semana é a atual. Troque o que precisar.',
+                'Clique em "Gerar sugestão da semana". O sistema cria um rascunho estruturado já adaptado às restrições e abre o editor, com o total comparado à meta.',
+                'Leia as mensagens no topo: as adaptações feitas (por exemplo, pão trocado por cuscuz no glúten) e os avisos (alimentos citados em "outros alimentos a evitar"), que você troca à mão.',
+                'Avalie, ajuste e clique em "Publicar". A família vê o plano como sempre, sem calorias e sem o nome da dieta.',
+                'Para consultar o banco inteiro, use "Modelos" → "Dietas prontas" e filtre por versão, semana e calorias.',
+            ],
+            'tip' => 'Na intolerância à lactose, leite, iogurte e queijo continuam, com a observação "versão sem lactose". '
+                . 'Nas outras restrições, o alimento é trocado por outro de mesmas calorias, e as trocas ("ou ...") com alimento restrito saem. '
+                . 'A sugestão é um ponto de partida: confira sempre antes de publicar.',
+            'images' => [],
+        ],
+        [
             'id' => 'alterar-modelos',
             'title' => 'Editar, renomear e excluir modelos e trechos',
             'intro' => 'Toda a equipe clínica usa qualquer modelo ou trecho, mas só quem criou, ou a médica administradora, altera ou exclui.',

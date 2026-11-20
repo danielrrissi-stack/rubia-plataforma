@@ -10,6 +10,7 @@ $modes = ['texto' => 'Texto', 'estruturado' => 'Estruturado'];
     <a class="btn btn-quiet" href="<?= e(url('/modelos-plano/novo?modo=estruturado')) ?>">Novo modelo estruturado</a>
   <?php endif; ?>
   <a class="btn btn-quiet" href="<?= e(url('/trechos')) ?>">Trechos de texto</a>
+  <a class="btn btn-quiet" href="<?= e(url('/dietas-prontas')) ?>">Dietas prontas</a>
 </p>
 <?php if ($templates === []): ?>
   <p class="ajuda">Nenhum modelo cadastrado.</p>

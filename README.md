@@ -638,3 +638,11 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/`
    (CSS e fotos novas do manual). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
    Depois, em **Equipe**, preencha a **especialidade** e o **RQE** da médica.
+18. **A atualização das dietas prontas** traz a migração `017_diet_library.sql` e dois seeds: `database/seeds/food_1_taco.sql`
+   (agora com as calorias do leite integral e do desnatado, que a TACO deixava em branco) e o novo `database/seeds/food_4_diet_library.sql`
+   (1.664 dietas, cerca de 5 MB). Faça **backup do banco** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php` aplica tudo.
+   Sem terminal, importe no phpMyAdmin, **nesta ordem**: (1) `database/migrations/017_diet_library.sql`, (2) na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('017_diet_library.sql');`, (3) `database/seeds/food_1_taco.sql`,
+   (4) `database/seeds/food_4_diet_library.sql` (se o phpMyAdmin recusar pelo tamanho, use o terminal).
+   Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/`
+   (PDFs do manual da médica e da nutricionista). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**

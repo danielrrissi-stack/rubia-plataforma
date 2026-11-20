@@ -1,5 +1,5 @@
 <?php
-/** @var array $patient @var ?array $current @var ?array $draft @var array $history @var array $templates @var bool $canEdit @var ?array $askDraft @var array $posted */
+/** @var array $patient @var ?array $current @var ?array $draft @var array $history @var array $templates @var bool $canEdit @var ?array $askDraft @var array $posted @var array $dietCard */
 $pid = (int) $patient['id'];
 $status = ['rascunho' => 'Rascunho', 'publicado' => 'Vigente', 'substituido' => 'Substituído', 'encerrado' => 'Encerrado'];
 $modes = ['texto' => 'Texto', 'estruturado' => 'Estruturado'];
@@ -40,6 +40,8 @@ $modes = ['texto' => 'Texto', 'estruturado' => 'Estruturado'];
     <a class="btn btn-quiet" href="<?= e(url('/planos/' . $draft['id'])) ?>">Ver</a></p>
 </section>
 <?php endif; ?>
+
+<?php require APP_ROOT . '/app/Diets/views/_patient_cards.php'; ?>
 
 <?php if ($canEdit): ?>
 <section class="cartao"><h2>Novo plano</h2>

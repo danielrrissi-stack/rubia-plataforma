@@ -28,3 +28,18 @@ O importador mantém vazio como nulo (não vira zero) e guarda só kcal, proteí
 `php tools/import_taco.php --sql-only` gera `database/seeds/food_1_taco.sql` (597 linhas, `INSERT ... ON DUPLICATE KEY UPDATE`,
 `id` = código TACO). Sem `--sql-only` também carrega no banco. Recarregar não reativa alimentos desativados nem apaga alimentos próprios
 (ids a partir de 100000).
+
+## Correções (data/taco/overrides.csv)
+A TACO não traz nenhum valor para dois leites fluidos muito usados: 457 "Leite, de vaca, desnatado, UHT" e 458 "Leite, de vaca,
+integral" (kcal, proteína, gordura e carboidrato vazios). Sem correção, esses leites contavam 0 kcal nos planos.
+`data/taco/overrides.csv` preenche os cinco valores desses alimentos (por 100 g) com a Tabela de Composição Nutricional dos
+Alimentos Consumidos no Brasil (IBGE, POF 2008–2009), conforme reproduzida em tabelatacoonline.com.br (seção IBGE), consultada em 2026-11-20:
+
+| TACO | Alimento | kcal | proteína | carboidrato | gordura | fibra |
+|---|---|---|---|---|---|---|
+| 457 | Leite de vaca desnatado | 34,2 | 3,4 | 5,0 | 0,1 | 0 |
+| 458 | Leite de vaca integral | 60,0 | 3,2 | 4,5 | 3,3 | 0 |
+
+A fonte não informa fibra (leite não tem fibra alimentar): usado 0. O `tools/import_taco.php` aplica o arquivo depois de ler a TACO.
+- https://www.tabelatacoonline.com.br/tabela-nutricional/ibge/leite-de-vaca-integral
+- https://www.tabelatacoonline.com.br/tabela-nutricional/ibge/leite-de-vaca-desnatado
