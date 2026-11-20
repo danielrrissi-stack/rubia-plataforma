@@ -120,12 +120,6 @@ final class DietBuilderTest extends TestCase
             && !($kid && ($b['adult_only'] ?? false)) && !(!$kid && ($b['kid_only'] ?? false))));
     }
 
-    /** Assinatura de uma refeicao (alimentos da opcao 1, na ordem). */
-    private static function mealSig(array $meal): string
-    {
-        return (string) json_encode([$meal['note'], array_column($meal['options'][0]['items'], 'food_id')]);
-    }
-
     private static function mealByName(array $day, string $name): ?array
     {
         foreach ($day['meals'] as $m) {
@@ -171,22 +165,32 @@ final class DietBuilderTest extends TestCase
         }
     }
 
+    /**
+     * Dias de 2025-12-29 (segunda da semana 1 de 2026) a 2027-01-03 (domingo da semana 53 de 2026), sem passar para uma
+     * semana 1: so a virada para a semana 1 fica isenta.
+     *
+     * @return list<array{0:string,1:array<string,string>}> [data, chave da refeicao => bloco]
+     */
+    private static function scan(DietBuilder $b, string $band): array
+    {
+        $out = [];
+        for ($d = new \DateTimeImmutable('2025-12-29'); $d <= new \DateTimeImmutable('2027-01-03'); $d = $d->modify('+1 day')) {
+            $out[] = [$d->format('Y-m-d'), $b->blockKeys($band, $d->format('Y-m-d'))];
+        }
+        return $out;
+    }
+
     public function test_no_lunch_or_dinner_repeat_in_7_days(): void
     {
         $b = self::builder();
         foreach (array_keys(DietBuilder::BANDS) as $band) {
-            $sigs = ['Almoço' => [], 'Jantar' => []];
-            for ($d = new \DateTimeImmutable('2026-03-23'); $d <= new \DateTimeImmutable('2026-06-21'); $d = $d->modify('+1 day')) {
-                $day = $b->buildDay($band, $d->format('Y-m-d'), 1500);
-                $this->assertSame('outono', $day['season']);
-                foreach ($sigs as $name => $_) {
-                    $sigs[$name][] = self::mealSig(self::mealByName($day, $name));
-                }
-            }
-            foreach ($sigs as $name => $list) {
-                for ($s = 0; $s + 7 <= count($list); $s++) {
-                    $win = array_slice($list, $s, 7);
-                    $this->assertCount(7, array_unique($win), "$band $name repete na janela que começa no dia $s");
+            $days = self::scan($b, $band);
+            $this->assertSame('2027-01-03', end($days)[0]);
+            $this->assertCount(53 * 7, $days);
+            foreach (['almoco', 'jantar'] as $key) {
+                for ($s = 0; $s + 7 <= count($days); $s++) {
+                    $win = array_map(static fn(array $d): string => $d[1][$key], array_slice($days, $s, 7));
+                    $this->assertCount(7, array_unique($win), "$band $key repete na janela que começa em {$days[$s][0]}");
                 }
             }
         }
@@ -196,19 +200,31 @@ final class DietBuilderTest extends TestCase
     {
         $b = self::builder();
         foreach (array_keys(DietBuilder::BANDS) as $band) {
-            foreach (['2026-01-05', '2026-03-23', '2026-06-22', '2026-09-21'] as $start) { // uma semana de cada estacao
-                $p = $b->buildDays($band, 2000, $start, 14);
-                for ($d = 0; $d + 1 < 14; $d++) {
-                    foreach (['Café da manhã', 'Lanche da manhã', 'Lanche da tarde', 'Ceia'] as $name) {
-                        $this->assertNotSame(
-                            self::mealSig(self::mealByName($p['structure']['days'][$d], $name)),
-                            self::mealSig(self::mealByName($p['structure']['days'][$d + 1], $name)),
-                            "$band $start dia $d: $name igual ao dia seguinte",
-                        );
-                    }
+            $days = self::scan($b, $band);
+            for ($i = 0; $i + 1 < count($days); $i++) {
+                foreach (['cafe', 'lanche_manha', 'lanche_tarde', 'ceia'] as $key) {
+                    $this->assertNotSame($days[$i][1][$key], $days[$i + 1][1][$key], "$band {$days[$i][0]}: $key igual ao dia seguinte");
                 }
             }
         }
+    }
+
+    public function test_block_keys_match_the_built_day(): void
+    {
+        $b = self::builder();
+        $menu = require APP_ROOT . '/data/dietas/cardapio.php';
+        // Semana 53 continua a sequencia: nao copia a semana 52.
+        $this->assertNotSame($b->blockKeys('adulto', '2026-12-21'), $b->blockKeys('adulto', '2026-12-28'));
+        $this->assertSame($b->blockKeys('adulto', '2026-12-28'), $b->blockKeys('adulto', '2032-12-27')); // semana 53 de 2032
+        $this->assertSame($b->blockKeys('infantil', '2026-07-15'), $b->blockKeys('infantil', '2027-07-21')); // semana 29, quarta
+        $keys = $b->blockKeys('adulto', '2026-03-23');
+        $day = $b->buildDay('adulto', '2026-03-23', 2000);
+        $this->assertSame(['cafe', 'lanche_manha', 'almoco', 'lanche_tarde', 'jantar', 'ceia'], array_keys($keys));
+        $lunch = self::mealByName($day, 'Almoço');
+        $found = array_values(array_filter($menu['meals']['almoco'], static fn(array $blk): bool =>
+            'almoco:' . substr(md5(serialize($blk)), 0, 12) === $keys['almoco']));
+        $this->assertCount(1, $found);
+        $this->assertSame(count($found[0]['items']), count($lunch['options'][0]['items']));
     }
 
     public function test_season_changes_on_the_right_day(): void

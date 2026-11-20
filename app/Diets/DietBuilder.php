@@ -22,6 +22,9 @@ final class DietBuilder
      * @param array<int,array{name:string,kcal:float,protein:float,carb:float,fat:float,fiber:float}> $foods por codigo TACO
      * @param array<int,array<string,array{id:int,grams:float}>> $measures por codigo TACO e nome da medida
      */
+    /** @var array<string,array> sequencia de blocos por versao (ver sequence()) */
+    private array $sequences = [];
+
     public function __construct(private array $menu, private array $foods, private array $measures)
     {
     }
@@ -125,32 +128,28 @@ final class DietBuilder
     }
 
     /**
-     * Um dia do cardapio. Indice do dia: t = (posicao da semana na estacao) * 7 + dia da semana (0 = segunda).
-     * Almoco e jantar: pool[(t + mi) % n], sem repetir em 7 dias seguidos se n >= 8; demais: pool[(t*(2mi+1) + mi) % n].
+     * Um dia do cardapio. A semana ISO (1 a 53, a 53 continua a sequencia) e o dia da semana escolhem os blocos
+     * (ver sequence()); t = (posicao da semana na estacao) * 7 + dia da semana (0 = segunda) varia frutas, legumes e
+     * saladas.
      *
      * @return array{meals:list<array>,totals:array{kcal:float,protein:float,carb:float,fat:float,fiber:float},season:string}
      */
     public function buildDay(string $band, string $ymd, int $kcal): array
     {
-        $week = self::weekOf($ymd);
+        $date = new \DateTimeImmutable($ymd);
+        $week = (int) $date->format('W');
+        $wd = (int) $date->format('N') - 1;
         $season = self::season($week);
         $kid = $band === 'infantil';
-        $t = $this->seasonIndex($week, $season) * 7 + (int) (new \DateTimeImmutable($ymd))->format('N') - 1;
+        $t = $this->seasonIndex($week, $season) * 7 + $wd;
+        $chosen = $this->sequence($band)[$week][$wd];
         $slots = ['fruta' => 0, 'legume' => 0, 'salada' => 0];
         $meals = [];
-        foreach ($this->menu['schedule'] as $mi => [$key, $name, $tAdult, $tKid]) {
+        foreach ($this->menu['schedule'] as [$key, $name, $tAdult, $tKid]) {
             if ($key === 'ceia' && $kcal < $this->menu['ceia_from'][$band]) {
                 continue;
             }
-            $pool = array_values(array_filter($this->menu['meals'][$key], static fn(array $b): bool =>
-                in_array($season, $b['seasons'] ?? ['verao', 'outono', 'inverno', 'primavera'], true)
-                && !($kid && ($b['adult_only'] ?? false)) && !(!$kid && ($b['kid_only'] ?? false))));
-            if ($pool === []) {
-                throw new \RuntimeException("Sem blocos para $key/$season/$band");
-            }
-            $block = $key === 'almoco' || $key === 'jantar'
-                ? $pool[($t + $mi) % count($pool)]
-                : $pool[($t * (2 * $mi + 1) + $mi) % count($pool)];
+            $block = $chosen[$key]['block'];
             $items = [];
             foreach ($block['items'] as $spec) {
                 $item = $this->expand($spec, $kid, $season, $t, $slots);
@@ -178,6 +177,75 @@ final class DietBuilder
             $out[] = ['name' => $m['name'], 'time' => $m['time'], 'note' => $m['note'], 'options' => [['items' => $items]]];
         }
         return ['meals' => $out, 'totals' => $this->totals($meals), 'season' => $season];
+    }
+
+    /**
+     * Identidade do bloco escolhido em cada refeicao do dia (chave da refeicao => chave do bloco), sem calorias.
+     *
+     * @return array<string,string>
+     */
+    public function blockKeys(string $band, string $ymd): array
+    {
+        $date = new \DateTimeImmutable($ymd);
+        return array_map(static fn(array $c): string => $c['key'],
+            $this->sequence($band)[(int) $date->format('W')][(int) $date->format('N') - 1]);
+    }
+
+    /**
+     * Blocos de cada dia da sequencia de semanas ISO 1..53 (calculada uma vez por versao). A formula da o candidato:
+     * almoco e jantar pool[(t + mi) % n], os demais pool[(t*(2mi+1) + mi) % n]. Se o bloco ja saiu nos 6 dias anteriores
+     * (almoco/jantar) ou no dia anterior (demais), avanca no pool ate achar um que nao saiu. O historico atravessa as
+     * estacoes (o mesmo bloco em duas estacoes conta como o mesmo); a semana 1 comeca sem historico.
+     *
+     * @return array<int,array<int,array<string,array{block:array,key:string}>>>
+     */
+    private function sequence(string $band): array
+    {
+        if (isset($this->sequences[$band])) {
+            return $this->sequences[$band];
+        }
+        $kid = $band === 'infantil';
+        $hist = [];
+        $table = [];
+        for ($w = 1; $w <= 53; $w++) {
+            $season = self::season($w);
+            $base = $this->seasonIndex($w, $season) * 7;
+            for ($d = 0; $d < 7; $d++) {
+                $t = $base + $d;
+                foreach ($this->menu['schedule'] as $mi => [$key]) {
+                    $pool = $this->pool($key, $season, $kid, $band);
+                    $n = count($pool);
+                    $long = $key === 'almoco' || $key === 'jantar';
+                    $cand = $long ? ($t + $mi) % $n : ($t * (2 * $mi + 1) + $mi) % $n;
+                    $recent = $hist[$key] ?? [];
+                    for ($k = 0; $k < $n && in_array($pool[($cand + $k) % $n]['key'], $recent, true); $k++) {
+                    }
+                    if ($k === $n) {
+                        throw new \RuntimeException("Blocos insuficientes para $key/$season/$band");
+                    }
+                    $c = $pool[($cand + $k) % $n];
+                    $hist[$key] = array_slice([...$recent, $c['key']], $long ? -6 : -1);
+                    $table[$w][$d][$key] = $c;
+                }
+            }
+        }
+        return $this->sequences[$band] = $table;
+    }
+
+    /** @return list<array{block:array,key:string}> blocos da refeicao na estacao e versao */
+    private function pool(string $key, string $season, bool $kid, string $band): array
+    {
+        $pool = [];
+        foreach ($this->menu['meals'][$key] as $b) {
+            if (in_array($season, $b['seasons'] ?? ['verao', 'outono', 'inverno', 'primavera'], true)
+                && !($kid && ($b['adult_only'] ?? false)) && !(!$kid && ($b['kid_only'] ?? false))) {
+                $pool[] = ['block' => $b, 'key' => $key . ':' . substr(md5(serialize($b)), 0, 12)];
+            }
+        }
+        if ($pool === []) {
+            throw new \RuntimeException("Sem blocos para $key/$season/$band");
+        }
+        return $pool;
     }
 
     private function seasonIndex(int $week, string $season): int
