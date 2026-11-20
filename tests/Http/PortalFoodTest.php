@@ -32,10 +32,10 @@ final class PortalFoodTest extends DbTestCase
         return [$g, $p, $nutri];
     }
 
-    private function item(string $name, array $subs = []): array
+    private function item(string $name, array $subs = [], int $foodId = 53): array
     {
         return [
-            'food_id' => 53, 'food_name' => $name, 'qty' => 1, 'measure_id' => 1, 'measure_name' => 'unidade',
+            'food_id' => $foodId, 'food_name' => $name, 'qty' => 1, 'measure_id' => 1, 'measure_name' => 'unidade',
             'measure_plural' => 'unidades', 'grams' => 50.0, 'note' => '', 'subs' => $subs,
             'per100' => ['kcal' => 300.0, 'protein' => 8.0, 'carb' => 58.0, 'fat' => 3.0, 'fiber' => 2.0],
         ];
@@ -101,7 +101,7 @@ final class PortalFoodTest extends DbTestCase
     {
         $days = [];
         for ($i = 0; $i < $n; $i++) {
-            $days[] = ['meals' => [['name' => 'Café', 'time' => '', 'note' => '', 'options' => [['items' => [$this->item('Dia' . $i)]]]]]];
+            $days[] = ['meals' => [['name' => 'Café', 'time' => '', 'note' => '', 'options' => [['items' => [$this->item('Dia' . $i, [], 1000 + $i)]]]]]];
         }
         $repo = Container::mealPlans();
         $id = $repo->createDraft((int) $p['id'], 'estruturado', ['title' => 'Plano dias', 'structure' => ['v' => 2, 'start' => $start, 'days' => $days]], (int) $nutri['id']);
@@ -152,8 +152,9 @@ final class PortalFoodTest extends DbTestCase
         for ($i = 0; $i < 7; $i++) {
             $this->assertStringContainsString('id="dia-' . self::ago(-$i) . '"', $body);
         }
-        $this->assertStringNotContainsString('Dia6<', $body);
-        $this->assertStringContainsString('Dia7', $body);
+        $this->assertStringNotContainsString('de Dia6</li>', $body);
+        $this->assertStringContainsString('de Dia7</li>', $body);
+        $this->assertStringContainsString('de Dia13</li>', $body);
     }
 
     public function testPortalHasShoppingListAndNoKcal(): void
@@ -165,7 +166,8 @@ final class PortalFoodTest extends DbTestCase
             $body = $this->get('/portal/p/' . $p['id'] . $suffix)->body;
             $this->assertStringContainsString('<h2>Lista de compras</h2>', $body);
             $this->assertStringContainsString('class="lista-compras"', $body);
-            $this->assertStringContainsString('Dia0 — 7 unidades', $body);
+            $this->assertStringContainsString('Dia0 — 1 unidade', $body);
+            $this->assertStringContainsString('Dia6 — 1 unidade', $body);
             $this->assertStringNotContainsString('kcal', $body);
         }
     }

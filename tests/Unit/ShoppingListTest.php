@@ -46,7 +46,7 @@ final class ShoppingListTest extends TestCase
         $this->assertSame('1 L', ShoppingList::build(array_fill(0, 5, $d))[0]['text']);
         $this->assertSame('1,5 L', ShoppingList::build(array_fill(0, 7, $d))[0]['text']);
         $s = self::day([self::item(5, 'Suco de uva', 200, 200)]);
-        $this->assertSame('0,5 L', ShoppingList::build([$s], [5 => 'Bebidas'])[0]['text']);
+        $this->assertSame('0,5 L', ShoppingList::build([$s], [5 => 'Bebidas (alcoólicas e não alcoólicas)'])[0]['text']);
     }
 
     public function test_mixed_units_and_grams_become_grams(): void
@@ -68,5 +68,19 @@ final class ShoppingListTest extends TestCase
     {
         $d = self::day([self::item(7, 'Zebu', 100, 100), self::item(6, 'Arroz', 100, 100), self::item(5, 'Nada', 0, 0)]);
         $this->assertSame(['Arroz', 'Zebu'], array_column(ShoppingList::build([$d]), 'name'));
+    }
+
+    public function test_sorting_ignores_accents(): void
+    {
+        $d = self::day([self::item(1, 'Óleo de soja', 10, 10), self::item(2, 'Banana', 10, 10), self::item(3, 'Água de coco', 10, 10)]);
+        $this->assertSame(['Água de coco', 'Banana', 'Óleo de soja'], array_column(ShoppingList::build([$d]), 'name'));
+    }
+
+    public function test_near_one_kilo_shows_kg_not_1000_g(): void
+    {
+        $d = self::day([self::item(3, 'Frango', 960, 960)]);
+        $this->assertSame('1,0 kg', ShoppingList::build([$d])[0]['text']);
+        $e = self::day([self::item(3, 'Frango', 950, 950)]);
+        $this->assertSame('950 g', ShoppingList::build([$e])[0]['text']);
     }
 }

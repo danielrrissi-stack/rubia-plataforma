@@ -144,7 +144,7 @@ final class PortalController
             return null;
         }
         $today = date('Y-m-d');
-        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        $tomorrow = (new \DateTimeImmutable($today))->modify('+1 day')->format('Y-m-d');
         $names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         $indexes = $dates = $nav = $structures = $groups = [];
         foreach (PlanDays::window($structure, $today) as $w) {

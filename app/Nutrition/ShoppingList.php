@@ -47,14 +47,14 @@ final class ShoppingList
             } elseif (self::isLiquid($name, (string) ($groups[$id] ?? ''))) {
                 $l = ceil($a['grams'] / 500 - 1e-9) / 2;
                 $text = rtrim(rtrim(number_format($l, 1, ',', ''), '0'), ',') . ' L';
-            } elseif ($a['grams'] >= 1000) {
+            } elseif (ceil($a['grams'] / 50 - 1e-9) * 50 >= 1000) {
                 $text = number_format(ceil($a['grams'] / 100 - 1e-9) / 10, 1, ',', '') . ' kg';
             } else {
                 $text = (int) (ceil($a['grams'] / 50 - 1e-9) * 50) . ' g';
             }
             $out[] = ['name' => $name, 'text' => $text];
         }
-        usort($out, static fn(array $x, array $y): int => strcmp(mb_strtolower($x['name'], 'UTF-8'), mb_strtolower($y['name'], 'UTF-8')));
+        usort($out, static fn(array $x, array $y): int => strcmp(self::sortKey($x['name']), self::sortKey($y['name'])) ?: strcmp($x['name'], $y['name']));
         return $out;
     }
 
@@ -76,6 +76,16 @@ final class ShoppingList
 
     private static function isLiquid(string $name, string $group): bool
     {
-        return str_starts_with(mb_strtolower($name, 'UTF-8'), 'leite') || mb_strtolower($group, 'UTF-8') === 'bebidas';
+        return str_starts_with(mb_strtolower($name, 'UTF-8'), 'leite') || str_starts_with(mb_strtolower($group, 'UTF-8'), 'bebidas');
+    }
+
+    /** Chave de ordenacao sem acento e sem diferenca de caixa. */
+    private static function sortKey(string $name): string
+    {
+        return strtr(mb_strtolower($name, 'UTF-8'), [
+            'á' => 'a', 'à' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i', 'ó' => 'o', 'ò' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u', 'ç' => 'c', 'ñ' => 'n',
+        ]);
     }
 }
