@@ -48,6 +48,9 @@ final class DemoSeedTest extends DbTestCase
         foreach (['crianca', 'adolescente', 'adulto', 'novo_paciente'] as $k) {
             $this->assertArrayHasKey($k, $ids, $k);
         }
+        $cert = $this->db->one('SELECT * FROM certificates WHERE id = ?', [$ids['atestado']]);
+        $this->assertSame($ids['adulto'], (int) $cert['patient_id']);
+        $this->assertStringContainsString('Pediatra', $cert['body_html']);
     }
 
     public function test_adult_shows_plateau_and_child_has_curve(): void

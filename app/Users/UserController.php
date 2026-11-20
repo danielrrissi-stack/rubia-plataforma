@@ -139,6 +139,8 @@ final class UserController
         $email = UserRepository::normalizeEmail((string) $r->input('email', ''));
         $role = (string) $r->input('papel', '');
         $register = trim((string) $r->input('registro', ''));
+        $specialty = trim((string) $r->input('especialidade', ''));
+        $rqe = trim((string) $r->input('rqe', ''));
         $isAdmin = $role === 'medico' && (string) $r->input('administrador', '') !== '' ? 1 : 0;
         $errors = [];
 
@@ -161,6 +163,12 @@ final class UserController
         if (mb_strlen($register) > 30) {
             $errors[] = 'O registro profissional deve ter até 30 caracteres.';
         }
+        if (mb_strlen($specialty) > 80) {
+            $errors[] = 'A especialidade deve ter até 80 caracteres.';
+        }
+        if (mb_strlen($rqe) > 40) {
+            $errors[] = 'O RQE deve ter até 40 caracteres.';
+        }
         if ($existing !== null && (int) $existing['id'] === (int) $actor['id']) {
             if ((int) $existing['is_admin'] === 1 && $isAdmin === 0) {
                 $errors[] = 'Você não pode remover o seu próprio acesso de administrador.';
@@ -172,6 +180,8 @@ final class UserController
             'email' => $email,
             'role' => $role,
             'professional_register' => $register === '' ? null : $register,
+            'specialty' => $specialty === '' ? null : $specialty,
+            'rqe' => $rqe === '' ? null : $rqe,
             'is_admin' => $isAdmin,
         ], $errors];
     }
@@ -213,14 +223,15 @@ final class UserController
 
     private static function blank(): array
     {
-        return ['nome' => '', 'email' => '', 'papel' => '', 'registro' => '', 'administrador' => false];
+        return ['nome' => '', 'email' => '', 'papel' => '', 'registro' => '', 'especialidade' => '', 'rqe' => '', 'administrador' => false];
     }
 
     private function fromRow(array $u): array
     {
         return [
             'nome' => $u['name'], 'email' => $u['email'], 'papel' => $u['role'],
-            'registro' => (string) $u['professional_register'], 'administrador' => (int) $u['is_admin'] === 1,
+            'registro' => (string) $u['professional_register'], 'especialidade' => (string) ($u['specialty'] ?? ''),
+            'rqe' => (string) ($u['rqe'] ?? ''), 'administrador' => (int) $u['is_admin'] === 1,
         ];
     }
 
@@ -229,6 +240,7 @@ final class UserController
         return [
             'nome' => (string) $r->input('nome', ''), 'email' => (string) $r->input('email', ''),
             'papel' => (string) $r->input('papel', ''), 'registro' => (string) $r->input('registro', ''),
+            'especialidade' => (string) $r->input('especialidade', ''), 'rqe' => (string) $r->input('rqe', ''),
             'administrador' => (string) $r->input('administrador', '') !== '',
         ];
     }

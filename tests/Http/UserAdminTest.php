@@ -197,4 +197,28 @@ final class UserAdminTest extends DbTestCase
         $this->post('/equipe/' . $set['id'] . '/convite');
         $this->assertSame(1, (int) $this->db->one('SELECT COUNT(*) c FROM mail_queue')['c']);
     }
+
+    public function testSpecialtyAndRqeSavedAndLimited(): void
+    {
+        $this->asAdmin();
+        $o = $this->makeUser('medico', ['professional_register' => 'CRM 9']);
+        $base = ['nome' => 'Dra Teste', 'email' => $o['email'], 'papel' => 'medico', 'registro' => 'CRM-SP 113058'];
+        $res = $this->post('/equipe/' . $o['id'] . '/editar', $base + ['especialidade' => ' Pediatra ', 'rqe' => '107605']);
+        $this->assertSame(302, $res->status);
+        $r = $this->row((int) $o['id']);
+        $this->assertSame('Pediatra', $r['specialty']);
+        $this->assertSame('107605', $r['rqe']);
+        $form = $this->get('/equipe/' . $o['id'] . '/editar');
+        $this->assertStringContainsString('value="Pediatra"', $form->body);
+
+        $res = $this->post('/equipe/' . $o['id'] . '/editar', $base + ['especialidade' => str_repeat('a', 81), 'rqe' => str_repeat('1', 41)]);
+        $this->assertSame(200, $res->status);
+        $this->assertStringContainsString('A especialidade deve ter até 80 caracteres.', $res->body);
+        $this->assertStringContainsString('O RQE deve ter até 40 caracteres.', $res->body);
+
+        $this->post('/equipe/' . $o['id'] . '/editar', $base + ['especialidade' => '', 'rqe' => '']);
+        $r = $this->row((int) $o['id']);
+        $this->assertNull($r['specialty']);
+        $this->assertNull($r['rqe']);
+    }
 }

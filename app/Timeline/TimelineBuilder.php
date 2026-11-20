@@ -24,7 +24,7 @@ final class TimelineBuilder
     public const TYPES = [
         'meta_peso' => 'Meta de peso', 'medicao' => 'Medição', 'exame' => 'Exame', 'remedio' => 'Remédio',
         'evento_adverso' => 'Evento adverso', 'plano' => 'Plano alimentar', 'meta' => 'Meta',
-        'evolucao' => 'Evolução', 'consulta' => 'Consulta',
+        'evolucao' => 'Evolução', 'atestado' => 'Atestado', 'consulta' => 'Consulta',
     ];
 
     /** @return array{events: list<array{date:string,type:string,label:string,text:string,link:?string,badge:?string}>, truncated:bool} */
@@ -53,6 +53,12 @@ final class TimelineBuilder
                 $dx = trim((string) (json_decode((string) $e['payload'], true)['diagnostico'] ?? ''));
                 $add((string) ($e['encounter_date'] ?? $e['created_at']), 'evolucao',
                     'Evolução registrada' . ($dx !== '' ? ' — ' . mb_strimwidth($dx, 0, 120, '…') : ''), $base . '/prontuario');
+            }
+        }
+        if ($doctor && $gate->check($user, 'view', Policy::CLINICO, $patientId)) {
+            foreach (Container::certificates()->forPatient($patientId) as $c) {
+                $add((string) $c['issued_on'], 'atestado', 'Atestado emitido: ' . \App\Certificates\CertificateType::TITLES[$c['type']],
+                    $base . '/atestados/' . $c['id'], $c['voided_at'] !== null ? 'anulado' : null);
             }
         }
         if ($doctor && $gate->check($user, 'view', Policy::EXAMES, $patientId)) {

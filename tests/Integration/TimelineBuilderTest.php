@@ -16,6 +16,7 @@ final class TimelineBuilderTest extends DbTestCase
     private array $nutri;
     private array $patient;
     private string $today;
+    private int $certOk = 0;
 
     protected function setUp(): void
     {
@@ -52,6 +53,9 @@ final class TimelineBuilderTest extends DbTestCase
         $m->remove($del, 'erro', $mid);
         $this->db->insert('meal_plans', ['patient_id' => $pid, 'mode' => 'texto', 'title' => 'Plano outubro', 'status' => 'publicado', 'created_by' => $mid, 'published_at' => '2026-10-08 10:00:00']);
         $this->db->insert('patient_goals', ['patient_id' => $pid, 'family_text' => 'Beber água', 'emoji' => '💧', 'category' => 'hidratacao', 'times_per_week' => 5, 'start_date' => '2026-10-05', 'created_by' => $mid]);
+        $this->certOk = Container::certificates()->create($pid, $mid, 'comparecimento', '2026-10-12', [], '<p>a</p>', null);
+        $voided = Container::certificates()->create($pid, $mid, 'aptidao', '2026-10-13', [], '<p>b</p>', null);
+        Container::certificates()->void($voided, $mid, 'Engano');
         Container::weightGoals()->create($pid, ['kind' => 'peso', 'start_on' => '2026-10-05', 'start_value' => 92.4, 'target_value' => 85.0, 'target_date' => (new \DateTimeImmutable($this->today))->modify('+6 months')->format('Y-m-d'), 'notes' => null], $this->patient, $this->today, $mid, new Request('POST', '/'));
     }
 
@@ -65,7 +69,7 @@ final class TimelineBuilderTest extends DbTestCase
         $r = $this->events($this->medico);
         $types = array_values(array_unique(array_column($r['events'], 'type')));
         sort($types);
-        $this->assertSame(['consulta', 'evento_adverso', 'evolucao', 'exame', 'medicao', 'meta', 'meta_peso', 'plano', 'remedio'], $types);
+        $this->assertSame(['atestado', 'consulta', 'evento_adverso', 'evolucao', 'exame', 'medicao', 'meta', 'meta_peso', 'plano', 'remedio'], $types);
         foreach ($r['events'] as $ev) {
             $this->assertGreaterThanOrEqual(self::FROM, $ev['date']);
             $this->assertNotSame('', $ev['link']);
@@ -79,6 +83,20 @@ final class TimelineBuilderTest extends DbTestCase
         $this->assertStringNotContainsString('Apagado', $texts);
         $this->assertStringNotContainsString('50,0 kg', $texts);
         $this->assertFalse($r['truncated']);
+    }
+
+    public function test_certificates_only_for_doctor_with_void_badge(): void
+    {
+        $ev = array_values(array_filter($this->events($this->medico)['events'], fn ($e) => $e['type'] === 'atestado'));
+        $this->assertCount(2, $ev);
+        $byDate = array_column($ev, null, 'date');
+        $this->assertSame('Atestado emitido: Declaração de comparecimento', $byDate['2026-10-12']['text']);
+        $this->assertNull($byDate['2026-10-12']['badge']);
+        $this->assertStringEndsWith('/pacientes/' . $this->patient['id'] . '/atestados/' . $this->certOk, $byDate['2026-10-12']['link']);
+        $this->assertSame('Atestado emitido: Atestado de aptidão para atividade física', $byDate['2026-10-13']['text']);
+        $this->assertSame('anulado', $byDate['2026-10-13']['badge']);
+        $this->assertSame('Atestado', $byDate['2026-10-13']['label']);
+        $this->assertNotContains('atestado', array_column($this->events($this->nutri)['events'], 'type'));
     }
 
     public function test_same_day_order_has_visit_last(): void

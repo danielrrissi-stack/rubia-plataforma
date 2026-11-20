@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var bool $canCadastro @var bool $canEdit @var bool $canCrescimento
- * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canExames @var ?array $labSummary @var bool $canEnergia @var bool $canAcessoProf @var bool $canChildAccount @var ?array $treatmentCard @var ?array $goalsCard @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
+ * @var bool $canProntuario @var array $evolutions @var bool $canPlano @var ?array $currentPlan @var bool $canExames @var ?array $labSummary @var bool $canEnergia @var bool $canAcessoProf @var bool $canChildAccount @var ?array $treatmentCard @var ?array $goalsCard @var ?array $certificatesCard @var bool $adult @var ?array $professional @var array $guardians @var ?array $growth
  */
 $pid = (int) $patient['id'];
 ?>
@@ -90,6 +90,12 @@ $pid = (int) $patient['id'];
     <?php if ($treatmentCard['pending'] > 0): ?><p><strong><?= e($treatmentCard['pending']) ?></strong> <?= $treatmentCard['pending'] === 1 ? 'relato' : 'relatos' ?> da família para ver</p><?php endif; ?>
     <p><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/tratamento')) ?>">Ver tratamento</a>
       <?php if (!empty($canEvolucao)): ?><a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/evolucao')) ?>">Evolução</a><?php endif; ?></p></section><?php endif; ?>
+  <?php if (!empty($certificatesCard)): ?><section class="cartao" id="cartao-atestados"><h2>Atestados</h2>
+    <?php if ($certificatesCard['items'] === []): ?><p class="ajuda">Nenhum atestado emitido.</p><?php else: ?>
+      <ul><?php foreach ($certificatesCard['items'] as $c): ?><li><a href="<?= e(url('/pacientes/' . $pid . '/atestados/' . $c['id'])) ?>"><?= e(fmt_date($c['issued_on'])) ?> — <?= e(\App\Certificates\CertificateType::LABELS[$c['type']]) ?></a><?php if ($c['voided_at'] !== null): ?> <span class="selo selo-alerta">anulado</span><?php endif; ?></li><?php endforeach; ?></ul>
+    <?php endif; ?>
+    <p><a class="btn" href="<?= e(url('/pacientes/' . $pid . '/atestados/novo')) ?>">Novo atestado</a>
+      <a class="btn btn-quiet" href="<?= e(url('/pacientes/' . $pid . '/atestados')) ?>">Ver todos</a></p></section><?php endif; ?>
   <?php if ($goalsCard !== null): $gp = $goalsCard['panel']; $nw = count($gp['weeks']); ?><section class="cartao" id="cartao-metas"><h2>Metas</h2>
     <?php if ($gp['rows'] === []): ?><p class="ajuda">Nenhuma meta ativa.</p><?php else: ?>
       <table class="grade-metas">

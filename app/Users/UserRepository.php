@@ -8,7 +8,7 @@ use App\Core\Database;
 final class UserRepository
 {
     private const UPDATABLE = [
-        'name', 'email', 'role', 'is_admin', 'professional_register', 'totp_secret',
+        'name', 'email', 'role', 'is_admin', 'professional_register', 'specialty', 'rqe', 'totp_secret',
         'totp_enabled', 'failed_logins', 'locked_until', 'active', 'last_login_at',
     ];
     private const USERNAME_PATTERN = '/^(?=[a-z0-9.]*[a-z0-9])[a-z0-9.]{3,40}\z/';

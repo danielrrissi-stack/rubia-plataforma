@@ -46,6 +46,7 @@ use App\Patients\GuardianRepository;
 use App\Patients\MajorityService;
 use App\Patients\PatientRepository;
 use App\Pdf\PdfRenderer;
+use App\Certificates\CertificateRepository;
 use App\Records\ClinicalEntryRepository;
 use App\Users\UserRepository;
 use App\WeightGoals\WeightGoalRepository;
@@ -262,6 +263,11 @@ final class Container
     public static function diaryComments(): DiaryCommentRepository
     {
         return self::$items['diaryComments'] ??= new DiaryCommentRepository(self::db(), self::audit(), self::diaryEntries(), self::diaryRequests());
+    }
+
+    public static function certificates(): CertificateRepository
+    {
+        return self::$items['certificates'] ??= new CertificateRepository(self::db());
     }
 
     public static function prescriptions(): PrescriptionRepository

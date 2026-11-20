@@ -39,6 +39,13 @@ final class HelpManualTest extends TestCase
         }
     }
 
+    public function test_doctor_manual_has_certificates_after_prescription(): void
+    {
+        $ids = array_column(Manual::sections('medico', false), 'id');
+        $this->assertContains('atestados', $ids);
+        $this->assertSame(array_search('receita', $ids, true) + 1, array_search('atestados', $ids, true));
+    }
+
     public function test_first_section_is_first_access(): void
     {
         foreach (Manual::ROLES as $role) {

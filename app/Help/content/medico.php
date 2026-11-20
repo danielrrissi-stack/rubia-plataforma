@@ -96,6 +96,22 @@ return [
         'images' => [$img('receita', '/pacientes/{adulto}/receita', 'Escolha dos medicamentos da receita.')],
     ],
     [
+        'id' => 'atestados',
+        'title' => 'Atestados e declarações',
+        'intro' => 'Quatro tipos prontos: comparecimento, acompanhante, afastamento e aptidão para atividade física. O sistema preenche nome, CPF, data e o seu cabeçalho; você completa o resto.',
+        'steps' => [
+            'Na ficha do paciente, no cartão "Atestados", clique em "Novo atestado" e escolha o tipo.',
+            'Preencha a data e, conforme o tipo, o horário, os dias de afastamento ou o nome do acompanhante (o primeiro responsável cadastrado já vem sugerido).',
+            'Se quiser o CID, digite o código e marque a caixa de autorização do paciente ou responsável. Sem a caixa marcada, o CID não sai.',
+            'Clique em "Emitir". Na tela seguinte, clique em "Baixar PDF", imprima, assine e carimbe.',
+        ],
+        'tip' => 'Todo atestado fica gravado na ficha e na linha do tempo. Emitiu por engano? Use "Anular" com o motivo: ele continua na lista, marcado como anulado. Especialidade e RQE do cabeçalho vêm do seu cadastro na equipe, preenchido pela médica administradora.',
+        'images' => [
+            $img('atestado-novo', '/pacientes/{adulto}/atestados/novo?tipo=comparecimento', 'Formulário da declaração de comparecimento.'),
+            $img('atestado', '/pacientes/{adulto}/atestados/{atestado}', 'Atestado emitido, com o botão para baixar o PDF.'),
+        ],
+    ],
+    [
         'id' => 'evolucao',
         'title' => 'Painel de evolução',
         'intro' => 'Cruza a curva de peso com as doses de cada remédio para mostrar se a dose atual ainda está fazendo efeito.',
