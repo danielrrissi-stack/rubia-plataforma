@@ -46,6 +46,19 @@ final class HelpManualTest extends TestCase
         $this->assertSame(array_search('receita', $ids, true) + 1, array_search('atestados', $ids, true));
     }
 
+    public function test_nutritionist_manual_explains_templates_in_detail(): void
+    {
+        $ids = array_column(Manual::sections('nutricionista', false), 'id');
+        $want = ['modelos', 'modelo-texto', 'modelo-estruturado', 'trechos', 'usar-modelo', 'alterar-modelos'];
+        $start = array_search('modelos', $ids, true);
+        $this->assertNotFalse($start);
+        $this->assertSame($want, array_slice($ids, (int) $start, count($want)));
+        $text = mb_strtolower($this->text('nutricionista'));
+        foreach (['linha terminada em dois-pontos', 'opção 1', 'a cada 30 segundos', 'inserir no cursor', 'criar rascunho', 'salvar como modelo'] as $w) {
+            $this->assertStringContainsString($w, $text, $w);
+        }
+    }
+
     public function test_first_section_is_first_access(): void
     {
         foreach (Manual::ROLES as $role) {

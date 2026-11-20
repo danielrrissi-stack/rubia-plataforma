@@ -17,7 +17,7 @@
 </div>
 <footer class="atestado-rodape">
   <p class="atestado-data"><?= e($dateLine) ?></p>
-  <p class="atestado-linha">__________________________________</p>
+  <p class="atestado-linha">_______________________________________________</p>
   <p><strong><?= e($doctorName) ?></strong></p>
   <?php if ($signCredentials !== ''): ?><p><?= e($signCredentials) ?></p><?php endif; ?>
   <p>Assinatura e carimbo</p>

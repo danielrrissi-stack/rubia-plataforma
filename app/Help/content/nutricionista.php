@@ -4,6 +4,7 @@ declare(strict_types=1);
 /** Manual da nutricionista: so os pacientes liberados e as partes de nutricao e acompanhamento. */
 $e = (require __DIR__ . '/_equipe.php')('nutricionista', 'nutricionista');
 $c = (require __DIR__ . '/_clinica.php')('nutricionista', 'nutricionista');
+$m = (require __DIR__ . '/_modelos.php')('nutricionista', 'nutricionista');
 
 return [
     $e['entrar'],
@@ -12,7 +13,7 @@ return [
     $c['crescimento'],
     $c['energia'],
     $c['plano'],
-    $c['modelos'],
+    ...$m,
     $c['metas'],
     $c['biblioteca'],
     $c['diario'],
