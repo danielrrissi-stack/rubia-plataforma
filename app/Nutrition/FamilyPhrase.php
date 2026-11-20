@@ -13,6 +13,12 @@ final class FamilyPhrase
         return str_contains($s, ',') ? rtrim(rtrim($s, '0'), ',') : $s;
     }
 
+    /** Nome do alimento, sem quantidade nem medida. */
+    public static function foodName(array $item): string
+    {
+        return (string) ($item['food_name'] ?? '');
+    }
+
     public static function item(array $item): string
     {
         $qty = (float) ($item['qty'] ?? 0);

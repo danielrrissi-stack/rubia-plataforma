@@ -360,3 +360,11 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .atestado-previa .atestado-corpo p { text-align: justify; line-height: 1.6; }
 .atestado-previa .atestado-rodape { margin-top: 1.5rem; }
 .atestado-previa .atestado-contato { font-size: .85rem; margin-top: 1rem; }
+
+.portal-dias ul { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+.portal-dias a { display: inline-block; padding: .6rem .9rem; min-height: 44px; box-sizing: border-box; border: 1px solid currentColor; border-radius: 999px; text-decoration: none; }
+.plano-dia { scroll-margin-top: 1rem; }
+.plano-compras { margin-top: 1.5rem; }
+.lista-compras { padding-left: 1.25rem; }
+.lista-compras li { padding: .2rem 0; }
+@media print { .portal-dias { display: none; } .plano-dia { break-inside: avoid-page; } }

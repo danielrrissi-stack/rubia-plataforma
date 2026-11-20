@@ -18,11 +18,13 @@ if ($plan['mode'] !== 'texto') {
     if (PlanDays::isMulti($struct)) {
         $all = PlanDays::days($struct);
         $idxs = isset($dayIndexes) ? array_values((array) $dayIndexes) : array_keys($all);
-        foreach ($idxs as $k) {
+        // $dayDates em lista (mesma ordem de $dayIndexes) permite indices repetidos (ciclo de plano curto).
+        $byPosition = isset($dayDates) && is_array($dayDates) && array_is_list($dayDates) && count($dayDates) === count($idxs);
+        foreach ($idxs as $pos => $k) {
             if (!isset($all[$k])) {
                 continue;
             }
-            $date = isset($dayDates[$k]) ? (string) $dayDates[$k] : (string) $all[$k]['date'];
+            $date = $byPosition ? (string) $dayDates[$pos] : (isset($dayDates[$k]) ? (string) $dayDates[$k] : (string) $all[$k]['date']);
             $groups[] = ['date' => $date, 'meals' => $all[$k]['meals']];
         }
     } else {
