@@ -87,7 +87,7 @@ final class DietController
         $start = (string) ($r->post['inicio'] ?? '');
         $d = \DateTimeImmutable::createFromFormat('!Y-m-d', $start);
         $okStart = $d !== false && $d->format('Y-m-d') === $start
-            && $start >= date('Y-m-d', strtotime('-7 days')) && $start <= date('Y-m-d', strtotime('+60 days'));
+            && $start >= date('Y-m-d', strtotime('-7 days')) && $start <= date('Y-m-d', strtotime('+7 days'));
         if (!in_array($n, ['7', '14'], true) || !$okStart) {
             Session::flash('erro', 'Escolha a duração (7 ou 14 dias) e a data de início da sugestão.');
             return $back;
@@ -96,6 +96,11 @@ final class DietController
             $sug = $this->buildSuggestion($pid, $band, $kcal, $start, (int) $n);
         } catch (InvalidPlanException $e) {
             Session::flash('erro', 'Não foi possível gerar a sugestão: ' . implode(' ', $e->errors));
+            return $back;
+        } catch (\PDOException $e) {
+            throw $e; // erro de banco nunca vai para a tela
+        } catch (\RuntimeException $e) {
+            Session::flash('erro', 'Não foi possível montar a sugestão: ' . $e->getMessage());
             return $back;
         }
         $adapted = ['changes' => $sug['changes'], 'warnings' => $sug['warnings']];

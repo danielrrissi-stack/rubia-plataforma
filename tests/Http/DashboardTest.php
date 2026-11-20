@@ -91,6 +91,7 @@ final class DashboardTest extends DbTestCase
             ]]]]]]];
         }
         $id = Container::mealPlans()->createDraft($pid, 'estruturado', ['title' => 'Plano', 'structure' => ['v' => 2, 'start' => $start, 'days' => $days]], $by);
+        $this->db->run('UPDATE meal_plans SET plan_days = ? WHERE id = ?', [$n, $id]);
         Container::mealPlans()->publish($id, $by);
         return $id;
     }
@@ -120,6 +121,21 @@ final class DashboardTest extends DbTestCase
         $this->assertStringContainsString('selo selo-alerta">vencido', $body);
         $this->assertStringContainsString('Gerar continuação agora', $body);
         $this->assertLessThan(strpos($body, 'Pendente Silva'), strpos($body, 'Vencido Souza'));
+    }
+
+    public function testReviewCardShowsSemContinuacaoWhenDraftDiscarded(): void
+    {
+        $med = $this->makeUser('medico');
+        $a = $this->makePatient(['full_name' => 'Descartada Lima']);
+        $plan = $this->publishedV2((int) $a['id'], (int) $med['id'], $this->dayOffset(-10));
+        $draft = Container::mealPlans()->createDraft((int) $a['id'], 'texto', ['title' => 'Cont', 'body_text' => 'x'], (int) $med['id']);
+        $this->db->run('UPDATE meal_plans SET continuation_draft_id = ? WHERE id = ?', [$draft, $plan]);
+        Container::mealPlans()->discard($draft, (int) $med['id'], new Request('POST', '/x'));
+        $this->loginAs($med);
+        $body = $this->get('/')->body;
+        $this->assertStringContainsString('Descartada Lima', $body);
+        $this->assertStringContainsString('sem continuação', $body);
+        $this->assertStringContainsString('Gerar continuação agora', $body);
     }
 
     public function testReviewCardOnlyForGrantedPatients(): void

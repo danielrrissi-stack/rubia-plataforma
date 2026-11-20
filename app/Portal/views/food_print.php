@@ -17,7 +17,7 @@ $pid = (int) $patient['id'];
   <h1>Dra. Rubia</h1>
   <p>Plano alimentar de <?= e($first) ?></p>
 <?php if ($plan !== null): ?>
-  <p><?= e($plan['title']) ?><?= $plan['published_at'] !== null ? ' · Publicado em ' . e(fmt_date(substr((string) $plan['published_at'], 0, 10))) . ($plan['publisher'] !== '' ? ' por ' . e($plan['publisher']) : '') : '' ?></p>
+  <p><?= $week !== null ? 'Plano alimentar' : e($plan['title']) ?><?= $plan['published_at'] !== null ? ' · Publicado em ' . e(fmt_date(substr((string) $plan['published_at'], 0, 10))) . ($plan['publisher'] !== '' ? ' por ' . e($plan['publisher']) : '') : '' ?></p>
 <?php endif; ?>
 </header>
 <?php if ($plan === null): ?>

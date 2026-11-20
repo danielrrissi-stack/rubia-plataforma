@@ -91,13 +91,13 @@ return static function (string $slug, string $as): array {
         ],
         [
             'id' => 'dietas-prontas',
-            'title' => 'Dietas prontas e "Sugestão da semana"',
+            'title' => 'Dietas prontas e "Sugestão de cardápio"',
             'intro' => 'O sistema traz um banco de 1.664 dietas prontas: uma por semana do ano, com frutas e legumes da estação (sopas no frio, '
                 . 'pratos leves no calor), de 100 em 100 kcal. Há duas versões: infantil (3 a 10 anos, 1.000 a 2.000 kcal, com leite no lugar do café e lancheira) '
                 . 'e adolescente/adulto (1.000 a 3.000 kcal). Cada dieta tem um nome, como 1500kcalSemana5 ou 1500kcalSemana5Infantil.',
             'steps' => [
                 'Na ficha do paciente, abra o "Plano alimentar". Confira primeiro o cartão "Restrições e alergias alimentares": marque lactose, alergia à proteína do leite, ovo, glúten, amendoim, castanhas, peixe, frutos do mar ou soja, e escreva outros alimentos a evitar. Clique em "Salvar restrições".',
-                'No cartão "Sugestão da semana", a versão já vem pela idade, as calorias vêm da meta de energia vigente (arredondada para a centena) e a semana é a atual. Escolha também a "Duração" (7 ou 14 dias) e o "Início". Troque o que precisar.',
+                'No cartão "Sugestão de cardápio", a versão já vem pela idade, as calorias vêm da meta de energia vigente (arredondada para a centena) e a semana é a atual. Escolha também a "Duração" (7 ou 14 dias) e o "Início". Troque o que precisar.',
                 'Clique em "Gerar sugestão". O sistema cria um rascunho estruturado, com uma aba por dia, já adaptado às restrições e abre o editor, com o total comparado à meta.',
                 'Leia as mensagens no topo: as adaptações feitas (por exemplo, pão trocado por cuscuz no glúten) e os avisos (alimentos citados em "outros alimentos a evitar"), que você troca à mão.',
                 'Avalie, ajuste e clique em "Publicar". A família vê o plano como sempre, sem calorias e sem o nome da dieta.',

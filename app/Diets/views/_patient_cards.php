@@ -32,7 +32,7 @@ $rs = $dietCard['restrictions'];
 </section>
 
 <?php if ($canEdit): ?>
-<section class="cartao"><h2>Sugestão da semana</h2>
+<section class="cartao"><h2>Sugestão de cardápio</h2>
 <?php if ($dietCard['band'] === null): ?>
   <p class="ajuda">As dietas prontas são para pacientes a partir de 3 anos.</p>
 <?php else: ?>
@@ -51,7 +51,7 @@ $rs = $dietCard['restrictions'];
       <?php foreach ([7, 14] as $n): ?><option value="<?= $n ?>" <?= $dietCard['days'] === $n ? 'selected' : '' ?>><?= $n ?> dias</option><?php endforeach; ?>
     </select></label>
   <label>Início
-    <input type="date" name="inicio" value="<?= e($dietCard['start']) ?>" min="<?= e(date('Y-m-d', strtotime('-7 days'))) ?>" max="<?= e(date('Y-m-d', strtotime('+60 days'))) ?>" required></label></p>
+    <input type="date" name="inicio" value="<?= e($dietCard['start']) ?>" min="<?= e(date('Y-m-d', strtotime('-7 days'))) ?>" max="<?= e(date('Y-m-d', strtotime('+7 days'))) ?>" required></label></p>
   <p class="ajuda">
     <?= $dietCard['goalKcal'] === null ? 'Paciente sem meta de energia: confira as calorias.' : 'Meta de energia vigente: ' . e(number_format($dietCard['goalKcal'], 0, ',', '.')) . ' kcal (arredondada para a centena).' ?>
     Versão infantil: 1.000 a 2.000 kcal; adolescente/adulto: 1.000 a 3.000 kcal.

@@ -69,7 +69,7 @@ final class DietSuggestionTest extends DbTestCase
         [$doc, $p] = $this->doctorWith(35);
         $this->db->insert('energy_goals', ['patient_id' => $p['id'], 'formula' => 'mifflin', 'activity_factor' => 1.2, 'weight_kg' => 90, 'height_cm' => 165, 'age_years' => 35, 'tmb_kcal' => 1400, 'get_kcal' => 1640, 'created_by' => $doc['id']]);
         $body = $this->get('/pacientes/' . $p['id'] . '/plano')->body;
-        $this->assertStringContainsString('Sugestão da semana', $body);
+        $this->assertStringContainsString('Sugestão de cardápio', $body);
         $this->assertStringContainsString('<option value="1600" selected>', $body);
         $this->assertStringContainsString('<option value="adulto" selected>', $body);
         $this->assertStringContainsString('Restrições e alergias alimentares', $body);
@@ -156,7 +156,7 @@ final class DietSuggestionTest extends DbTestCase
         $this->db->insert('professional_access', ['patient_id' => $p['id'], 'professional_id' => $nutri['id'], 'granted_by' => $doc['id']]);
         $this->loginAs($nutri);
         $body = $this->get('/pacientes/' . $p['id'] . '/plano')->body;
-        $this->assertStringContainsString('Sugestão da semana', $body);
+        $this->assertStringContainsString('Sugestão de cardápio', $body);
         $this->assertStringNotContainsString('camarão', $body);
     }
 
@@ -197,11 +197,31 @@ final class DietSuggestionTest extends DbTestCase
     public function testInvalidDurationOrStart(): void
     {
         [, $p] = $this->doctorWith(30);
-        foreach ([['dias' => '10', 'inicio' => date('Y-m-d')], ['dias' => '7', 'inicio' => 'x'], ['dias' => '7', 'inicio' => date('Y-m-d', strtotime('+90 days'))]] as $bad) {
+        foreach ([['dias' => '10', 'inicio' => date('Y-m-d')], ['dias' => '7', 'inicio' => 'x'], ['dias' => '7', 'inicio' => date('Y-m-d', strtotime('+8 days'))], ['dias' => '7', 'inicio' => date('Y-m-d', strtotime('-8 days'))]] as $bad) {
             $res = $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800'] + $bad);
             $this->assertSame('/pacientes/' . $p['id'] . '/plano', $res->headers['Location']);
             $this->assertNull(Container::mealPlans()->draft((int) $p['id']));
         }
+    }
+
+    public function testStartBoundaries(): void
+    {
+        [, $p] = $this->doctorWith(30);
+        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800', 'dias' => '7', 'inicio' => date('Y-m-d', strtotime('+7 days')), 'descartar_rascunho' => '1']));
+        $this->assertSame(date('Y-m-d', strtotime('+7 days')), $plan['structure']['start']);
+    }
+
+    public function testBuilderFailureIsFlashedNotFatal(): void
+    {
+        [, $p] = $this->doctorWith(30);
+        $this->db->run('SET FOREIGN_KEY_CHECKS = 0');
+        $this->db->run('DELETE FROM foods');
+        $this->db->run('SET FOREIGN_KEY_CHECKS = 1');
+        $res = $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800', 'dias' => '7', 'inicio' => date('Y-m-d')]);
+        $this->assertSame(302, $res->status);
+        $this->assertSame('/pacientes/' . $p['id'] . '/plano', $res->headers['Location']);
+        $this->assertStringContainsString('Não foi possível montar a sugestão', (string) Session::flash('erro'));
+        $this->assertNull(Container::mealPlans()->draft((int) $p['id']));
     }
 
     private function publishedFrom(array $doc, array $p, string $start): array

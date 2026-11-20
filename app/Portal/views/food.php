@@ -7,7 +7,7 @@ $pid = (int) $patient['id'];
 <?php if ($plan === null): ?>
   <p class="aviso">Nenhum plano alimentar no momento.</p>
 <?php else: ?>
-  <p class="ajuda"><?= e($plan['title']) ?><?= $plan['published_at'] !== null ? ' · publicado em ' . e(fmt_date(substr((string) $plan['published_at'], 0, 10))) : '' ?></p>
+  <p class="ajuda"><?= $week !== null ? 'Plano alimentar' : e($plan['title']) ?><?= $plan['published_at'] !== null ? ' · publicado em ' . e(fmt_date(substr((string) $plan['published_at'], 0, 10))) : '' ?></p>
   <?php if ($week !== null): ?>
   <nav class="portal-dias" aria-label="Dias do cardápio"><ul>
     <?php foreach ($week['nav'] as $n): ?><li><a href="#dia-<?= e($n['date']) ?>"><?= e($n['label']) ?></a></li><?php endforeach; ?>

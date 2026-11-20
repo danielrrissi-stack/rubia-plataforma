@@ -46,7 +46,7 @@ return static function (string $slug, string $as): array {
             'steps' => [
                 'Na ficha, no cartão "Plano alimentar", clique em "Ver plano alimentar".',
                 'Em "Novo plano", escolha o "Modo" (Texto ou Estruturado) e como começar ("Em branco", "Cópia do plano vigente" ou um "Modelo"). Clique em "Criar rascunho".',
-                'Para um cardápio de vários dias, use o cartão "Sugestão da semana": escolha a "Duração" (7 ou 14 dias; o padrão é 14) e o "Início" (o padrão é hoje) e clique em "Gerar sugestão". O sistema cria um rascunho chamado "Plano alimentar – dd/mm a dd/mm" e abre o editor.',
+                'Para um cardápio de vários dias, use o cartão "Sugestão de cardápio": escolha a "Duração" (7 ou 14 dias; o padrão é 14) e o "Início" (o padrão é hoje) e clique em "Gerar sugestão". O sistema cria um rascunho chamado "Plano alimentar – dd/mm a dd/mm" e abre o editor.',
                 'No editor há uma aba para cada dia ("Seg 23/11", "Ter 24/11"...), com o total de calorias do dia. O dia que fica mais de 10 % longe da meta aparece destacado. Em cada dia, "Copiar de outro dia" repete um cardápio e "Limpar dia" esvazia o dia.',
                 'Escreva o plano. No modo estruturado, busque os alimentos da tabela TACO e as medidas caseiras.',
                 'Quando estiver pronto, abra o rascunho e clique em "Publicar". A família passa a ver o plano no portal: hoje e os próximos 6 dias, nas abas "Hoje", "Amanhã", "Qua 26/11"..., e a "Lista de compras" desses 7 dias. A família não vê calorias.',

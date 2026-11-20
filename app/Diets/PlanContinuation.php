@@ -106,7 +106,7 @@ final class PlanContinuation
         $rows = $this->db->all(
             "SELECT mp.* FROM meal_plans mp JOIN patients p ON p.id = mp.patient_id
              WHERE mp.status = 'publicado' AND mp.mode = 'estruturado' AND mp.continuation_draft_id IS NULL
-               AND mp.structure_json IS NOT NULL AND p.deleted_at IS NULL
+               AND mp.structure_json IS NOT NULL AND mp.plan_days IS NOT NULL AND p.deleted_at IS NULL
              ORDER BY mp.id",
         );
         $out = [];
@@ -138,7 +138,7 @@ final class PlanContinuation
         $sql = "SELECT mp.id, mp.patient_id, mp.structure_json, mp.continuation_draft_id, p.full_name, p.social_name
                 FROM meal_plans mp JOIN patients p ON p.id = mp.patient_id
                 WHERE mp.status = 'publicado' AND mp.mode = 'estruturado' AND mp.discarded_at IS NULL
-                  AND mp.structure_json IS NOT NULL AND p.deleted_at IS NULL";
+                  AND mp.structure_json IS NOT NULL AND mp.plan_days IS NOT NULL AND p.deleted_at IS NULL";
         $params = [];
         if ($ids !== null) {
             $sql .= ' AND mp.patient_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')';

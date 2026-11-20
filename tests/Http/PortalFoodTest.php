@@ -157,6 +157,21 @@ final class PortalFoodTest extends DbTestCase
         $this->assertStringContainsString('de Dia13</li>', $body);
     }
 
+    public function testPortalHidesDateRangeTitleOfV2Plan(): void
+    {
+        [$g, $p, $nutri] = $this->family();
+        $this->publishMulti($p, $nutri, self::ago(23), 14); // terminou ha 10 dias
+        $title = 'Plano alimentar – ' . date('d/m', strtotime('-23 days')) . ' a ' . date('d/m', strtotime('-10 days'));
+        $this->db->run('UPDATE meal_plans SET title = ? WHERE patient_id = ?', [$title, $p['id']]);
+        $this->loginAs($g);
+        foreach (['/alimentacao', '/alimentacao/imprimir'] as $suffix) {
+            $body = $this->get('/portal/p/' . $p['id'] . $suffix)->body;
+            $this->assertStringNotContainsString($title, $body);
+            $this->assertStringContainsString('Plano alimentar', $body);
+            $this->assertStringContainsString('ublicado em ' . date('d/m/Y'), $body);
+        }
+    }
+
     public function testPortalHasShoppingListAndNoKcal(): void
     {
         [$g, $p, $nutri] = $this->family();

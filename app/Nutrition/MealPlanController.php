@@ -234,7 +234,7 @@ final class MealPlanController
         if (PlanDays::isMulti($stored) !== PlanDays::isMulti($structure)) {
             return Response::json(['ok' => false, 'errors' => ['Não foi possível salvar: o formato do plano mudou. Recarregue a página.']], 422);
         }
-        $base =isset($post['revisao']) && is_string($post['revisao']) && ctype_digit($post['revisao']) ? (int) $post['revisao'] : null;
+        $base = isset($post['revisao']) && is_string($post['revisao']) && ctype_digit($post['revisao']) ? (int) $post['revisao'] : null;
         $auto = ($post['auto'] ?? '') === '1';
         try {
             $res = Container::mealPlans()->saveDraft((int) $plan['id'], [

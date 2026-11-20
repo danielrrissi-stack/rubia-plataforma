@@ -205,6 +205,16 @@ final class PlanContinuationTest extends DbTestCase
         $this->assertNotNull($plan1);
     }
 
+    public function test_plan_without_plan_days_is_ignored(): void
+    {
+        $p = $this->patient();
+        $plan = $this->published($p, $this->day(-10));
+        $this->db->run('UPDATE meal_plans SET plan_days = NULL WHERE id = ?', [$plan['id']]);
+        $svc = Container::planContinuation();
+        $this->assertSame([], $svc->due(date('Y-m-d')));
+        $this->assertSame([], $svc->reviewList($this->doc, date('Y-m-d')));
+    }
+
     public function test_one_failing_plan_does_not_block_others(): void
     {
         $pBad = $this->patient(['full_name' => 'Elisa Falha']);
