@@ -1,7 +1,6 @@
 <?php
 /** @var array $patient @var array $dietCard @var bool $canEdit @var ?array $draft */
 use App\Diets\DietAdapter;
-use App\Diets\DietBuilder;
 use App\Diets\DietController;
 
 $pid = (int) $patient['id'];
@@ -47,10 +46,12 @@ $rs = $dietCard['restrictions'];
     <select name="kcal">
       <?php foreach ($dietCard['levels']['adulto'] as $k): ?><option value="<?= e($k) ?>" <?= $dietCard['kcal'] === $k ? 'selected' : '' ?>><?= e(number_format($k, 0, ',', '.')) ?> kcal</option><?php endforeach; ?>
     </select></label>
-  <label>Semana
-    <select name="semana">
-      <?php for ($w = 1; $w <= 52; $w++): ?><option value="<?= $w ?>" <?= $dietCard['week'] === $w ? 'selected' : '' ?>>Semana <?= $w ?> (<?= e(DietBuilder::SEASON_LABEL[DietBuilder::season($w)]) ?>)<?= $dietCard['week'] === $w ? ' · atual' : '' ?></option><?php endfor; ?>
-    </select></label></p>
+  <label>Duração
+    <select name="dias">
+      <?php foreach ([7, 14] as $n): ?><option value="<?= $n ?>" <?= $dietCard['days'] === $n ? 'selected' : '' ?>><?= $n ?> dias</option><?php endforeach; ?>
+    </select></label>
+  <label>Início
+    <input type="date" name="inicio" value="<?= e($dietCard['start']) ?>" min="<?= e(date('Y-m-d', strtotime('-7 days'))) ?>" max="<?= e(date('Y-m-d', strtotime('+60 days'))) ?>" required></label></p>
   <p class="ajuda">
     <?= $dietCard['goalKcal'] === null ? 'Paciente sem meta de energia: confira as calorias.' : 'Meta de energia vigente: ' . e(number_format($dietCard['goalKcal'], 0, ',', '.')) . ' kcal (arredondada para a centena).' ?>
     Versão infantil: 1.000 a 2.000 kcal; adolescente/adulto: 1.000 a 3.000 kcal.
@@ -59,7 +60,7 @@ $rs = $dietCard['restrictions'];
   <?php if ($draft !== null): ?>
   <p><label class="inline"><input type="checkbox" name="descartar_rascunho" value="1"> Descartar o rascunho atual ("<?= e($draft['title']) ?>")</label></p>
   <?php endif; ?>
-  <p><button type="submit" class="btn">Gerar sugestão da semana</button>
+  <p><button type="submit" class="btn">Gerar sugestão</button>
     <a class="btn btn-quiet" href="<?= e(url('/dietas-prontas')) ?>">Ver dietas prontas</a></p>
 </form>
 <?php endif; ?>

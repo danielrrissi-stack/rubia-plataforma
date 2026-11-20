@@ -78,15 +78,14 @@ final class DietSuggestionTest extends DbTestCase
     public function testSuggestCreatesStructuredDraftWithoutKcalInTitle(): void
     {
         [, $p] = $this->doctorWith(7);
-        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'infantil', 'kcal' => '1400', 'semana' => '30']));
+        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'infantil', 'kcal' => '1400', 'dias' => '7', 'inicio' => date('Y-m-d')]));
         $this->assertSame('estruturado', $plan['mode']);
         $this->assertSame('rascunho', $plan['status']);
-        $this->assertSame('1400kcalSemana30Infantil', $plan['source_diet_code']);
-        $this->assertSame('Plano alimentar – semana 30 (inverno)', $plan['title']);
+        $this->assertStringStartsWith('1400kcalSemana', (string) $plan['source_diet_code']);
         $this->assertStringNotContainsString('kcal', $plan['title'] . $plan['guidance_text']);
-        $this->assertCount(6, $plan['structure']['meals']);
+        $this->assertSame(2, (int) $plan['structure']['v']);
         $editor = $this->get('/planos/' . $plan['id'] . '/editar')->body;
-        $this->assertStringContainsString('1400kcalSemana30Infantil', $editor);
+        $this->assertStringContainsString((string) $plan['source_diet_code'], $editor);
     }
 
     public function testRestrictionsAreSavedAndApplied(): void
@@ -97,15 +96,17 @@ final class DietSuggestionTest extends DbTestCase
         $this->assertSame(['lactose', 'gluten'], $rs['items']);
         $this->assertSame('morango', $rs['other_text']);
 
-        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800', 'semana' => '40']));
+        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800', 'dias' => '7', 'inicio' => date('Y-m-d')]));
         $gluten = (require APP_ROOT . '/data/dietas/cardapio.php')['tags']['gluten'];
         $dairyNotes = 0;
-        foreach ($plan['structure']['meals'] as $m) {
-            foreach ($m['options'][0]['items'] as $it) {
-                $this->assertNotContains($it['food_id'], $gluten, $it['food_name']);
-                if (in_array($it['food_id'], [457, 458, 448, 449, 461, 463], true)) {
-                    $this->assertStringContainsString('sem lactose', $it['note']);
-                    $dairyNotes++;
+        foreach ($plan['structure']['days'] as $day) {
+            foreach ($day['meals'] as $m) {
+                foreach ($m['options'][0]['items'] as $it) {
+                    $this->assertNotContains($it['food_id'], $gluten, $it['food_name']);
+                    if (in_array($it['food_id'], [457, 458, 448, 449, 461, 463], true)) {
+                        $this->assertStringContainsString('sem lactose', $it['note']);
+                        $dairyNotes++;
+                    }
                 }
             }
         }
@@ -117,10 +118,10 @@ final class DietSuggestionTest extends DbTestCase
     {
         [$doc, $p] = $this->doctorWith(30);
         $old = Container::mealPlans()->createDraft((int) $p['id'], 'texto', ['title' => 'Antigo', 'body_text' => 'x'], (int) $doc['id']);
-        $res = $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['kcal' => '1500', 'semana' => '1']);
+        $res = $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['kcal' => '1500', 'dias' => '7', 'inicio' => date('Y-m-d')]);
         $this->assertSame('/pacientes/' . $p['id'] . '/plano', $res->headers['Location']);
         $this->assertNotNull(Container::mealPlans()->draft((int) $p['id']));
-        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['kcal' => '1500', 'semana' => '1', 'descartar_rascunho' => '1']));
+        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['kcal' => '1500', 'dias' => '7', 'inicio' => date('Y-m-d'), 'descartar_rascunho' => '1']));
         $this->assertNotSame($old, (int) $plan['id']);
         $this->assertNotNull(Container::mealPlans()->find($old)['discarded_at']);
     }
@@ -128,13 +129,13 @@ final class DietSuggestionTest extends DbTestCase
     public function testInvalidLevelAndToddler(): void
     {
         [$doc, $p] = $this->doctorWith(30);
-        $res = $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'infantil', 'kcal' => '2500', 'semana' => '1']);
+        $res = $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'infantil', 'kcal' => '2500', 'dias' => '7', 'inicio' => date('Y-m-d')]);
         $this->assertSame('/pacientes/' . $p['id'] . '/plano', $res->headers['Location']);
         $this->assertNull(Container::mealPlans()->draft((int) $p['id']));
 
         $baby = $this->makePatient(['birth_date' => $this->years(1), 'sex' => 'M', 'responsible_professional_id' => $doc['id'], 'created_by' => $doc['id']]);
         $this->assertStringContainsString('a partir de 3 anos', $this->get('/pacientes/' . $baby['id'] . '/plano')->body);
-        $this->post('/pacientes/' . $baby['id'] . '/plano/sugestao', ['kcal' => '1000', 'semana' => '1']);
+        $this->post('/pacientes/' . $baby['id'] . '/plano/sugestao', ['kcal' => '1000', 'dias' => '7', 'inicio' => date('Y-m-d')]);
         $this->assertNull(Container::mealPlans()->draft((int) $baby['id']));
     }
 
@@ -142,7 +143,7 @@ final class DietSuggestionTest extends DbTestCase
     {
         [, $p] = $this->doctorWith(30);
         $this->loginAs($this->makeUser('nutricionista'));
-        $this->assertSame(403, $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['kcal' => '1500', 'semana' => '1'])->status);
+        $this->assertSame(403, $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['kcal' => '1500', 'dias' => '7', 'inicio' => date('Y-m-d')])->status);
         $this->assertSame(403, $this->post('/pacientes/' . $p['id'] . '/restricoes', ['restricoes' => ['ovo']])->status);
     }
 
@@ -157,6 +158,59 @@ final class DietSuggestionTest extends DbTestCase
         $body = $this->get('/pacientes/' . $p['id'] . '/plano')->body;
         $this->assertStringContainsString('Sugestão da semana', $body);
         $this->assertStringNotContainsString('camarão', $body);
+    }
+
+    public function testSuggestCreatesFourteenDatedDays(): void
+    {
+        [, $p] = $this->doctorWith(30);
+        $today = date('Y-m-d');
+        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800', 'dias' => '14', 'inicio' => $today]));
+        $this->assertSame(2, (int) $plan['structure']['v']);
+        $this->assertCount(14, $plan['structure']['days']);
+        $this->assertSame($today, $plan['structure']['start']);
+        $this->assertSame(14, (int) $plan['plan_days']);
+        $this->assertSame('Plano alimentar – ' . date('d/m') . ' a ' . date('d/m', strtotime('+13 days')), $plan['title']);
+        $this->assertStringNotContainsString('kcal', $plan['title'] . $plan['guidance_text']);
+    }
+
+    public function testSevenDaysOption(): void
+    {
+        [, $p] = $this->doctorWith(30);
+        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800', 'dias' => '7', 'inicio' => date('Y-m-d')]));
+        $this->assertCount(7, $plan['structure']['days']);
+    }
+
+    public function testRestrictionsAppliedOnEveryDay(): void
+    {
+        [, $p] = $this->doctorWith(30);
+        $this->post('/pacientes/' . $p['id'] . '/restricoes', ['restricoes' => ['leite']]);
+        $plan = $this->planFrom($this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800', 'dias' => '14', 'inicio' => date('Y-m-d')]));
+        foreach ($plan['structure']['days'] as $day) {
+            foreach ($day['meals'] as $m) {
+                foreach ($m['options'][0]['items'] as $it) {
+                    $this->assertNotContains($it['food_id'], [457, 458]);
+                }
+            }
+        }
+    }
+
+    public function testInvalidDurationOrStart(): void
+    {
+        [, $p] = $this->doctorWith(30);
+        foreach ([['dias' => '10', 'inicio' => date('Y-m-d')], ['dias' => '7', 'inicio' => 'x'], ['dias' => '7', 'inicio' => date('Y-m-d', strtotime('+90 days'))]] as $bad) {
+            $res = $this->post('/pacientes/' . $p['id'] . '/plano/sugestao', ['versao' => 'adulto', 'kcal' => '1800'] + $bad);
+            $this->assertSame('/pacientes/' . $p['id'] . '/plano', $res->headers['Location']);
+            $this->assertNull(Container::mealPlans()->draft((int) $p['id']));
+        }
+    }
+
+    public function testLibraryShowListsSevenDays(): void
+    {
+        $this->doctorWith(30);
+        $body = $this->get('/dietas-prontas/1500kcalSemana5')->body;
+        foreach (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'] as $n) {
+            $this->assertStringContainsString($n, $body);
+        }
     }
 
     public function testLibraryPages(): void
