@@ -328,6 +328,7 @@ final class DemoSeed
         $plan = (int) $this->db->one('SELECT id FROM meal_plans WHERE patient_id = ? ORDER BY id DESC LIMIT 1', [$lia])['id'];
         $out['plano'] = $plan;
         $out['modelo'] = Container::mealPlanTemplates()->fromPlan($plan, 'Plano infantil — base', $doc);
+        $out += $this->nutriTemplates();
         $out['trecho'] = Container::textSnippets()->create('Água ao longo do dia', 'Beber um copo de água ao acordar, no meio da manhã e à tarde.', $doc);
         $out['coleta'] = (int) $this->db->one('SELECT id FROM lab_collections WHERE patient_id = ? ORDER BY collected_on DESC LIMIT 1', [$ids['adulto']])['id'];
         $out['receita'] = (int) $this->db->one("SELECT id FROM prescriptions WHERE patient_id = ? AND drug_name = 'Tirzepatida'", [$ids['adulto']])['id'];
@@ -343,6 +344,50 @@ final class DemoSeed
         $out['medida'] = (int) $this->db->one('SELECT id FROM measurements WHERE patient_id = ? ORDER BY measured_on DESC, id DESC LIMIT 1', [$lia])['id'];
         $out['registro_prontuario'] = (int) $this->db->one("SELECT id FROM clinical_entries WHERE patient_id = ? AND kind = 'evolucao' ORDER BY id DESC LIMIT 1", [$lia])['id'];
         return $out;
+    }
+
+    /** Modelos de plano da nutricionista (autora: as fotos do manual dela mostram o editor). */
+    private function nutriTemplates(): array
+    {
+        $nutri = (int) $this->u['nutricionista']['id'];
+        $text = Container::mealPlanTemplates()->create([
+            'title' => 'Base escolar — texto', 'mode' => 'texto',
+            'body_text' => "Café da manhã:\n- 1 copo de leite\n- 1 pão francês com queijo branco\n- 1 fruta\n\n"
+                . "Lanche da escola:\n- 1 fruta ou 1 iogurte natural\n- **Água** na garrafinha\n\n"
+                . "ALMOÇO\n- Arroz, feijão, uma carne magra e salada à vontade\n\n"
+                . "Jantar:\n- Igual ao almoço, em porção menor",
+            'guidance_text' => 'Beber água ao longo do dia. Comer devagar e sem telas.',
+        ], $nutri);
+        $food = function (string $q): ?array {
+            return Container::foods()->search($q, 1)[0] ?? null;
+        };
+        $item = function (string $q, float $grams, bool $household = false, array $subs = []) use ($food): ?array {
+            $f = $food($q);
+            if ($f === null) {
+                return null;
+            }
+            $m = $household ? ($f['measures'][0] ?? null) : null;
+            return ['food_id' => (int) $f['id'], 'qty' => $m !== null ? 1 : $grams, 'measure_id' => $m !== null ? (int) $m['id'] : null,
+                'note' => '', 'subs' => array_values(array_filter($subs))];
+        };
+        $meal = static fn (string $name, string $time, array $options, string $note = ''): array
+            => ['name' => $name, 'time' => $time, 'note' => $note,
+                'options' => array_map(static fn (array $items): array => ['items' => array_values(array_filter($items))], $options)];
+        $input = ['meals' => [
+            $meal('Café da manhã', '07:00', [[$item('pão francês', 50, true), $item('mamão papaia', 120), $item('banana prata', 80, false, [$item('maçã fuji', 110)])]]),
+            $meal('Lanche da manhã', '10:00', [[$item('maçã fuji', 130)]], 'Fruta à vontade.'),
+            $meal('Almoço', '12:30', [
+                [$item('arroz cozido', 100), $item('feijão carioca cozido', 80), $item('frango peito grelhado', 90), $item('alface', 30)],
+                [$item('arroz cozido', 80), $item('feijão carioca cozido', 80), $item('alface', 30)],
+            ]),
+            $meal('Jantar', '19:30', [[$item('arroz cozido', 80), $item('feijão carioca cozido', 60), $item('frango peito grelhado', 70)]]),
+        ]];
+        $structure = (new \App\Nutrition\MealPlanResolver(Container::foods()))->resolve($input, true);
+        $struct = Container::mealPlanTemplates()->create([
+            'title' => 'Base escolar — estruturado', 'mode' => 'estruturado', 'structure' => $structure,
+            'guidance_text' => 'Beber água ao longo do dia. Comer devagar e sem telas.',
+        ], $nutri);
+        return ['modelo_texto' => $text, 'modelo_estruturado' => $struct];
     }
 
     /** Horario padrao da clinica para medica e nutricionista; consultas nos proximos dias uteis. */

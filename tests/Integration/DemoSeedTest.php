@@ -51,6 +51,15 @@ final class DemoSeedTest extends DbTestCase
         $cert = $this->db->one('SELECT * FROM certificates WHERE id = ?', [$ids['atestado']]);
         $this->assertSame($ids['adulto'], (int) $cert['patient_id']);
         $this->assertStringContainsString('Pediatra', $cert['body_html']);
+        $nutri = (int) $this->db->one('SELECT id FROM users WHERE email = ?', [DemoSeed::LOGINS['nutricionista']])['id'];
+        foreach (['modelo_texto' => 'texto', 'modelo_estruturado' => 'estruturado'] as $k => $mode) {
+            $t = $this->db->one('SELECT * FROM meal_plan_templates WHERE id = ?', [$ids[$k]]);
+            $this->assertSame($mode, $t['mode'], $k);
+            $this->assertSame($nutri, (int) $t['created_by'], $k);
+        }
+        $structure = json_decode((string) $this->db->one('SELECT structure_json FROM meal_plan_templates WHERE id = ?', [$ids['modelo_estruturado']])['structure_json'], true);
+        $this->assertGreaterThanOrEqual(3, count($structure['meals']));
+        $this->assertNotEmpty($structure['meals'][0]['options'][0]['items']);
     }
 
     public function test_adult_shows_plateau_and_child_has_curve(): void
