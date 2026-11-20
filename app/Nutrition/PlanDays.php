@@ -90,6 +90,14 @@ final class PlanDays
         return max(0, self::diff($today, $last) + 1);
     }
 
+    /** Rotulo curto de um dia datado: "Dia 24/11 (ter): ". */
+    public static function shortLabel(string $ymd): string
+    {
+        $d = new DateTimeImmutable($ymd);
+        $names = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+        return 'Dia ' . $d->format('d/m') . ' (' . $names[(int) $d->format('w')] . '): ';
+    }
+
     private static function addDays(string $ymd, int $n): string
     {
         return (new DateTimeImmutable($ymd))->modify(($n >= 0 ? '+' : '') . $n . ' days')->format('Y-m-d');

@@ -68,6 +68,32 @@ final class MealPlanCalculator
     }
 
     /**
+     * Totais de cada dia e a media dos dias (v1 = um dia, media igual a ele).
+     * @return array{days:list<array{kcal:float,protein:float,carb:float,fat:float,fiber:float}>,average:array{kcal:float,protein:float,carb:float,fat:float,fiber:float}}
+     */
+    public static function plan(array $structure): array
+    {
+        if (!PlanDays::isMulti($structure)) {
+            $d = self::day($structure);
+            return ['days' => [$d], 'average' => $d];
+        }
+        $days = [];
+        $sum = array_fill_keys(self::KEYS, 0.0);
+        foreach (PlanDays::days($structure) as $day) {
+            $t = self::day(['meals' => $day['meals']]);
+            $days[] = $t;
+            foreach (self::KEYS as $k) {
+                $sum[$k] += $t[$k];
+            }
+        }
+        $n = max(1, count($days));
+        foreach (self::KEYS as $k) {
+            $sum[$k] /= $n;
+        }
+        return ['days' => $days, 'average' => $sum];
+    }
+
+    /**
      * % das calorias de proteina/carboidrato/gordura (base = prot*4 + carb*4 + gord*9), 1 casa.
      * @return array{protein:float,carb:float,fat:float}
      */

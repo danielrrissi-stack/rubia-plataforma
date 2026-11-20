@@ -260,4 +260,56 @@ final class MealPlanRepositoryTest extends DbTestCase
         $this->assertSame($b, (int) $this->repo->onDate($this->pid, '2026-11-15')['id']); // dia do encerramento ainda vale
         $this->assertNull($this->repo->onDate($this->pid, '2026-11-16'));
     }
+
+    private function v2Structure(array $kcals, string $start = '2026-11-23'): array
+    {
+        $days = [];
+        foreach ($kcals as $k) {
+            $s = $this->structure();
+            $s['meals'][0]['options'][0]['items'][0]['per100']['kcal'] = $k;
+            $days[] = ['meals' => $s['meals']];
+        }
+        return ['v' => 2, 'start' => $start, 'days' => $days];
+    }
+
+    public function test_publish_v2_stores_average_and_draftFrom_keeps_v2(): void
+    {
+        $id = $this->repo->createDraft($this->pid, 'estruturado', $this->data($this->v2Structure([1000.0, 1200.0])), $this->uid, null, null, null, null, 14);
+        $this->repo->publish($id, $this->uid);
+        $this->assertEquals(1100.0, (float) $this->repo->find($id)['total_kcal']);
+        $d = $this->repo->find($this->repo->draftFrom($id, $this->uid));
+        $this->assertSame(2, $d['structure']['v']);
+        $this->assertSame('2026-11-23', $d['structure']['start']);
+        $this->assertSame(14, (int) $d['plan_days']);
+    }
+
+    public function test_publish_v2_empty_day_fails_with_date(): void
+    {
+        $s = $this->v2Structure([1000.0, 1200.0]);
+        $s['days'][1]['meals'][0]['options'][0]['items'] = [];
+        $id = $this->repo->createDraft($this->pid, 'estruturado', $this->data($s), $this->uid);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('24/11');
+        $this->repo->publish($id, $this->uid);
+    }
+
+    public function test_publish_continuation_copies_plan_days_from_source(): void
+    {
+        $a = $this->repo->createDraft($this->pid, 'estruturado', $this->data($this->v2Structure([1000.0])), $this->uid, null, null, null, null, 7);
+        $this->repo->publish($a, $this->uid);
+        $b = $this->repo->createDraft($this->pid, 'estruturado', $this->data($this->v2Structure([1000.0])), $this->uid, null, null, $a, null, null, true);
+        $this->assertSame(1, (int) $this->repo->find($b)['auto_generated']);
+        $this->db->run('UPDATE meal_plans SET continuation_draft_id = ? WHERE id = ?', [$b, $a]);
+        $this->repo->publish($b, $this->uid);
+        $this->assertSame(7, (int) $this->repo->find($b)['plan_days']);
+    }
+
+    public function test_publish_non_continuation_keeps_null_plan_days(): void
+    {
+        $a = $this->repo->createDraft($this->pid, 'estruturado', $this->data($this->v2Structure([1000.0])), $this->uid, null, null, null, null, 7);
+        $this->repo->publish($a, $this->uid);
+        $b = $this->repo->createDraft($this->pid, 'estruturado', $this->data($this->v2Structure([1000.0])), $this->uid, null, null, $a);
+        $this->repo->publish($b, $this->uid);
+        $this->assertNull($this->repo->find($b)['plan_days']);
+    }
 }

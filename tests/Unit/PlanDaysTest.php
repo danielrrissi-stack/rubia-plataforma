@@ -83,4 +83,11 @@ final class PlanDaysTest extends TestCase
         $this->assertSame(1, PlanDays::remainingFrom($p, '2026-12-06'));
         $this->assertSame(0, PlanDays::remainingFrom($p, '2026-12-07'));
     }
+
+    public function test_short_label(): void
+    {
+        $this->assertSame('Dia 24/11 (ter): ', PlanDays::shortLabel('2026-11-24'));
+        $this->assertSame('Dia 21/11 (sáb): ', PlanDays::shortLabel('2026-11-21'));
+        $this->assertSame('Dia 22/11 (dom): ', PlanDays::shortLabel('2026-11-22'));
+    }
 }
