@@ -47,9 +47,22 @@ final class PortalDiaryController
             }
         }
         $measured = isset(Container::diaryWeek()->measuredDays($pid, $day, $day)[$day]);
+        // Botao so nos dias com algo para anotar; o dia aberto sempre aparece (marcado), mesmo vazio.
+        $from = date('Y-m-d', strtotime($today . ' -' . self::WINDOW_DAYS . ' days'));
+        $windowRequests = $repo->forViewer($pid, $user, $from, $today);
         $links = [];
         for ($i = 0; $i <= self::WINDOW_DAYS; $i++) {
-            $links[] = date('Y-m-d', strtotime($today . ' -' . $i . ' days'));
+            $d = date('Y-m-d', strtotime($today . ' -' . $i . ' days'));
+            $asked = false;
+            foreach ($windowRequests as $req) {
+                if ($repo->appliesOn($req, $d)) {
+                    $asked = true;
+                    break;
+                }
+            }
+            if ($asked || $d === $day) {
+                $links[] = $d;
+            }
         }
         return $this->render('Portal/views/diary.php', 'Diário', $user, $patient, [
             'items' => $items, 'day' => $day, 'today' => $today, 'links' => $links, 'measured' => $measured,
