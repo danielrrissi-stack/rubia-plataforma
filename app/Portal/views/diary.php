@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $first @var int $userId @var list<array> $items @var string $day @var string $today
- * @var list<string> $links @var bool $measured
+ * @var list<string> $links @var list<string> $upcoming @var bool $future @var bool $measured
  */
 use App\Diary\DiaryFormat;
 use App\Diary\DiaryType;
@@ -16,8 +16,13 @@ $linkLabel = static function (string $ymd) use ($today, $short): string {
     if ($ymd === $today) {
         return 'hoje';
     }
+    if ($ymd === date('Y-m-d', strtotime($today . ' +1 day'))) {
+        return 'amanhã';
+    }
     return $ymd === date('Y-m-d', strtotime($today . ' -1 day')) ? 'ontem' : $short($ymd);
 };
+$upcoming = $upcoming ?? [];
+$future = $future ?? false;
 ?>
 <p class="portal-links"><a href="<?= e(url('/portal/p/' . $pid)) ?>">&larr; Voltar</a></p>
 <h1>O que a Dra. Rubia pediu para anotar</h1>
@@ -28,9 +33,21 @@ $linkLabel = static function (string $ymd) use ($today, $short): string {
     <?php endforeach; ?>
   </ul>
 </nav>
+<?php if ($upcoming !== []): ?>
+<nav aria-label="Próximos dias">
+  <p class="ajuda">Próximos dias</p>
+  <ul class="portal-dias">
+    <?php foreach ($upcoming as $d): ?>
+      <li><?php if ($d === $day): ?><strong aria-current="date"><?= e($linkLabel($d)) ?></strong><?php else: ?><a href="<?= e(url($base . '?dia=' . $d)) ?>"><?= e($linkLabel($d)) ?></a><?php endif; ?></li>
+    <?php endforeach; ?>
+  </ul>
+</nav>
+<?php endif; ?>
 <h2><?= e($short($day)) ?></h2>
 <?php if ($items === []): ?>
   <p class="aviso">Nada para anotar neste dia.</p>
+<?php elseif ($future): ?>
+  <p class="aviso">Dá para anotar a partir do dia <?= e((new \DateTimeImmutable($day))->format('d/m')) ?>.</p>
 <?php endif; ?>
 <?php foreach ($items as $item):
     $req = $item['request'];
@@ -40,7 +57,8 @@ $linkLabel = static function (string $ymd) use ($today, $short): string {
   <section class="portal-medicamento">
     <h3><?= e(DiaryType::LABELS[$type] ?? $type) ?></h3>
     <?php if (($req['guidance'] ?? '') !== ''): ?><p class="ajuda"><?= e($req['guidance']) ?></p><?php endif; ?>
-    <?php if ($type === 'medidas'): ?>
+    <?php if ($future): ?>
+    <?php elseif ($type === 'medidas'): ?>
       <?php if ($measured): ?>
         <p>Peso anotado ✔</p>
       <?php else: ?>
