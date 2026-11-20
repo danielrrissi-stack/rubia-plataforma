@@ -1,6 +1,6 @@
 <?php
 /**
- * @var string $userName @var string $role @var string $today @var array $recent @var array $pending @var bool $canCreate @var list<array> $unreviewed @var list<array> $reviewsDue
+ * @var string $userName @var string $role @var string $today @var array $recent @var array $pending @var bool $canCreate @var list<array> $unreviewed @var list<array> $reviewsDue @var list<array> $plansToReview
  */
 $heading = $role === 'nutricionista' ? 'Meus pacientes' : 'Pacientes recentes';
 ?>
@@ -46,6 +46,37 @@ $heading = $role === 'nutricionista' ? 'Meus pacientes' : 'Pacientes recentes';
         <a href="<?= e(url('/pacientes/' . (int) $rv['patient_id'] . '/tratamento')) ?>"><?= e($rv['patient_name']) ?></a> —
         <?= e($rv['drug_name']) ?>, <?= e(fmt_date($rv['next_review_date'])) ?>
         <?php if ($rv['next_review_date'] < $today): ?><span class="selo selo-alerta">vencida</span><?php endif; ?>
+      </li>
+    <?php endforeach; ?>
+  </ul>
+</section>
+<?php endif; ?>
+
+<?php if ($plansToReview !== []): ?>
+<section class="cartao" aria-labelledby="h-planos">
+  <h2 id="h-planos">Planos para revisar</h2>
+  <ul>
+    <?php foreach ($plansToReview as $pl): ?>
+      <li>
+        <a href="<?= e(url($pl['url'])) ?>"><?= e($pl['name']) ?></a> —
+        <?php if ($pl['kind'] === 'vencido'): ?>
+          família vendo repetição desde <?= e(fmt_date($pl['end'])) ?>
+          <span class="selo selo-alerta">vencido</span>
+        <?php elseif ($pl['kind'] === 'pendente'): ?>
+          termina em <?= e(fmt_date($pl['end'])) ?>
+        <?php elseif ($pl['kind'] === 'rascunho_aberto'): ?>
+          termina em <?= e(fmt_date($pl['end'])) ?>, há um rascunho aberto
+        <?php else: ?>
+          termina em <?= e(fmt_date($pl['end'])) ?>, sem continuação
+        <?php endif; ?>
+        <?php if ($pl['draft_url'] !== null): ?>
+          — <a href="<?= e(url($pl['draft_url'])) ?>">Revisar rascunho</a>
+        <?php elseif ($pl['can_edit']): ?>
+          <form method="post" action="<?= e(url('/planos/' . (int) $pl['plan_id'] . '/continuacao')) ?>" class="inline">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-quiet">Gerar continuação agora</button>
+          </form>
+        <?php endif; ?>
       </li>
     <?php endforeach; ?>
   </ul>

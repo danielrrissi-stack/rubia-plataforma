@@ -126,6 +126,73 @@ final class PlanContinuation
     }
 
     /**
+     * Planos publicados v2 que terminam em ate 4 dias (ou ja terminaram) para o cartao do painel.
+     * @return list<array{patient_id:int, plan_id:int, name:string, kind:string, end:string, url:string, draft_url:?string, can_edit:bool}>
+     */
+    public function reviewList(array $user, string $today): array
+    {
+        $ids = \App\Core\Container::patientScope()->accessiblePatientIds($user);
+        if ($ids === []) {
+            return [];
+        }
+        $sql = "SELECT mp.id, mp.patient_id, mp.structure_json, mp.continuation_draft_id, p.full_name, p.social_name
+                FROM meal_plans mp JOIN patients p ON p.id = mp.patient_id
+                WHERE mp.status = 'publicado' AND mp.mode = 'estruturado' AND mp.discarded_at IS NULL
+                  AND mp.structure_json IS NOT NULL AND p.deleted_at IS NULL";
+        $params = [];
+        if ($ids !== null) {
+            $sql .= ' AND mp.patient_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')';
+            $params = array_values($ids);
+        }
+        $out = [];
+        foreach ($this->db->all($sql . ' ORDER BY mp.id', $params) as $row) {
+            $pid = (int) $row['patient_id'];
+            $structure = json_decode((string) $row['structure_json'], true);
+            if (!is_array($structure) || !PlanDays::isMulti($structure)
+                || PlanDays::remainingFrom($structure, $today) > self::MAX_REMAINING) {
+                continue;
+            }
+            $last = PlanDays::lastDate($structure);
+            if ($last === null || !$this->gate->check($user, 'view', Policy::NUTRICAO, $pid)) {
+                continue;
+            }
+            $marker = $row['continuation_draft_id'] === null ? null : (int) $row['continuation_draft_id'];
+            $draftId = null;
+            if ($marker !== null && $marker > 0) {
+                $d = $this->db->one(
+                    "SELECT id FROM meal_plans WHERE id = ? AND status = 'rascunho' AND discarded_at IS NULL",
+                    [$marker]
+                );
+                $draftId = $d === null ? null : (int) $d['id'];
+            } else {
+                $open = $this->plans->draft($pid);
+                $draftId = $open === null ? null : (int) $open['id'];
+            }
+            $ended = $today > $last;
+            if ($ended) {
+                $kind = 'vencido';
+            } elseif ($marker !== null && $marker > 0) {
+                $kind = $draftId !== null ? 'pendente' : 'sem_continuacao';
+            } else {
+                $kind = $draftId !== null ? 'rascunho_aberto' : 'sem_continuacao';
+            }
+            $end = $ended ? (new \DateTimeImmutable($last))->modify('+1 day')->format('Y-m-d') : $last;
+            $out[] = [
+                'patient_id' => $pid,
+                'plan_id' => (int) $row['id'],
+                'name' => (string) (($row['social_name'] ?? '') ?: $row['full_name']),
+                'kind' => $kind,
+                'end' => $end,
+                'url' => '/pacientes/' . $pid . '/plano',
+                'draft_url' => $draftId !== null ? '/planos/' . $draftId . '/editar' : null,
+                'can_edit' => $this->gate->check($user, 'edit', Policy::NUTRICAO, $pid),
+            ];
+        }
+        usort($out, fn(array $x, array $y): int => [$x['kind'] === 'vencido' ? 0 : 1, $x['end']] <=> [$y['kind'] === 'vencido' ? 0 : 1, $y['end']]);
+        return $out;
+    }
+
+    /**
      * Monta o rascunho de continuacao do plano publicado v2 $planId e devolve o id.
      * @throws \RuntimeException (inclui InvalidPlanException)
      */
