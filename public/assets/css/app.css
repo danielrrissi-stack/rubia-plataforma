@@ -1,0 +1,352 @@
+/* Dra. Rubia - identidade: linho claro, verde-sálvia, tipografia de sistema.
+   Painel clínico (body.clinico): denso. Portal da família (body.portal): acolhedor, alvos grandes. */
+:root {
+  --linho: #f6f4ee;
+  --papel: #ffffff;
+  --tinta: #1f2b27;
+  --tinta-suave: #52605b;
+  --salvia: #2f6b5f;
+  --salvia-escura: #234f46;
+  --salvia-clara: #e3eee9;
+  --linha: #d9ddd4;
+  --alerta: #8f3d1f;
+  --alerta-fundo: #f8e9e2;
+  --ok-fundo: #e3eee9;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --raio: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--linho);
+  color: var(--tinta);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.25; margin: 0 0 .6em; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.25rem; }
+a { color: var(--salvia-escura); text-underline-offset: 2px; }
+:focus-visible { outline: 3px solid #1d5fa8; outline-offset: 2px; }
+
+.skip { position: absolute; left: -999px; top: 0; background: var(--papel); padding: .5rem 1rem; z-index: 10; }
+.skip:focus { left: .5rem; top: .5rem; }
+
+.brand { display: inline-flex; align-items: center; gap: .55rem; font-family: var(--serif); font-size: 1.2rem; font-weight: 600; color: var(--salvia-escura); text-decoration: none; }
+.brand-mark { width: 1.1rem; height: 1.1rem; background: var(--salvia); border-radius: 0 100% 0 100%; display: inline-block; }
+
+.btn {
+  display: inline-block; min-height: 2.5rem; padding: .55rem 1.1rem;
+  background: var(--salvia); color: #fff; border: 1px solid var(--salvia);
+  border-radius: var(--raio); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.btn:hover { background: var(--salvia-escura); }
+.btn-quiet { background: transparent; color: var(--salvia-escura); border-color: var(--linha); }
+.btn-quiet:hover { background: var(--salvia-clara); }
+
+label { display: block; font-weight: 600; margin-bottom: .25rem; }
+input[type=text], input[type=email], input[type=password], input[type=date], input[type=number], input[type=search], select, textarea {
+  width: 100%; min-height: 2.5rem; padding: .5rem .65rem; font: inherit; color: inherit;
+  background: var(--papel); border: 1px solid #aeb6ac; border-radius: var(--raio);
+}
+.campo { margin-bottom: 1rem; }
+.ajuda { color: var(--tinta-suave); font-size: .875rem; }
+
+.aviso { padding: .7rem 1rem; border-radius: var(--raio); margin: 0 0 1rem; }
+.aviso-ok { background: var(--ok-fundo); color: var(--salvia-escura); }
+.aviso-erro { background: var(--alerta-fundo); color: var(--alerta); }
+.aviso-atencao { background: var(--alerta-fundo); color: var(--tinta); }
+
+table { width: 100%; border-collapse: collapse; background: var(--papel); }
+th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--linha); }
+th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
+
+.erro-pagina { max-width: 34rem; margin: 3rem auto; padding: 0 1rem; }
+
+/* Painel clínico: barra superior, conteúdo denso */
+.clinico .topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem;
+  padding: .6rem 1rem; background: var(--papel); border-bottom: 1px solid var(--linha);
+}
+.clinico .nav { display: flex; flex-wrap: wrap; gap: .25rem; flex: 1 1 auto; }
+.clinico .nav a { padding: .35rem .7rem; border-radius: var(--raio); text-decoration: none; color: var(--tinta); }
+.clinico .nav a:hover { background: var(--salvia-clara); }
+.clinico .nav a[aria-current=page] { background: var(--salvia-clara); color: var(--salvia-escura); font-weight: 600; }
+.topbar-user { display: flex; align-items: center; gap: .6rem; font-size: .9rem; color: var(--tinta-suave); }
+.clinico .conteudo { max-width: 72rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.clinico .btn { min-height: 2.25rem; padding: .4rem .9rem; font-size: .95rem; }
+
+@media (min-width: 60rem) {
+  .clinico .topbar { padding: .6rem 2rem; }
+  .clinico .conteudo { padding: 1.75rem 2rem 4rem; }
+}
+
+/* Portal da família: tipografia maior, alvos de toque grandes */
+.portal { font-size: 1.125rem; line-height: 1.65; background: #faf6ee; }
+.portal-topo { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; }
+.portal .conteudo { max-width: 40rem; margin: 0 auto; padding: .5rem 1.25rem 3rem; }
+.portal h1 { font-size: 1.9rem; }
+.portal .btn { min-height: 3.25rem; padding: .8rem 1.5rem; font-size: 1.1rem; border-radius: 12px; }
+.portal input[type=text], .portal input[type=email], .portal input[type=password], .portal input[type=date], .portal input[type=number], .portal select, .portal textarea {
+  min-height: 3.25rem; font-size: 1.1rem; border-radius: 12px;
+}
+.portal-rodape { max-width: 40rem; margin: 0 auto; padding: 1rem 1.25rem 2rem; color: var(--tinta-suave); font-size: .95rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Telas de autenticação */
+.auth-card { max-width: 24rem; margin: 2rem auto; }
+
+/* Medidas e curvas */
+.tabela-rolagem { overflow-x: auto; }
+.selo { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .75rem; background: var(--salvia-clara); color: var(--salvia-escura); }
+.selo-familia { background: #efe3c8; color: #5b4510; }
+.selo-alerta { background: var(--alerta-fundo); color: var(--alerta); font-weight: 600; }
+.abas { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+.aba { font: inherit; padding: .3rem .8rem; border: 1px solid var(--linha); border-radius: 999px; background: var(--papel); color: var(--tinta); cursor: pointer; }
+.aba[aria-pressed=true] { background: var(--salvia-escura); color: #fff; border-color: var(--salvia-escura); }
+.grafico { position: relative; height: 24rem; }
+
+/* Portal: cartões e resumo */
+.portal-lead { font-size: 1.25rem; color: var(--tinta-suave); margin-top: 0; }
+.portal-lista { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: .9rem; }
+.portal-cartao { display: block; min-height: 4.5rem; padding: 1.1rem 1.25rem; background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: 14px; color: inherit; text-decoration: none; }
+.portal-cartao:hover, .portal-cartao:focus-visible { background: var(--salvia-clara); }
+.portal-cartao-titulo { display: block; font-family: var(--serif); font-size: 1.4rem; font-weight: 600; }
+.portal-cartao-texto { display: block; color: var(--tinta-suave); }
+.portal-resumo { background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 1rem 1.25rem; margin: 1rem 0; }
+.portal-valores { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: .25rem 0; }
+.portal-nota { padding: .7rem 1rem; border-radius: 10px; margin: .75rem 0 0; background: var(--ok-fundo); color: var(--salvia-escura); }
+.portal-nota-atencao { background: #f4ecd9; color: #5b4510; }
+.portal-links { font-size: 1rem; }
+.portal-links a { display: inline-block; padding: .6rem 0; }
+.portal-dicas { background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; padding: .5rem 1rem; margin-bottom: 1.25rem; }
+.portal-dicas summary { cursor: pointer; font-weight: 600; min-height: 2.75rem; display: flex; align-items: center; }
+.portal .grafico { height: 20rem; }
+.portal .aba { min-height: 2.75rem; padding: .4rem 1.1rem; }
+
+/* Substitutos de estilos inline (a CSP bloqueia style="...") */
+.form-inline { display: inline; }
+.instalador { max-width: 40rem; margin: 1.5rem auto; }
+.chave-pem { width: 100%; font-family: monospace; }
+.termo { max-height: 20rem; overflow: auto; border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }
+
+/* Plano alimentar */
+.editor-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.editor-duplo textarea { width: 100%; font-family: inherit; }
+.previa-plano { border: 1px solid var(--linha); border-radius: var(--raio); padding: .5rem 1rem; min-height: 8rem; background: var(--papel); }
+.barra-editor { display: flex; flex-wrap: wrap; gap: .4rem; }
+.acoes-plano { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.plano-corpo h3 { margin-top: 1rem; }
+.plano-refeicao h4 { margin: .6rem 0 .2rem; }
+.impressao { background: #fff; }
+.impressao .nao-imprimir { margin: 1rem; }
+.impressao .plano-corpo, .impressao .impressao-cabecalho, .impressao .plano-totais { max-width: 48rem; margin: 0 auto; padding: 0 1rem; }
+/* Editor estruturado */
+.pe-totais { position: sticky; top: 0; z-index: 5; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: .6rem 1rem; margin-bottom: 1rem; box-shadow: 0 2px 6px rgba(0, 0, 0, .06); }
+.pe-totais h2 { font-size: 1.05rem; margin-bottom: .2rem; }
+.pe-totais-linha, .pe-meta { margin: .2rem 0; }
+.pe-barra { height: .55rem; background: var(--salvia-clara); border-radius: 999px; overflow: hidden; }
+.pe-barra-cheia { height: 100%; width: 0; background: var(--salvia); transition: width .2s; }
+.pe-barra-cheia.pe-barra-acima { background: var(--alerta); }
+.pe-refeicao { margin-bottom: 1rem; }
+.pe-refeicao-topo, .pe-linha { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; }
+.pe-campo { display: flex; flex-direction: column; font-size: .85rem; color: var(--tinta-suave); gap: .15rem; }
+.pe-campo input, .pe-campo select { font-size: 1rem; color: var(--tinta); }
+.pe-campo-largo { margin: .5rem 0; }
+.pe-campo-largo input { width: 100%; max-width: 40rem; }
+.pe-opcao { border-top: 1px solid var(--linha); padding-top: .5rem; margin-top: .5rem; }
+.pe-opcao h3 { font-size: 1rem; }
+.pe-item { padding: .4rem 0; border-bottom: 1px dashed var(--linha); }
+.pe-sub { margin-left: 1.5rem; padding-top: .3rem; }
+.pe-sub::before { content: "ou"; align-self: center; color: var(--tinta-suave); font-style: italic; }
+.pe-busca-caixa { position: relative; }
+.pe-busca { width: 18rem; max-width: 70vw; }
+.pe-qtd { width: 5rem; }
+.pe-invalido { border-color: var(--alerta); outline: 2px solid var(--alerta-fundo); }
+.pe-kcal { align-self: center; font-size: .875rem; color: var(--tinta-suave); min-width: 4rem; }
+.pe-btn { padding: .3rem .6rem; font-weight: 500; }
+.pe-resultados { position: absolute; left: 0; top: 100%; z-index: 10; list-style: none; margin: 0; padding: .2rem; width: 26rem; max-width: 90vw; max-height: 18rem; overflow: auto; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); box-shadow: 0 4px 12px rgba(0, 0, 0, .12); }
+.pe-resultados li { margin: 0; }
+.pe-resultado { display: block; width: 100%; text-align: left; font: inherit; padding: .35rem .5rem; border: 0; background: transparent; cursor: pointer; border-radius: 4px; }
+.pe-resultado:hover, .pe-resultado:focus { background: var(--salvia-clara); }
+.pe-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+@media (max-width: 48rem) { .editor-duplo { grid-template-columns: 1fr; } }
+/* Exames laboratoriais: marca sempre em texto (nunca so cor) + texto acessivel em .sr-only */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.lab-evolucao th, .lab-evolucao td { white-space: nowrap; }
+.lab-celula { font-variant-numeric: tabular-nums; }
+.lab-alterado_alto, .lab-alterado_baixo { background: var(--alerta-fundo); color: var(--alerta); font-weight: 600; }
+.lab-limitrofe_alto, .lab-limitrofe_baixo { background: #f6efd9; color: #5b4510; }
+.lab-marca { font-size: .85em; }
+.lab-vazio { color: var(--tinta-suave); }
+.lab-celula[title] { text-decoration: underline dotted; }
+.lab-grupo { border: 1px solid var(--linha); border-radius: var(--raio); margin: 0 0 1rem; padding: .5rem 1rem; background: var(--papel); }
+.lab-grupo legend { font-weight: 600; padding: 0 .3rem; }
+.lab-campo { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; }
+.lab-campo label { flex: 1 1 14rem; }
+.lab-campo input { width: 8rem; }
+.lab-unidade { color: var(--tinta-suave); min-width: 4rem; }
+.lab-coletas li, .lab-laudos li { margin-bottom: .4rem; }
+
+/* Receita impressa */
+.receita { max-width: 40rem; margin: 0 auto; padding: 1rem; }
+.receita-cabecalho { text-align: center; border-bottom: 1px solid #000; margin-bottom: 1rem; }
+.receita-cabecalho h1 { margin: 0; font-size: 1.4rem; }
+.receita-cabecalho p { margin: .1rem 0; }
+.receita-titulo { text-align: center; text-transform: uppercase; letter-spacing: .1em; }
+.receita-grupo h3 { text-decoration: underline; margin: 1.2rem 0 .4rem; }
+.receita-item { margin-bottom: .8rem; break-inside: avoid; }
+.receita-item p { margin: .1rem 0; }
+.receita-nome { font-weight: 700; }
+.receita-rodape { margin-top: 3rem; text-align: center; break-inside: avoid; }
+.receita-rodape p { margin: .2rem 0; }
+.receita-assinatura { margin-top: 2.5rem !important; }
+
+@media print {
+  .topbar, .nao-imprimir, .skip { display: none !important; }
+  body, .impressao { background: #fff; color: #000; }
+  .plano-refeicao { break-inside: avoid; }
+}
+
+/* Metas (equipe) */
+.grade-metas th, .grade-metas td { padding: .4rem .6rem; text-align: left; vertical-align: top; }
+.grade-metas td { white-space: nowrap; text-align: center; }
+.grade-metas .meta-completa { background: var(--ok-fundo); color: var(--salvia-escura); font-weight: 600; }
+
+/* Portal: metas, estrelas e selos */
+[hidden] { display: none !important; }
+.metas-semana { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin: .5rem 0 1rem; }
+.metas-lista { gap: 1.1rem; }
+.metas-meta { background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: 14px; padding: 1rem; }
+.metas-texto { font-size: 1.2rem; margin: 0 0 .7rem; }
+.metas-dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .35rem; }
+.metas-form { display: block; margin: 0; }
+.metas-dia { width: 100%; min-height: 4rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; font: inherit; font-size: .95rem; background: var(--papel); color: var(--tinta); border: 2px solid var(--salvia-escura); border-radius: 12px; cursor: pointer; }
+.metas-dia:disabled { border-color: var(--linha); color: var(--tinta-suave); cursor: default; opacity: .7; }
+.metas-dia-marca { font-size: 1.4rem; line-height: 1; min-height: 1.4rem; }
+.metas-dia-feito { background: var(--salvia-escura); color: #fff; }
+.metas-dia-feito:disabled { background: var(--salvia); color: #fff; opacity: .85; }
+.metas-selo { font-size: 1rem; padding: .3rem .8rem; margin: 0 .3rem .3rem 0; }
+
+/* Diario de habitos (equipe) */
+.diario-grade { max-width: 100%; overflow-x: auto; }
+.diario-grade table { min-width: 40rem; }
+.diario-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 48rem) { .diario-duplo { grid-template-columns: 1fr; } }
+.diario-foto { max-width: 14rem; max-height: 14rem; border-radius: var(--raio); }
+.diario-registro { border-bottom: 1px solid var(--linha); padding-bottom: .6rem; margin-bottom: .6rem; }
+.diario-comentario { margin: .4rem 0 .4rem 1rem; padding-left: .6rem; border-left: 3px solid var(--salvia); }
+.portal-dias { list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1rem; padding: 0; margin: 0 0 1rem; }
+
+/* Agenda da equipe */
+.agenda-filtro { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem .75rem; margin-bottom: 1rem; }
+.agenda-filtro label { margin: 0; }
+.agenda-filtro select, .agenda-filtro input[type=date] { width: auto; }
+.agenda-nav { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: 1rem; }
+.agenda-nav input[type=date] { width: auto; }
+.agenda-dia { list-style: none; padding: 0; margin: 0 0 1.5rem; }
+.agenda-slot { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; padding: .45rem .6rem; border-bottom: 1px solid var(--linha); background: var(--papel); }
+.agenda-hora { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 6.5rem; }
+.agenda-livre .btn { margin-left: auto; }
+.agenda-passado { color: var(--tinta-suave); background: transparent; }
+.agenda-marcado { border-left: 4px solid var(--salvia); }
+.agenda-destaque { border-left-color: var(--alerta); background: var(--alerta-fundo); }
+.agenda-riscada { border-left-color: var(--linha); color: var(--tinta-suave); background: transparent; }
+.agenda-riscada .agenda-paciente { text-decoration: line-through; color: var(--tinta-suave); }
+.agenda-paciente { font-weight: 600; }
+.agenda-acoes { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .5rem 0 1rem; }
+.agenda-slot .agenda-acoes { margin: 0 0 0 auto; }
+.agenda-semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5rem; }
+.agenda-coluna h2 { font-size: 1rem; margin: 0 0 .4rem; }
+.agenda-coluna .agenda-slot { font-size: .875rem; padding: .35rem .4rem; }
+.agenda-coluna .agenda-hora { min-width: 0; }
+.agenda-hoje h2 a { color: var(--salvia-escura); }
+@media (max-width: 60rem) { .agenda-semana { grid-template-columns: 1fr; } }
+.agenda-detalhes { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; margin: 0 0 1rem; }
+.agenda-detalhes dt { font-weight: 600; color: var(--tinta-suave); }
+.agenda-detalhes dd { margin: 0; }
+.agenda-form { max-width: 40rem; margin-bottom: 1.5rem; }
+.agenda-busca { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; max-width: 40rem; margin-bottom: 1rem; }
+.agenda-busca label { flex-basis: 100%; }
+.agenda-busca input[type=search] { flex: 1 1 16rem; }
+.agenda-resultados, .agenda-excecoes { list-style: none; padding: 0; }
+.agenda-resultados li, .agenda-excecoes li { padding: .4rem 0; border-bottom: 1px solid var(--linha); }
+.agenda-horarios-livres { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem; }
+.agenda-faixas input[type=time], .agenda-linha input[type=time] { min-height: 2.5rem; padding: .4rem; font: inherit; border: 1px solid #aeb6ac; border-radius: var(--raio); }
+.agenda-linha { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+
+/* Ditado por voz (dictation.js) */
+.btn-ditar { background: transparent; border: 1px solid var(--linha); border-radius: 999px; padding: .1rem .45rem; margin-left: .35rem;
+  font-size: 1rem; line-height: 1.4; cursor: pointer; vertical-align: top; }
+.btn-ditar:hover, .btn-ditar[aria-pressed="true"] { background: var(--salvia-clara); }
+.ditado-status { display: block; color: var(--tinta-suave); font-size: .875rem; }
+.ditado-status:empty { display: none; }
+
+/* Cartoes (pagina do paciente e demais telas): caixa propria com faixa colorida no titulo */
+.cartao { background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: var(--raio);
+  padding: 0 1rem .5rem; margin: 0 0 1.5rem; box-shadow: 0 1px 3px rgba(31, 43, 39, .12); overflow-x: auto; min-width: 0; }
+.cartao > h2:first-child { background: var(--salvia-clara); color: var(--salvia-escura); border-bottom: 2px solid var(--salvia);
+  margin: 0 -1rem .75rem; padding: .6rem 1rem; font-size: 1.25rem; }
+.cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1.25rem; margin: 1.5rem 0; }
+.cartoes > .cartao { margin: 0; }
+#cartao-metas { grid-column: 1 / -1; } /* grade de semanas precisa da largura toda */
+
+/* Prontuario: cada grupo e um cartao com faixa colorida de cabecalho (titulo + botao do grupo) */
+.pront-item { background: var(--papel); border: 1px solid var(--linha); border-left: 6px solid var(--salvia); border-radius: var(--raio);
+  padding: 0 1rem .5rem; margin: 0 0 1.5rem; box-shadow: 0 1px 3px rgba(31, 43, 39, .12); overflow: hidden; }
+.pront-topo { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap;
+  background: var(--salvia-clara); border-bottom: 2px solid var(--salvia); margin: 0 -1rem .75rem; padding: .6rem 1rem; }
+.pront-topo h3 { margin: 0; color: var(--salvia-escura); }
+.pront-vazio { border-left-color: #b9c0b5; }
+.pront-vazio .pront-topo { background: #eef0eb; border-bottom-color: #b9c0b5; }
+.pront-vazio .pront-topo h3 { color: var(--tinta-suave); }
+.pront-item > form { margin-bottom: .5rem; }
+
+/* Tabelas: faixa no cabecalho, linha entre registros e fundo alternado.
+   O fundo alternado fica no <tr>: celulas com cor propria (ex.: exame alterado) continuam por cima. */
+.tabela { width: 100%; border-collapse: collapse; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio);
+  margin: 0 0 1rem; }
+.tabela th, .tabela td { padding: .55rem .75rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--linha); }
+.tabela thead th { background: var(--salvia-clara); color: var(--salvia-escura); border-bottom: 2px solid var(--salvia); font-weight: 600; }
+.tabela tbody tr:nth-child(even) { background: #f3f7f4; }
+.tabela tbody tr:hover { background: var(--salvia-clara); }
+.tabela tbody tr:last-child td { border-bottom: 0; }
+
+/* Painel de evolucao: curva de peso, faixas de dose no mesmo eixo e curvas pequenas do metabolismo */
+.evolucao-graf { position: relative; height: 320px; }
+.evolucao-faixas { position: relative; height: 80px; margin-top: .25rem; }
+.evolucao-mini { position: relative; height: 140px; margin-bottom: 1rem; }
+#evolucao-metabolismo > summary { cursor: pointer; font-weight: 600; color: var(--salvia-escura); padding: .6rem 0; }
+#evolucao-metabolismo h3 { font-size: 1rem; margin: .75rem 0 .25rem; }
+.periodos { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+
+/* Manual de utilizacao (/ajuda) */
+.portal-ajuda { margin-left: auto; margin-right: 1rem; }
+.manual { max-width: 60rem; }
+.manual-ficticio { font-weight: 600; }
+.manual-perfis ul { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; list-style: none; padding: 0; }
+.manual-indice ol { columns: 2 16rem; }
+.manual-foto { margin: 1rem 0; }
+.manual-foto img { display: block; max-width: 100%; height: auto; border: 1px solid var(--linha); border-radius: var(--raio); }
+.manual-foto-mobile img { max-width: min(100%, 390px); }
+.manual-foto figcaption { font-size: .9rem; color: var(--tinta-suave); margin-top: .35rem; }
+.manual-passos li { margin: .35rem 0; }
+.manual-topo { font-size: .9rem; }
+
+/* Atestados */
+.atestado-tipos { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.atestado-previa { max-width: 46rem; }
+.atestado-previa .atestado-cabecalho, .atestado-previa .atestado-titulo, .atestado-previa .atestado-rodape { text-align: center; }
+.atestado-previa .atestado-cabecalho { border-bottom: 1px solid currentColor; padding-bottom: .5rem; margin-bottom: 1rem; }
+.atestado-previa .atestado-cabecalho h1 { font-size: 1.15rem; margin: 0; }
+.atestado-previa .atestado-titulo { font-size: 1rem; letter-spacing: .1em; }
+.atestado-previa .atestado-corpo p { text-align: justify; line-height: 1.6; }
+.atestado-previa .atestado-rodape { margin-top: 1.5rem; }
+.atestado-previa .atestado-contato { font-size: .85rem; margin-top: 1rem; }

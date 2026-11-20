@@ -1,0 +1,14 @@
+{
+  "name": "Dra. Rubia — Acompanhamento",
+  "short_name": "Dra. Rubia",
+  "start_url": "/portal",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "pt-BR",
+  "background_color": "#faf6ee",
+  "theme_color": "#2f6b5f",
+  "icons": [
+    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

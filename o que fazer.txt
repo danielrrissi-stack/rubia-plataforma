@@ -1,0 +1,5 @@
+Criar um aplicativo web php e mysql para usar com os pacientes da Dra Rubia para auxiliar na dieta.
+
+Esse aplicativo deve ter calculo taxa metabólica basal, e as principais funcionalidades dos aplicativos web diet, diet box e principalmente o Easy Health.
+
+Vamos hospedar esse aplicativo no domínio rubia.med.br
