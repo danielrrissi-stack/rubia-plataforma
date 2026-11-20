@@ -72,6 +72,10 @@ Novo formato v2 do `structure_json`; o v1 (um dia) continua valendo para planos 
 - **Cardápio ampliado** (`cardapio.php`): pelo menos **7 almoços e 7 jantares por estação**, para não repetir almoço nem
   jantar dentro de 7 dias seguidos. Hoje há 5 a 6 jantares por estação. Os lanches, o café e a ceia podem repetir, mas
   não em dois dias seguidos. Os alimentos continuam fáceis de encontrar.
+  - A regra vale também na troca de estação: a escolha olha os dias anteriores. A sequência corre pelas semanas 1 a 53
+    do ano.
+  - Única exceção: a passagem da última semana do ano para a semana 1, onde um prato pode repetir dentro de 7 dias.
+    É decisão do Claude, porque cruzar o ano exigiria histórico sem fim.
 - A tabela `diet_library` (1.664 dietas) **continua** para a lista "Dietas prontas" e para o nome de origem:
   - `structure_json` passa a guardar só a segunda-feira da semana, para o seed não crescer;
   - as colunas de calorias e macros passam a ser a **média dos 7 dias**, então a lista e o detalhe mostram os mesmos
