@@ -647,3 +647,13 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    (4) `database/seeds/food_4_diet_library.sql` (se o phpMyAdmin recusar pelo tamanho, use o terminal).
    Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/`
    (PDFs do manual da médica e da nutricionista). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
+19. **A atualização do plano alimentar por dias** traz a migração `018_meal_plan_days.sql` e o seed `database/seeds/food_4_diet_library.sql`
+   atualizado (cerca de 5 MB). Faça **backup do banco** antes. Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php` aplica tudo.
+   Sem terminal, importe no phpMyAdmin, **nesta ordem**: (1) `database/migrations/018_meal_plan_days.sql`, (2) na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('018_meal_plan_days.sql');`, (3) `database/seeds/food_4_diet_library.sql`
+   (se o phpMyAdmin recusar pelo tamanho, use o terminal).
+   Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/`
+   (inclui o novo `assets/js/plan-days.js`, o `meal-plan-editor.js` atualizado, CSS e os PDFs do manual da médica e da nutricionista).
+   **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
+   **Cron:** confira que o Cron de 5 minutos (`cron/run.php`) existe no cPanel, pois a continuação automática dos planos
+   (rascunho e e-mail de aviso a partir das 06:00) depende dele.
