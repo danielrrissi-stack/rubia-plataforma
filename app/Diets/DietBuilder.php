@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Diets;
 
 /**
- * Gera as dietas prontas a partir de data/dietas/cardapio.php (sem banco): escolhe os blocos da semana, ajusta as
+ * Gera os dias do cardapio a partir de data/dietas/cardapio.php: escolhe os blocos pela semana e dia da semana, ajusta as
  * porcoes ao nivel de calorias e arredonda para medidas caseiras. A saida `structure` esta no formato de entrada do
  * editor estruturado (MealPlanResolver).
  */
@@ -80,8 +80,62 @@ final class DietBuilder
     public function build(string $band, int $week, int $kcal): array
     {
         $season = self::season($week);
+        // Data de referencia: a semana N tem o mesmo cardapio todo ano (t depende so da semana e do dia da semana).
+        $monday = (new \DateTimeImmutable('2026-01-01'))->setISODate(2026, $week, 1);
+        $structure = null;
+        $sum = ['kcal' => 0.0, 'protein' => 0.0, 'carb' => 0.0, 'fat' => 0.0, 'fiber' => 0.0];
+        for ($d = 0; $d < 7; $d++) {
+            $day = $this->buildDay($band, $monday->modify('+' . $d . ' day')->format('Y-m-d'), $kcal);
+            $structure ??= ['v' => 1, 'meals' => $day['meals']];
+            foreach ($sum as $k => $_) {
+                $sum[$k] += $day['totals'][$k];
+            }
+        }
+        return [
+            'code' => self::code($kcal, $week, $band), 'band' => $band, 'week' => $week, 'season' => $season, 'kcal_target' => $kcal,
+            'totals' => array_map(static fn(float $v): float => round($v / 7, 1), $sum),
+            'title' => 'Plano alimentar – semana ' . $week . ' (' . self::SEASON_LABEL[$season] . ')',
+            'guidance' => $this->guidance($band, $season),
+            'structure' => $structure,
+        ];
+    }
+
+    /**
+     * N dias a partir de $startYmd (estrutura v2). `totals` traz os totais de cada dia, na ordem.
+     *
+     * @return array{code:string,title:string,guidance:string,structure:array,totals:list<array>}
+     */
+    public function buildDays(string $band, int $kcal, string $startYmd, int $n): array
+    {
+        $start = new \DateTimeImmutable($startYmd);
+        $days = [];
+        $totals = [];
+        for ($d = 0; $d < $n; $d++) {
+            $day = $this->buildDay($band, $start->modify('+' . $d . ' day')->format('Y-m-d'), $kcal);
+            $days[] = ['meals' => $day['meals']];
+            $totals[] = $day['totals'];
+        }
+        return [
+            'code' => self::code($kcal, self::weekOf($startYmd), $band),
+            'title' => 'Plano alimentar – ' . $start->format('d/m') . ' a ' . $start->modify('+' . max(0, $n - 1) . ' day')->format('d/m'),
+            'guidance' => $this->guidance($band, self::season(self::weekOf($startYmd))),
+            'structure' => ['v' => 2, 'start' => $start->format('Y-m-d'), 'days' => $days],
+            'totals' => $totals,
+        ];
+    }
+
+    /**
+     * Um dia do cardapio. Indice do dia: t = (posicao da semana na estacao) * 7 + dia da semana (0 = segunda).
+     * Almoco e jantar: pool[(t + mi) % n], sem repetir em 7 dias seguidos se n >= 8; demais: pool[(t*(2mi+1) + mi) % n].
+     *
+     * @return array{meals:list<array>,totals:array{kcal:float,protein:float,carb:float,fat:float,fiber:float},season:string}
+     */
+    public function buildDay(string $band, string $ymd, int $kcal): array
+    {
+        $week = self::weekOf($ymd);
+        $season = self::season($week);
         $kid = $band === 'infantil';
-        $i = $this->seasonIndex($week, $season);
+        $t = $this->seasonIndex($week, $season) * 7 + (int) (new \DateTimeImmutable($ymd))->format('N') - 1;
         $slots = ['fruta' => 0, 'legume' => 0, 'salada' => 0];
         $meals = [];
         foreach ($this->menu['schedule'] as $mi => [$key, $name, $tAdult, $tKid]) {
@@ -94,10 +148,12 @@ final class DietBuilder
             if ($pool === []) {
                 throw new \RuntimeException("Sem blocos para $key/$season/$band");
             }
-            $block = $pool[($i * (2 * $mi + 1) + $mi) % count($pool)];
+            $block = $key === 'almoco' || $key === 'jantar'
+                ? $pool[($t + $mi) % count($pool)]
+                : $pool[($t * (2 * $mi + 1) + $mi) % count($pool)];
             $items = [];
             foreach ($block['items'] as $spec) {
-                $item = $this->expand($spec, $kid, $season, $i, $slots);
+                $item = $this->expand($spec, $kid, $season, $t, $slots);
                 if ($item !== null) {
                     $items[] = $item;
                 }
@@ -105,29 +161,23 @@ final class DietBuilder
             $note = (string) ($block['note'] ?? '');
             if (str_contains($note, '{SALADA}')) {
                 $sal = $this->menu['saladas'][$season];
-                $note = str_replace('{SALADA}', $sal[($i + $slots['salada']++) % count($sal)], $note);
+                $note = str_replace('{SALADA}', $sal[($t + $slots['salada']++) % count($sal)], $note);
             }
             $meals[] = ['name' => $name, 'time' => $kid ? $tKid : $tAdult, 'note' => $note, 'items' => $items];
         }
 
         $this->fit($meals, $kcal, $kid);
 
-        $structure = ['v' => 1, 'meals' => []];
+        $out = [];
         foreach ($meals as $m) {
             $items = [];
             foreach ($m['items'] as $it) {
                 $items[] = ['food_id' => $it['code'], 'qty' => $it['qty'], 'measure_id' => $it['measure_id'], 'note' => $it['note'],
                     'subs' => $it['sub'] === null ? [] : [$this->sub($it)]];
             }
-            $structure['meals'][] = ['name' => $m['name'], 'time' => $m['time'], 'note' => $m['note'], 'options' => [['items' => $items]]];
+            $out[] = ['name' => $m['name'], 'time' => $m['time'], 'note' => $m['note'], 'options' => [['items' => $items]]];
         }
-        return [
-            'code' => self::code($kcal, $week, $band), 'band' => $band, 'week' => $week, 'season' => $season, 'kcal_target' => $kcal,
-            'totals' => $this->totals($meals),
-            'title' => 'Plano alimentar – semana ' . $week . ' (' . self::SEASON_LABEL[$season] . ')',
-            'guidance' => $this->guidance($band, $season),
-            'structure' => $structure,
-        ];
+        return ['meals' => $out, 'totals' => $this->totals($meals), 'season' => $season];
     }
 
     private function seasonIndex(int $week, string $season): int
@@ -142,7 +192,7 @@ final class DietBuilder
     }
 
     /** Aplica a troca infantil e os placeholders; null = item fora desta versao. */
-    private function expand(array $spec, bool $kid, string $season, int $i, array &$slots): ?array
+    private function expand(array $spec, bool $kid, string $season, int $t, array &$slots): ?array
     {
         [$code, $grams, $role] = $spec;
         $o = $spec[3] ?? [];
@@ -161,17 +211,17 @@ final class DietBuilder
         }
         if ($code === 'FRUTA') {
             $pool = $this->menu['fruits'][$season];
-            $k = ($i * 2 + $slots['fruta']++) % count($pool);
+            $k = ($t * 2 + $slots['fruta']++) % count($pool);
             [$code, $grams, $measure] = $pool[$k];
             $sub = $pool[($k + 1) % count($pool)][0];
         } elseif ($code === 'LEGUME') {
             $pool = $this->menu['legumes'][$season];
-            [$code, $grams] = $pool[($i + 2 * $slots['legume']++) % count($pool)];
+            [$code, $grams] = $pool[($t + 2 * $slots['legume']++) % count($pool)];
             $measure = null;
         } elseif ($role === 'fr' && $sub === null) {
             $pool = $this->menu['fruits'][$season];
-            $sub = $pool[($i + $slots['fruta']) % count($pool)][0];
-            $sub = $sub === $code ? $pool[($i + $slots['fruta'] + 1) % count($pool)][0] : $sub;
+            $sub = $pool[($t + $slots['fruta']) % count($pool)][0];
+            $sub = $sub === $code ? $pool[($t + $slots['fruta'] + 1) % count($pool)][0] : $sub;
         }
         if (!isset($this->foods[$code])) {
             throw new \RuntimeException('Alimento TACO inexistente no cardápio: ' . $code);
@@ -338,5 +388,24 @@ final class DietBuilder
             $measures[$m['taco_code']][$m['name']] = ['id' => $m['taco_code'] * 100 + $n, 'grams' => round($m['grams'], 1)];
         }
         return new self(require $root . '/data/dietas/cardapio.php', $foods, $measures);
+    }
+
+    /** A mesma montagem, com os alimentos TACO e as medidas POF do banco (que ja trazem a correcao do leite). */
+    public static function fromDatabase(\App\Core\Database $db): self
+    {
+        $foods = [];
+        foreach ($db->all("SELECT taco_code, name, kcal, protein_g, carb_g, fat_g, fiber_g FROM foods WHERE source = 'taco' AND taco_code IS NOT NULL") as $r) {
+            $foods[(int) $r['taco_code']] = [
+                'name' => (string) $r['name'], 'kcal' => (float) ($r['kcal'] ?? 0), 'protein' => (float) ($r['protein_g'] ?? 0),
+                'carb' => (float) ($r['carb_g'] ?? 0), 'fat' => (float) ($r['fat_g'] ?? 0), 'fiber' => (float) ($r['fiber_g'] ?? 0),
+            ];
+        }
+        $measures = [];
+        $rows = $db->all("SELECT f.taco_code, m.id, m.name, m.grams FROM food_measures m JOIN foods f ON f.id = m.food_id
+            WHERE f.source = 'taco' AND m.source = 'pof' ORDER BY m.id");
+        foreach ($rows as $m) {
+            $measures[(int) $m['taco_code']][(string) $m['name']] = ['id' => (int) $m['id'], 'grams' => (float) $m['grams']];
+        }
+        return new self(require APP_ROOT . '/data/dietas/cardapio.php', $foods, $measures);
     }
 }
