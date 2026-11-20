@@ -33,6 +33,15 @@ $action = $user === null ? '/equipe/novo' : '/equipe/' . $user['id'] . '/editar'
     <p class="ajuda">Obrigatório para médico(a) e nutricionista.</p>
   </div>
   <div class="campo">
+    <label for="especialidade">Especialidade</label>
+    <input type="text" id="especialidade" name="especialidade" value="<?= e($values['especialidade']) ?>" maxlength="80">
+  </div>
+  <div class="campo">
+    <label for="rqe">RQE</label>
+    <input type="text" id="rqe" name="rqe" value="<?= e($values['rqe']) ?>" maxlength="40">
+    <p class="ajuda">Especialidade e RQE saem no cabeçalho e na assinatura dos atestados.</p>
+  </div>
+  <div class="campo">
     <label><input type="checkbox" name="administrador" value="1"<?= $values['administrador'] ? ' checked' : '' ?>> Administrador (somente médico)</label>
   </div>
   <button type="submit" class="btn">Salvar</button>
