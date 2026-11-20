@@ -7,7 +7,11 @@ namespace App\Nutrition;
 final class TacoImporter
 {
     /** @return list<array{taco_code:int,name:string,group_name:string,kcal:?float,protein_g:?float,carb_g:?float,fat_g:?float,fiber_g:?float}> */
-    public static function parse(string $foodCsv, string $nutrientsCsv, string $categoriesCsv): array
+    /**
+     * $overridesCsv (opcional, data/taco/overrides.csv): alimentos que a TACO deixou sem valor (ex.: leite fluido 457/458)
+     * recebem os cinco valores de outra fonte brasileira, citada na coluna `fonte`. Substitui os cinco valores do alimento.
+     */
+    public static function parse(string $foodCsv, string $nutrientsCsv, string $categoriesCsv, ?string $overridesCsv = null): array
     {
         $cats = [];
         foreach (self::csv($categoriesCsv) as $r) {
@@ -16,6 +20,15 @@ final class TacoImporter
         $nut = [];
         foreach (self::csv($nutrientsCsv) as $r) {
             $nut[(int) $r['foodId']] = $r;
+        }
+        foreach ($overridesCsv === null ? [] : self::csv($overridesCsv) as $o) {
+            $code = (int) $o['taco_code'];
+            if (!isset($nut[$code])) {
+                throw new \RuntimeException('Override para alimento inexistente: ' . $code);
+            }
+            foreach (['kcal', 'protein', 'carbohydrates', 'lipids', 'dietaryFiber'] as $k) {
+                $nut[$code][$k] = $o[$k];
+            }
         }
         $out = [];
         foreach (self::csv($foodCsv) as $r) {

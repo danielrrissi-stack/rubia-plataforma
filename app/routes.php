@@ -175,6 +175,10 @@ $router->post('/pacientes/{id:\d+}/energia', [EnergyController::class, 'store'],
 
 $router->get('/pacientes/{id:\d+}/plano', [MealPlanController::class, 'index'], $authMw);
 $router->post('/pacientes/{id:\d+}/plano/novo', [MealPlanController::class, 'create'], $authMw);
+$router->post('/pacientes/{id:\d+}/plano/sugestao', [\App\Diets\DietController::class, 'suggest'], $authMw);
+$router->post('/pacientes/{id:\d+}/restricoes', [\App\Diets\DietController::class, 'saveRestrictions'], $authMw);
+$router->get('/dietas-prontas', [\App\Diets\DietController::class, 'index'], $authMw);
+$router->get('/dietas-prontas/{code:[0-9A-Za-z]+}', [\App\Diets\DietController::class, 'show'], $authMw);
 $router->get('/alimentos/busca', [FoodController::class, 'search'], $authMw);
 $router->get('/alimentos', [FoodController::class, 'index'], $authMw);
 $router->get('/alimentos/novo', [FoodController::class, 'createForm'], $authMw);

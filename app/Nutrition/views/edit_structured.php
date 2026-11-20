@@ -14,7 +14,8 @@ $data = MealPlanController::editorData(is_array($plan['structure'] ?? null) ? $p
 $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 ?>
 <h1><?= $isPlan ? 'Plano alimentar' : 'Modelo' ?><?php if ($patient !== null): ?> — <?= e($patient['social_name'] ?: $patient['full_name']) ?><?php endif; ?></h1>
-<p><a href="<?= e(url($context['backUrl'])) ?>">Voltar</a></p>
+<p><a href="<?= e(url($context['backUrl'])) ?>">Voltar</a><?php if ($isPlan && ($plan['source_diet_code'] ?? null) !== null): ?>
+  · <span class="ajuda">Origem: dieta pronta <a href="<?= e(url('/dietas-prontas/' . $plan['source_diet_code'])) ?>"><?= e($plan['source_diet_code']) ?></a></span><?php endif; ?></p>
 
 <div id="pe-erros" class="aviso aviso-erro" role="alert"<?= $errors === [] ? ' hidden' : '' ?>>
   <p>Não foi possível salvar. Corrija:</p>
