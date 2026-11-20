@@ -126,7 +126,8 @@ final class DemoSeed
             $id = Container::users()->create($row + ['password' => self::PASSWORD, 'active' => 1]);
             $this->u[$key] = $this->db->one('SELECT * FROM users WHERE id = ?', [$id]);
         };
-        $mk('medico', ['name' => 'Dra. Ana Exemplo', 'email' => self::LOGINS['medico'], 'role' => 'medico', 'is_admin' => 1] + $staff);
+        $mk('medico', ['name' => 'Dra. Ana Exemplo', 'email' => self::LOGINS['medico'], 'role' => 'medico', 'is_admin' => 1,
+            'professional_register' => 'CRM-XX 000000', 'specialty' => 'Pediatra', 'rqe' => '000000'] + $staff);
         $mk('nutricionista', ['name' => 'Bruna Fictícia Lopes', 'email' => self::LOGINS['nutricionista'], 'role' => 'nutricionista'] + $staff);
         $mk('secretaria', ['name' => 'Cíntia Modelo Rocha', 'email' => self::LOGINS['secretaria'], 'role' => 'secretaria'] + $staff);
         $mk('responsavel', ['name' => 'Carla Exemplo Moraes', 'email' => self::LOGINS['responsavel'], 'role' => 'responsavel']);
@@ -330,6 +331,15 @@ final class DemoSeed
         $out['trecho'] = Container::textSnippets()->create('Água ao longo do dia', 'Beber um copo de água ao acordar, no meio da manhã e à tarde.', $doc);
         $out['coleta'] = (int) $this->db->one('SELECT id FROM lab_collections WHERE patient_id = ? ORDER BY collected_on DESC LIMIT 1', [$ids['adulto']])['id'];
         $out['receita'] = (int) $this->db->one("SELECT id FROM prescriptions WHERE patient_id = ? AND drug_name = 'Tirzepatida'", [$ids['adulto']])['id'];
+        foreach (['rx_clinic_name' => 'Consultório Exemplo', 'rx_address' => 'Rua Fictícia, 100 — Centro', 'rx_phone' => '(11) 90000-0000', 'rx_city' => 'Cidade Exemplo'] as $k => $v) {
+            $this->db->run('INSERT INTO settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)', [$k, $v]);
+        }
+        $adult = Container::patients()->find($ids['adulto']);
+        [$clean] = \App\Certificates\CertificateText::validate('comparecimento', ['data' => $this->today, 'inicio' => '09:00', 'fim' => '09:40'], $this->today);
+        $docRow = $this->db->one('SELECT * FROM users WHERE id = ?', [$doc]);
+        $html = \App\Certificates\CertificateText::document('comparecimento', $clean, $adult, $docRow,
+            \App\Medications\PrescriptionPrintController::headSettings(), $this->today);
+        $out['atestado'] = Container::certificates()->create($ids['adulto'], $doc, 'comparecimento', $this->today, $clean, $html, null);
         $out['medida'] = (int) $this->db->one('SELECT id FROM measurements WHERE patient_id = ? ORDER BY measured_on DESC, id DESC LIMIT 1', [$lia])['id'];
         $out['registro_prontuario'] = (int) $this->db->one("SELECT id FROM clinical_entries WHERE patient_id = ? AND kind = 'evolucao' ORDER BY id DESC LIMIT 1", [$lia])['id'];
         return $out;

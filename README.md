@@ -362,6 +362,15 @@ A família pode **relatar um efeito indesejado** (até 90 dias para trás); a te
 
 Preencha o **cabeçalho** uma única vez em **Receita (cabeçalho)** (`/admin/receita`, médica administradora). Depois, na ficha, escolha os itens da receita e clique em **Imprimir**; na janela de impressão do navegador, escolha **Salvar como PDF** se preferir um arquivo. A assinatura é **à mão**. Receitas de **controle especial** (duas vias) **não** são cobertas.
 
+### Atestados e declarações
+
+Na ficha do paciente, cartão **Atestados** (só a médica): **comparecimento**, **acompanhante**, **afastamento** (1 a 90 dias) e
+**aptidão para atividade física**. O texto é fixo (`app/Certificates/CertificateText.php`); a médica preenche data, horário, dias,
+acompanhante e uma observação opcional. O **CID** só sai com a caixa de autorização marcada. O cabeçalho usa o nome,
+a **especialidade**, o **registro** e o **RQE** do cadastro da médica (**Equipe**); o rodapé usa cidade, telefone e endereço de
+**Receita (cabeçalho)**. Cada emissão fica gravada (o PDF sai sempre igual) e aparece na linha do tempo; não se apaga,
+**anula-se** com motivo (o PDF passa a sair com a marca "ANULADO").
+
 ## Diário de hábitos
 
 Aqui a equipe pede à família que anote hábitos do dia a dia (alimentação, água, sono, atividade, tempo de tela, peso e medidas), e a família registra pelo portal. **O diário apenas guarda o que foi anotado: não calcula, não compara com metas e não julga nada.**
@@ -622,3 +631,10 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
 16. **A atualização do manual de utilização** não tem migração. Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de
    `rubia_app/public/` para `public_html/rubia.med.br/` (nova pasta `assets/manual/` com fotos e PDFs, e CSS).
    **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
+17. **A atualização dos atestados** traz a migração `016_certificates.sql`. Faça **backup do banco** antes.
+   Com terminal: `php /home2/USUARIO/rubia_app/tools/migrate.php`. Sem terminal, importe no phpMyAdmin
+   `database/migrations/016_certificates.sql` e logo depois, na aba "SQL":
+   `INSERT INTO schema_migrations (name) VALUES ('016_certificates.sql');`
+   Extraia o zip **dentro de `rubia_app`** e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/`
+   (CSS e fotos novas do manual). **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
+   Depois, em **Equipe**, preencha a **especialidade** e o **RQE** da médica.
