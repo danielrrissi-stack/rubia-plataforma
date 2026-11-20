@@ -174,4 +174,45 @@ final class TemplateTest extends DbTestCase
 
         $this->assertSame(0, (int) $this->db->one('SELECT COUNT(*) c FROM meal_plan_templates')['c']);
     }
-}
+
+    private function publishedV2(array $doc, array $p): int
+    {
+        $days = [];
+        for ($i = 0; $i < 7; $i++) {
+            $days[] = ['meals' => [['name' => 'RefD' . $i . 'X', 'time' => '', 'note' => '', 'options' => [['items' => [[
+                'food_id' => 1, 'food_name' => 'Arroz', 'qty' => 100.0, 'measure_id' => null, 'measure_name' => null,
+                'measure_plural' => null, 'grams' => 100.0, 'note' => '', 'subs' => [],
+                'per100' => ['kcal' => 130.0, 'protein' => 2.5, 'carb' => 28.0, 'fat' => 0.2, 'fiber' => 1.6],
+            ]]]]]]];
+        }
+        $id = Container::mealPlans()->createDraft((int) $p['id'], 'estruturado', ['title' => 'Por dias', 'structure' => ['v' => 2, 'start' => '2026-11-23', 'days' => $days]], (int) $doc['id']);
+        Container::mealPlans()->publish($id, (int) $doc['id']);
+        return $id;
+    }
+
+    public function testSaveTemplateFromV2Day(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->publishedV2($doc, $p);
+        $res = $this->post('/planos/' . $planId . '/salvar-como-modelo', ['titulo' => 'Modelo do dia 3', 'dia' => '3']);
+        $this->assertSame(302, $res->status);
+        $row = $this->db->one('SELECT structure_json FROM meal_plan_templates');
+        $s = json_decode((string) $row['structure_json'], true);
+        $this->assertSame(1, $s['v']);
+        $this->assertCount(1, $s['meals']);
+        $this->assertSame('RefD3X', $s['meals'][0]['name']);
+        $this->assertArrayNotHasKey('days', $s);
+    }
+
+    public function testSaveTemplateFromV2RequiresValidDay(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $planId = $this->publishedV2($doc, $p);
+        foreach ([[], ['dia' => '7'], ['dia' => '-1'], ['dia' => 'x']] as $extra) {
+            $res = $this->post('/planos/' . $planId . '/salvar-como-modelo', ['titulo' => 'Sem dia'] + $extra);
+            $this->assertSame(302, $res->status);
+            $this->assertSame('/planos/' . $planId, $res->headers['Location']);
+        }
+        $this->assertSame(0, (int) $this->db->one('SELECT COUNT(*) c FROM meal_plan_templates')['c']);
+        $this->assertStringContainsString('Escolha o dia para salvar como modelo.', $this->get('/planos/' . $planId)->body);
+    }}

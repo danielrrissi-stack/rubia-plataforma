@@ -117,7 +117,21 @@ $row = static function (array $p) use ($today, $canEdit, $pid, $hasEntries): str
       <?php if ($hasFood): ?>
         <div>
           <h4>Plano alimentar</h4>
-          <?php $plan = $plans[$d] ?? null; ?>
+          <?php
+          $plan = $plans[$d] ?? null;
+          $dayIndexes = null;
+          $dayDates = null;
+          $dayAnchors = false; // a secao do dia da semana ja usa o id dia-AAAA-MM-DD
+          if ($plan !== null && $plan['mode'] === 'estruturado' && \App\Nutrition\PlanDays::isMulti((array) $plan['structure'])) {
+              $idx = \App\Nutrition\PlanDays::indexFor((array) $plan['structure'], $d);
+              if ($idx === null) {
+                  $plan = null; // antes do inicio do plano
+              } else {
+                  $dayIndexes = [$idx];
+                  $dayDates = [$idx => $d];
+              }
+          }
+          ?>
           <?php if ($plan === null): ?>
             <p class="ajuda">Sem plano alimentar publicado neste dia.</p>
           <?php else: ?>

@@ -348,4 +348,57 @@ final class MealPlanStructuredTest extends DbTestCase
             'age_years' => 10, 'tmb_kcal' => 1200, 'get_kcal' => 1800, 'created_by' => $by,
         ];
     }
-}
+
+    /** Plano v2 publicado: $n dias a partir de $start, refeicao "RefDnnX" por dia. */
+    private function publishedV2(int $pid, int $by, string $start, int $n = 14): int
+    {
+        $days = [];
+        for ($i = 0; $i < $n; $i++) {
+            $days[] = ['meals' => [$this->meal([['food_id' => 53, 'qty' => '100', 'measure_id' => null, 'note' => '', 'subs' => []]], sprintf('RefD%02dX', $i))]];
+        }
+        $structure = (new \App\Nutrition\MealPlanResolver(Container::foods()))->resolve(['v' => 2, 'start' => $start, 'days' => $days], true);
+        $id = Container::mealPlans()->createDraft($pid, 'estruturado', ['title' => 'Plano por dias', 'structure' => $structure], $by);
+        Container::mealPlans()->publish($id, $by);
+        return $id;
+    }
+
+    public function testShowV2ListsEveryDayWithKcal(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $id = $this->publishedV2((int) $p['id'], (int) $doc['id'], '2026-11-23');
+        $body = $this->get('/planos/' . $id)->body;
+        $this->assertSame(14, substr_count($body, 'class="plano-dia"'));
+        $this->assertStringContainsString('id="dia-2026-11-23"', $body);
+        $this->assertStringContainsString('<h2>Segunda, 23/11', $body);
+        $this->assertStringContainsString('<h2>Terça, 24/11', $body);
+        $this->assertSame(14, substr_count($body, 'kcal no dia'));
+        $this->assertStringContainsString('Média dos dias', $body);
+        $this->assertStringContainsString('<select name="dia"', $body);
+        $print = $this->get('/planos/' . $id . '/imprimir', ['totais' => '1'])->body;
+        $this->assertSame(14, substr_count($print, 'class="plano-dia"'));
+        $this->assertStringContainsString('Média dos dias', $print);
+        $plain = $this->get('/planos/' . $id . '/imprimir')->body;
+        $this->assertSame(14, substr_count($plain, 'class="plano-dia"'));
+        $this->assertStringNotContainsString('kcal', $plain);
+    }
+
+    public function testShowV2MarksToday(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $id = $this->publishedV2((int) $p['id'], (int) $doc['id'], date('Y-m-d'), 7);
+        $body = $this->get('/planos/' . $id)->body;
+        $this->assertSame(1, substr_count($body, '<span class="selo">hoje</span>'));
+    }
+
+    public function testBodyDayIndexesAndDatesOverride(): void
+    {
+        [$doc, $p] = $this->setupDoctor();
+        $id = $this->publishedV2((int) $p['id'], (int) $doc['id'], '2026-11-23');
+        $plan = Container::mealPlans()->find($id);
+        $html = \App\Core\View::render('Nutrition/views/_plan_body.php', ['plan' => $plan, 'family' => true, 'dayIndexes' => [9, 8], 'dayDates' => [9 => '2026-12-01', 8 => '2026-12-02']], null);
+        $this->assertSame(2, substr_count($html, 'class="plano-dia"'));
+        $this->assertLessThan(strpos($html, 'Quarta, 02/12'), strpos($html, 'Terça, 01/12'));
+        $this->assertStringContainsString('RefD09X', $html);
+        $this->assertStringNotContainsString('RefD00X', $html);
+        $this->assertStringNotContainsString('kcal', $html);
+    }}

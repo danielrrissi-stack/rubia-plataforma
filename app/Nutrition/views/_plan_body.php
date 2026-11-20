@@ -6,15 +6,44 @@
  */
 use App\Nutrition\FamilyPhrase;
 use App\Nutrition\MealPlanCalculator;
+use App\Nutrition\PlanDays;
 use App\Nutrition\PlanText;
 
 $family = $family ?? false;
+// Plano por dias (v2): $dayIndexes (lista de indices) e $dayDates (data exibida por indice) restringem/rotulam os dias;
+// $markToday (so equipe) marca o dia de hoje; $dayAnchors = false evita id duplicado quando a pagina ja tem o id do dia.
+$groups = [];
+if ($plan['mode'] !== 'texto') {
+    $struct = (array) ($plan['structure'] ?? []);
+    if (PlanDays::isMulti($struct)) {
+        $all = PlanDays::days($struct);
+        $idxs = isset($dayIndexes) ? array_values((array) $dayIndexes) : array_keys($all);
+        foreach ($idxs as $k) {
+            if (!isset($all[$k])) {
+                continue;
+            }
+            $date = isset($dayDates[$k]) ? (string) $dayDates[$k] : (string) $all[$k]['date'];
+            $groups[] = ['date' => $date, 'meals' => $all[$k]['meals']];
+        }
+    } else {
+        $groups[] = ['date' => null, 'meals' => (array) ($struct['meals'] ?? [])];
+    }
+}
+$markToday = $markToday ?? false;
+$dayAnchors = $dayAnchors ?? true;
+$weekdays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 ?>
 <div class="plano-corpo">
 <?php if ($plan['mode'] === 'texto'): ?>
   <?= PlanText::toHtml((string) ($plan['body_text'] ?? '')) ?>
 <?php else: ?>
-  <?php foreach ((array) ($plan['structure']['meals'] ?? []) as $meal): ?>
+  <?php foreach ($groups as $group): $multiDay = $group['date'] !== null; ?>
+  <?php if ($multiDay): $dt = new DateTimeImmutable($group['date']); ?>
+  <section class="plano-dia"<?= $dayAnchors ? ' id="dia-' . e($group['date']) . '"' : '' ?>>
+    <h2><?= e($weekdays[(int) $dt->format('w')] . ', ' . $dt->format('d/m')) ?><?= $markToday && $group['date'] === date('Y-m-d') ? ' <span class="selo">hoje</span>' : '' ?></h2>
+    <?php if (!$family): ?><p class="ajuda"><?= e(fmt_num(MealPlanCalculator::day(['meals' => $group['meals']])['kcal'], 0)) ?> kcal no dia</p><?php endif; ?>
+  <?php endif; ?>
+  <?php foreach ($group['meals'] as $meal): ?>
     <section class="plano-refeicao">
       <h3><?= e($meal['name']) ?><?= ($meal['time'] ?? '') !== '' ? ' — ' . e($meal['time']) : '' ?></h3>
       <?php if (($meal['note'] ?? '') !== ''): ?><p class="ajuda"><?= e($meal['note']) ?></p><?php endif; ?>
@@ -33,6 +62,8 @@ $family = $family ?? false;
         </ul>
       <?php endforeach; ?>
     </section>
+  <?php endforeach; ?>
+  <?php if ($multiDay): ?></section><?php endif; ?>
   <?php endforeach; ?>
 <?php endif; ?>
 <?php if (trim((string) ($plan['guidance_text'] ?? '')) !== ''): ?>
