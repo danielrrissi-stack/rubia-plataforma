@@ -363,6 +363,14 @@ A família pode **relatar um efeito indesejado** (até 90 dias para trás); a te
 
 Preencha o **cabeçalho** uma única vez em **Receita (cabeçalho)** (`/admin/receita`, médica administradora). Depois, na ficha, escolha os itens da receita e clique em **Imprimir**; na janela de impressão do navegador, escolha **Salvar como PDF** se preferir um arquivo. A assinatura é **à mão**. Receitas de **controle especial** (duas vias) **não** são cobertas.
 
+### Papel timbrado
+
+Três folhas A4 para **preencher à mão** — **Receita**, **Pedido de Exames** e **Anotações** — abertas em PDF numa aba nova. Em
+**Receita (cabeçalho)** (`/admin/receita`, administradora) saem em branco; no **fim da ficha do paciente** (só a médica) saem com nome,
+nascimento e data de hoje. **Nada é gravado** (só a auditoria de visualização). Nome, especialidade, CRM e RQE vêm do usuário logado
+(**Equipe**); telefone, endereço, cidade e CEP vêm de **Receita (cabeçalho)**; o nome da clínica, o site e o aplicativo são fixos.
+O desenho vetorial fica em `app/Letterhead/art/`, as medidas em `app/Letterhead/papel.css` e a fonte Nunito (licença OFL) em `lib/papel-fonts/`.
+
 ### Atestados e declarações
 
 Na ficha do paciente, cartão **Atestados** (só a médica): **comparecimento**, **acompanhante**, **afastamento** (1 a 90 dias) e
@@ -657,3 +665,7 @@ Os testes recriam o banco `rubia_test` a cada execução; use um banco separado 
    **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.**
    **Cron:** confira que o Cron de 5 minutos (`cron/run.php`) existe no cPanel, pois a continuação automática dos planos
    (rascunho e e-mail de aviso a partir das 06:00) depende dele.
+20. **A atualização do papel timbrado** não tem migração. Extraia o zip **dentro de `rubia_app`** (traz `app/Letterhead/` e
+   `lib/papel-fonts/`) e copie o **conteúdo** de `rubia_app/public/` para `public_html/rubia.med.br/` (manual da médica).
+   **Depois da cópia, refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.** Confira em **Receita (cabeçalho)** o telefone, o
+   endereço e o CEP, e em **Equipe** a especialidade, o CRM e o RQE da médica.

@@ -112,6 +112,17 @@ return [
         ],
     ],
     [
+        'id' => 'papel-timbrado',
+        'title' => 'Papel timbrado para preencher à mão',
+        'steps' => [
+            'Na ficha do paciente, no fim da página, clique em "Receita", "Pedido de Exames" ou "Anotações".',
+            'A folha A4 abre em outra aba com o nome, a data de nascimento e a data de hoje. Imprima e escreva à mão.',
+            'Para a folha em branco, a administradora usa os mesmos três botões em "Receita (cabeçalho)" no menu.',
+        ],
+        'tip' => 'Nada do que for escrito fica no sistema. Nome, especialidade, CRM e RQE vêm do seu cadastro; telefone, endereço e cidade vêm de "Receita (cabeçalho)". Na impressora, use tamanho A4 e escala 100%.',
+        'images' => [],
+    ],
+    [
         'id' => 'evolucao',
         'title' => 'Painel de evolução',
         'intro' => 'Cruza a curva de peso com as doses de cada remédio para mostrar se a dose atual ainda está fazendo efeito.',
@@ -176,6 +187,7 @@ return [
         'steps' => [
             'Clique em "Receita (cabeçalho)" no menu.',
             'Preencha nome do consultório, endereço, telefone e cidade e clique em "Salvar".',
+            'Os botões no alto da tela abrem o papel timbrado em branco: "Receita", "Pedido de Exames" e "Anotações".',
         ],
         'images' => [$img('cabecalho-receita', '/admin/receita', 'Cabeçalho da receita.')],
     ],
