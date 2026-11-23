@@ -121,3 +121,10 @@ $pid = (int) $patient['id'];
     <?php endif; ?></section><?php endif; ?>
   <?php if (!empty($agendaCard)) { include dirname(__DIR__, 2) . '/Agenda/views/_patient_card.php'; } ?>
 </div>
+<?php if (!empty($canPapel)): ?>
+<section class="cartao" id="papel-timbrado" aria-labelledby="h-papel">
+  <h2 id="h-papel">Papel timbrado</h2>
+  <p class="ajuda">Folha para preencher à mão, já com o nome, o nascimento e a data de hoje. Nada fica gravado na ficha.</p>
+  <?php $papelBase = '/pacientes/' . $pid . '/papel/'; include dirname(__DIR__, 2) . '/Letterhead/views/_buttons.php'; ?>
+</section>
+<?php endif; ?>

@@ -79,4 +79,14 @@ final class PdfRendererTest extends TestCase
         $pdf = $this->renderer($this->tmp . '/cache')->render('T', '<p>x</p><img src="http://127.0.0.1:9/x.png">');
         $this->assertStringStartsWith('%PDF-', $pdf);
     }
+
+    public function test_optional_css_and_font_dir(): void
+    {
+        $r = $this->renderer($this->tmp . '/cache');
+        $css = APP_ROOT . '/app/Letterhead/papel.css';
+        $this->assertStringNotContainsString('Nunito', $r->render('T', '<p>x</p>'));
+        $this->assertStringContainsString('Nunito', $r->render('T', '<p style="font-family: nunito">x</p>', $css, APP_ROOT . '/lib/papel-fonts'));
+        $this->assertStringContainsString('pt-titulo', $r->document('T', '', $css));
+        $this->assertStringNotContainsString('pt-titulo', $r->document('T', ''));
+    }
 }

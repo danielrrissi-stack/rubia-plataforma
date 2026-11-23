@@ -16,17 +16,17 @@ final class PdfRenderer
     {
     }
 
-    /** Documento HTML completo com o CSS do PDF embutido; $bodyHtml ja vem escapado pela view. */
-    public function document(string $title, string $bodyHtml): string
+    /** Documento HTML completo com o CSS embutido (pdf.css ou $cssFile); $bodyHtml ja vem escapado pela view. */
+    public function document(string $title, string $bodyHtml, ?string $cssFile = null): string
     {
-        $css = (string) file_get_contents(__DIR__ . '/pdf.css');
+        $css = (string) file_get_contents($cssFile ?? __DIR__ . '/pdf.css');
         return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
             . '<title>' . htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</title>'
             . '<style>' . $css . '</style></head><body>' . $bodyHtml . '</body></html>';
     }
 
-    /** Bytes do PDF (A4 retrato). */
-    public function render(string $title, string $bodyHtml): string
+    /** Bytes do PDF (A4 retrato). $fontDir: pasta so de leitura com fontes extras (.ttf, .ufm e installed-fonts.json). */
+    public function render(string $title, string $bodyHtml, ?string $cssFile = null, ?string $fontDir = null): string
     {
         require_once $this->libDir . '/autoload.inc.php';
         $cache = $this->usableCacheDir();
@@ -38,11 +38,11 @@ final class PdfRenderer
         $options->setChroot([$this->libDir]);
         // fontDir fica nas fontes da biblioteca (so leitura): o Dompdf faz `require` de um arquivo
         // dessa pasta, entao ela nunca pode ser a pasta gravavel (nem o temp compartilhado da hospedagem).
-        $options->setFontDir($this->libDir . '/vendor/dompdf/dompdf/lib/fonts');
+        $options->setFontDir($fontDir ?? $this->libDir . '/vendor/dompdf/dompdf/lib/fonts');
         $options->setFontCache($cache);
         $options->setTempDir($cache);
         $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($this->document($title, $bodyHtml), 'UTF-8');
+        $dompdf->loadHtml($this->document($title, $bodyHtml, $cssFile), 'UTF-8');
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
         return (string) $dompdf->output();
