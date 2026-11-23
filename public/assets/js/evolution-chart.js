@@ -26,8 +26,23 @@
     return rows;
   }
 
+  /**
+   * Faixa do eixo de datas ajustada aos dados: comeca pouco antes do primeiro dado (nunca antes do
+   * inicio do periodo) e termina em toDay. Evita o vazio a esquerda no inicio do tratamento.
+   */
+  function fitRange(fromDay, toDay, dataDays) {
+    var MIN_SPAN = 14;
+    if (!dataDays.length) { return { min: toDay - 30, max: toDay }; }
+    var first = Math.min.apply(null, dataDays);
+    if (fromDay !== null && first < fromDay) { first = fromDay; }
+    var min = first - Math.max(1, Math.round((toDay - first) * 0.05));
+    if (toDay - min < MIN_SPAN) { min = toDay - MIN_SPAN; }
+    if (fromDay !== null && min < fromDay) { min = fromDay; }
+    return { min: min, max: toDay };
+  }
+
   if (typeof module === 'object' && module.exports) {
-    module.exports = { bandRows: bandRows, day: day };
+    module.exports = { bandRows: bandRows, day: day, fitRange: fitRange };
   }
   if (typeof window === 'undefined' || typeof document === 'undefined') { return; }
 
@@ -49,7 +64,7 @@
     return c.indexOf('alterado') === 0 ? COLORS.alterado : COLORS.limitrofe;
   }
   function xScale(min, max) {
-    return { type: 'linear', min: min, max: max, ticks: { maxTicksLimit: 8, callback: function (v) { return br(v); } } };
+    return { type: 'linear', min: min, max: max, ticks: { maxTicksLimit: 8, precision: 0, callback: function (v) { return br(v); } } };
   }
 
   // Escreve a dose dentro de cada barra.
@@ -162,14 +177,12 @@
   fetch(root.getAttribute('data-url'), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
     .then(function (r) { if (!r.ok) { throw new Error('http'); } return r.json(); })
     .then(function (j) {
-      var max = day(j.to);
-      var min = j.from ? day(j.from) : null;
-      if (min === null) {
-        var firsts = j.points.map(function (p) { return day(p[0]); });
-        j.meds.forEach(function (m) { m.segments.forEach(function (s) { firsts.push(day(s.from)); }); });
-        j.metabolism.forEach(function (s) { s.points.forEach(function (p) { firsts.push(day(p[0])); }); });
-        min = firsts.length ? Math.min.apply(null, firsts) : max - 30;
-      }
+      var firsts = j.points.map(function (p) { return day(p[0]); });
+      j.meds.forEach(function (m) { m.segments.forEach(function (s) { firsts.push(day(s.from)); }); });
+      j.metabolism.forEach(function (s) { s.points.forEach(function (p) { firsts.push(day(p[0])); }); });
+      var range = fitRange(j.from ? day(j.from) : null, day(j.to), firsts);
+      var min = range.min;
+      var max = range.max;
       if (!j.points.length) { msg.textContent = 'Nenhuma pesagem no período.'; }
       drawCurve(j, min, max);
       drawBands(j, min, max);
