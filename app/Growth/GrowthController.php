@@ -66,6 +66,9 @@ final class GrowthController
             'velocity' => $velocity,
             'tabs' => $this->tabsFor($birth, $today),
             'adultPatient' => $months >= self::ADULT_MONTHS,
+            'bandAges' => GrowthBands::available($birth, $today, $measures),
+            'bandCurrent' => GrowthBands::ageKey($birth, $today),
+            'bmiSummary' => BmiSummary::make($patient, $measures, Container::growth()),
             'canWrite' => $this->canWrite($user, $id),
             'isStaff' => in_array($user['role'], self::AUDIT_VIEW, true),
         ]);
@@ -228,6 +231,33 @@ final class GrowthController
             'patient' => $patientPts,
             'x_unit' => $unit,
         ]);
+    }
+
+    /**
+     * GET /pacientes/{id}/faixas.json?faixa=0-2|2-5|5-10|10-19 (so equipe clinica; sem faixa: a da idade atual).
+     * Graficos por faixa de classificacao: ver GrowthBands::data(). Adulto: charts vazio.
+     */
+    public function bands(Request $r): Response
+    {
+        $user = $r->attributes['user'];
+        $id = (int) $r->params['id'];
+        Container::gate()->authorize($user, 'view', Policy::ANTROPOMETRIA, $id, $r);
+        if (!in_array($user['role'], self::AUDIT_VIEW, true)) {
+            throw new HttpException(403);
+        }
+        $patient = $this->patient($id);
+        $key = $r->input('faixa', '');
+        if ($key === '') {
+            $key = GrowthBands::ageKey((string) $patient['birth_date'], date('Y-m-d'));
+            if ($key === null) {
+                return Response::json(['faixa' => null, 'charts' => []]);
+            }
+        }
+        if (!is_string($key) || !isset(GrowthBands::AGES[$key])) {
+            throw new HttpException(400);
+        }
+        $bands = new GrowthBands(Container::whoRef(), Container::growth());
+        return Response::json($bands->data($patient, Container::measurements()->current($id), $key));
     }
 
     /** @return array{0:array,1:array,2:callable} grade de referencia, pontos do paciente, resolvedor de tabela */

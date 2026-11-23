@@ -228,4 +228,54 @@ final class GrowthPagesTest extends DbTestCase
         $this->loginAs($this->makeUser('medico'));
         $this->assertSame(400, $this->get('/pacientes/' . $p['id'] . '/curvas.json', ['indicador' => 'xxx'])->status);
     }
+
+    public function testBandsPanelAndBmiSummaryComeAfterCurves(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->childPatient(date('Y-m-d', strtotime('-8 years -3 months')), 'M');
+        Container::measurements()->create((int) $p['id'], ['measured_on' => date('Y-m-d'), 'weight_kg' => 28.0, 'height_cm' => 128.0, 'position' => 'em_pe'] + $this->blank(), 'equipe', (int) $med['id']);
+        $this->loginAs($med);
+        $body = $this->get('/pacientes/' . $p['id'] . '/crescimento')->body;
+        $order = array_map(static fn (string $s): int => (int) strpos($body, $s), ['id="growth-chart"', 'id="growth-bands"', 'id="resumo-imc"', 'id="h-crianca"']);
+        $sorted = $order;
+        sort($sorted);
+        $this->assertSame($sorted, $order);
+        $this->assertGreaterThan(0, $order[0]);
+        $this->assertStringContainsString('IMC 17,1: ', $body);
+        $this->assertStringContainsString('imc-quadro tom-', $body);
+        $this->assertStringContainsString('growth-bands.js', $body);
+        $this->assertStringContainsString('data-faixa="5-10"', $body);
+        $this->assertStringNotContainsString('data-faixa-idade', $body); // uma faixa so: sem abas
+    }
+
+    public function testAdultHasSummaryButNoBandsPanel(): void
+    {
+        $med = $this->makeUser('medico');
+        $p = $this->childPatient('1990-01-01', 'F');
+        Container::measurements()->create((int) $p['id'], ['measured_on' => date('Y-m-d'), 'weight_kg' => 80.0, 'height_cm' => 160.0, 'position' => null] + $this->blank(), 'equipe', (int) $med['id']);
+        $this->loginAs($med);
+        $body = $this->get('/pacientes/' . $p['id'] . '/crescimento')->body;
+        $this->assertStringNotContainsString('growth-bands', $body);
+        $this->assertStringContainsString('Obesidade grau I.', $body);
+        $this->assertStringContainsString('IMC de 18,5 a 24,9', $body);
+        $this->assertSame(['faixa' => null, 'charts' => []], json_decode($this->get('/pacientes/' . $p['id'] . '/faixas.json')->body, true));
+    }
+
+    public function testSummaryWithoutMeasures(): void
+    {
+        $p = $this->childPatient('2018-01-01');
+        $this->loginAs($this->makeUser('medico'));
+        $this->assertStringContainsString('Registre uma medida com peso e altura', $this->get('/pacientes/' . $p['id'] . '/crescimento')->body);
+    }
+
+    public function testBandsJson(): void
+    {
+        $p = $this->childPatient(date('Y-m-d', strtotime('-8 years')));
+        $this->loginAs($this->makeUser('medico'));
+        $path = '/pacientes/' . $p['id'] . '/faixas.json';
+        $this->assertSame('5-10', json_decode($this->get($path)->body, true)['faixa']);
+        $this->assertSame('2-5', json_decode($this->get($path, ['faixa' => '2-5'])->body, true)['faixa']);
+        $this->assertSame(400, $this->get($path, ['faixa' => 'x'])->status);
+        $this->assertSame(400, $this->get($path, ['faixa' => ['x']])->status);
+    }
 }

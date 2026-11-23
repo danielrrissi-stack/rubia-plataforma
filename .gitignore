@@ -7,4 +7,5 @@ storage/*
 .phpunit.cache/
 config/.install.lock
 dist/
+modelo_grafico/
 config/config.demo.php

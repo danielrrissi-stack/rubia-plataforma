@@ -380,6 +380,14 @@ a **especialidade**, o **registro** e o **RQE** do cadastro da médica (**Equipe
 **Receita (cabeçalho)**. Cada emissão fica gravada (o PDF sai sempre igual) e aparece na linha do tempo; não se apaga,
 **anula-se** com motivo (o PDF passa a sair com a marca "ANULADO").
 
+## Crescimento: gráficos por faixa e resumo do IMC
+
+Em `/pacientes/{id}/crescimento` (médica e nutricionista), abaixo das curvas: **altura, peso e IMC** sobre faixas coloridas, com os cortes
+da OMS que o sistema já usa, e o **Resumo do IMC** da última medida (categoria, cor e peso mínimo e máximo). A faixa é a **Eutrofia da OMS**
+(escore Z de −2 a +1); no adulto, IMC de 18,5 a 24,9. A tabela da calculadora infantil da **ABRAN** (6 a 15 anos) aparece **só como comparação**:
+o mínimo dela fica perto da mediana da OMS. Meninos de 8 anos ficam sem essa linha porque a página da ABRAN traz um valor incoerente.
+Esta atualização não tem migração; copie `public/` (CSS, `growth-bands.js`, manual) e refaça a linha `// AJUSTE NO DEPLOY` do `index.php`.
+
 ## Diário de hábitos
 
 Aqui a equipe pede à família que anote hábitos do dia a dia (alimentação, água, sono, atividade, tempo de tela, peso e medidas), e a família registra pelo portal. **O diário apenas guarda o que foi anotado: não calcula, não compara com metas e não julga nada.**

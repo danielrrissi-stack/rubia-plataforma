@@ -19,7 +19,7 @@ function release_is_excluded(string $rel): bool
         // clinica ficticia, fotos e PDFs do manual: so na maquina de desenvolvimento
         'tools/demo/', 'tools/manual_shots.mjs', 'tools/manual_shots_lib.js', 'tools/manual_shots_list.php', 'tools/manual_pdf.php',
         'config/config.php', 'config/config.test.php', 'config/config.demo.php', 'config/config.demo.example.php', 'config/.install.lock',
-        'modelo_papel/', 'o que fazer.txt', 'phpunit.xml', '.gitignore', '.gitattributes',
+        'modelo_papel/', 'modelo_grafico/', 'o que fazer.txt', 'phpunit.xml', '.gitignore', '.gitattributes',
     ];
     /** Em storage/ so entram estes arquivos (a pasta precisa existir, vazia e protegida). */
     $storageKeep = ['storage/.htaccess', 'storage/.gitkeep'];

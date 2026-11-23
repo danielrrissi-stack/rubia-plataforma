@@ -112,6 +112,22 @@ th { font-size: .875rem; color: var(--tinta-suave); font-weight: 600; }
 .aba { font: inherit; padding: .3rem .8rem; border: 1px solid var(--linha); border-radius: 999px; background: var(--papel); color: var(--tinta); cursor: pointer; }
 .aba[aria-pressed=true] { background: var(--salvia-escura); color: #fff; border-color: var(--salvia-escura); }
 .grafico { position: relative; height: 24rem; }
+/* Graficos por faixa e resumo do IMC (tela de crescimento) */
+.faixa-grafico[hidden] { display: none; }
+.faixa-grafico + .faixa-grafico { margin-top: 1.5rem; }
+.faixa-grafico h3 { font-size: 1rem; margin-bottom: .3rem; }
+.imc-quadro { border-radius: 14px; padding: 1rem 1.3rem; color: #fff; }
+.imc-quadro.tom-ok { background: #2a6f2f; }
+.imc-quadro.tom-atencao { background: #8a5a00; }
+.imc-quadro.tom-alerta { background: #b3202f; }
+.imc-quadro.tom-grave { background: #6b1020; }
+.imc-frase { font-size: 1.2rem; margin: 0 0 .8rem; }
+.imc-numeros { display: flex; flex-wrap: wrap; gap: .6rem; margin: 0; }
+.imc-numeros > div { flex: 1 1 5rem; background: rgba(255, 255, 255, .16); border-radius: 10px; padding: .4rem .7rem; }
+.imc-numeros dt { font-size: .875rem; margin: 0; color: #fff; }
+.imc-numeros dd { font-size: clamp(1rem, 4.2vw, 1.3rem); font-weight: 700; margin: 0; white-space: nowrap; }
+.imc-numeros .imc-atual { background: #fff; color: var(--tinta); }
+.imc-numeros .imc-atual dt { color: var(--tinta-suave); }
 
 /* Portal: cartões e resumo */
 .portal-lead { font-size: 1.25rem; color: var(--tinta-suave); margin-top: 0; }
