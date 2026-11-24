@@ -1,0 +1,43 @@
+@page { margin: 18mm 16mm; }
+body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #000; line-height: 1.35; }
+h1 { font-size: 15pt; margin: 0 0 2mm; }
+h2 { font-size: 12.5pt; margin: 4mm 0 2mm; }
+h3 { font-size: 11pt; margin: 4mm 0 1.5mm; }
+p { margin: 0.8mm 0; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 0.3mm solid #999; padding: 1mm 1.5mm; text-align: left; vertical-align: top; }
+.receita-cabecalho { text-align: center; border-bottom: 0.3mm solid #000; padding-bottom: 2mm; margin-bottom: 4mm; }
+.receita-cabecalho h1 { margin: 0; }
+.receita-titulo { text-align: center; text-transform: uppercase; letter-spacing: 0.15em; }
+.receita-grupo h3 { text-decoration: underline; }
+.receita-item { margin-bottom: 3mm; page-break-inside: avoid; }
+.receita-nome { font-weight: bold; }
+.receita-rodape { margin-top: 14mm; text-align: center; page-break-inside: avoid; }
+.receita-assinatura { margin-top: 12mm; }
+.impressao-cabecalho { border-bottom: 0.3mm solid #000; padding-bottom: 2mm; margin-bottom: 3mm; }
+.impressao-cabecalho p { color: #333; }
+.plano-refeicao { page-break-inside: avoid; }
+.plano-refeicao h4 { font-size: 10.5pt; margin: 2mm 0 1mm; }
+ul { margin: 1mm 0 2mm; padding-left: 6mm; }
+li { margin: 0.6mm 0; }
+.ajuda { color: #444; font-size: 9.5pt; }
+.plano-orientacoes { margin-top: 5mm; }
+/* Manual de utilizacao */
+.manual-capa h1 { font-size: 22pt; margin-top: 30mm; }
+.manual-marca { color: #2f6b5f; font-weight: bold; }
+.manual-aviso { border: 0.4mm solid #8f3d1f; background: #f8e9e2; padding: 3mm; margin: 6mm 0; font-weight: bold; }
+.manual-secao { page-break-before: always; }
+.manual-dica { background: #e3eee9; padding: 2mm; margin: 2mm 0; }
+.manual-foto { margin: 3mm 0; page-break-inside: avoid; }
+.manual-foto img { border: 0.3mm solid #999; }
+.manual-foto-desktop img { width: 100%; }
+.manual-foto-mobile img { width: 62mm; }
+
+.atestado-cabecalho { text-align: center; border-bottom: 0.3mm solid #000; padding-bottom: 2mm; margin-bottom: 8mm; }
+.atestado-cabecalho h1 { margin: 0; letter-spacing: 0.05em; }
+.atestado-titulo { text-align: center; letter-spacing: 0.12em; margin: 6mm 0 8mm; }
+.atestado-corpo p { text-align: justify; margin: 0 0 4mm; line-height: 1.6; }
+.atestado-rodape { margin-top: 14mm; text-align: center; page-break-inside: avoid; }
+.atestado-data { margin-bottom: 14mm; }
+.atestado-contato { margin-top: 10mm; font-size: 9pt; }
+.atestado-anulado { border: 0.6mm solid #000; text-align: center; font-weight: bold; padding: 2mm; margin-bottom: 4mm; letter-spacing: 0.1em; }

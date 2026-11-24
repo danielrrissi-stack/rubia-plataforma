@@ -1,0 +1,56 @@
+/* Papel timbrado (so PDF). Posicoes em mm medidas no modelo; tudo absoluto para a folha ser sempre uma so. */
+@page { size: A4 portrait; margin: 0; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "nunito", "DejaVu Sans", sans-serif; color: #1a4279; font-size: 10pt; line-height: 0.82; }
+.pt-fundo { position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; }
+.pt-medica { position: absolute; left: 110.5mm; top: 6mm; width: 95mm; height: 45mm; overflow: hidden; }
+.pt-nome { font-weight: bold; margin-bottom: 0.8mm; }
+.pt-cred { font-size: 10.5pt; }
+.pt-contato { border-collapse: collapse; margin-top: 1.2mm; width: 95mm; }
+.pt-contato td { padding: 0.8mm 0; vertical-align: middle; }
+.pt-contato .pt-icone { width: 6.8mm; padding: 0.75mm 0; }
+.pt-icone img { width: 4.6mm; height: 4.6mm; }
+.pt-fone { font-size: 10pt; font-weight: 600; }
+.pt-fone span { font-weight: bold; }
+.pt-site { font-size: 9pt; white-space: nowrap; }
+.pt-site b { font-weight: 600; }
+.pt-rotulo, .pt-valor, .pt-num, .pt-barra { position: absolute; line-height: 1; }
+.pt-rotulo, .pt-barra { font-size: 11.5pt; }
+.pt-valor { font-weight: 600; }
+.pt-num { font-size: 11pt; font-weight: 600; text-align: center; }
+.pt-barra { width: 3mm; text-align: center; }
+.pt-l1 { bottom: 230.7mm; }
+.pt-l2 { bottom: 221.6mm; }
+.pt-linha { position: absolute; height: 0; border-top: 0.25mm solid #1a4279; }
+.pt-r1 { top: 66mm; }
+.pt-r2 { top: 75.1mm; }
+.pt-paciente { left: 6.8mm; }
+.pt-paciente-valor { left: 26.5mm; width: 120mm; }
+.pt-paciente-linha { left: 25.3mm; width: 121.4mm; }
+.pt-data { left: 155mm; }
+.pt-d1 { left: 165.8mm; width: 8.6mm; }
+.pt-db1 { left: 174.5mm; }
+.pt-d2 { left: 177.6mm; width: 8.6mm; }
+.pt-db2 { left: 186.3mm; }
+.pt-d3 { left: 189.6mm; width: 13.6mm; }
+.pt-nasc { left: 6.8mm; }
+.pt-n1 { left: 47.2mm; width: 9.4mm; }
+.pt-nb1 { left: 57mm; }
+.pt-n2 { left: 60.4mm; width: 9.4mm; }
+.pt-nb2 { left: 70.2mm; }
+.pt-n3 { left: 73.8mm; width: 14.4mm; }
+.pt-titulo { position: absolute; left: 0; top: 83mm; width: 210mm; margin: 0; text-align: center; font-size: 16pt; font-weight: bold; line-height: 1; }
+.pt-c65 { font-size: 6.5pt; }
+.pt-c70 { font-size: 7pt; }
+.pt-c75 { font-size: 7.5pt; }
+.pt-c80 { font-size: 8pt; }
+.pt-c85 { font-size: 8.5pt; }
+.pt-c90 { font-size: 9pt; }
+.pt-c95 { font-size: 9.5pt; }
+.pt-c100 { font-size: 10pt; }
+.pt-c105 { font-size: 10.5pt; }
+.pt-c110 { font-size: 11pt; }
+.pt-c115 { font-size: 11.5pt; }
+.pt-c120 { font-size: 12pt; }
+.pt-c125 { font-size: 12.5pt; }
+.pt-c130 { font-size: 13pt; }

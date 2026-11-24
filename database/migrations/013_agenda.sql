@@ -1,0 +1,71 @@
+ALTER TABLE users ADD phone VARCHAR(30) NULL;
+CREATE TABLE professional_schedules (
+    professional_id INT UNSIGNED NOT NULL PRIMARY KEY,
+    slot_minutes SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+    address VARCHAR(200) NULL,
+    updated_by INT UNSIGNED NULL,
+    updated_at DATETIME NULL,
+    CONSTRAINT fk_prof_schedules_prof FOREIGN KEY (professional_id) REFERENCES users(id),
+    CONSTRAINT fk_prof_schedules_updater FOREIGN KEY (updated_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE schedule_ranges (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    professional_id INT UNSIGNED NOT NULL,
+    weekday TINYINT UNSIGNED NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    created_by INT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME NULL,
+    deleted_by INT UNSIGNED NULL,
+    KEY idx_schedule_ranges_prof_day (professional_id, weekday),
+    CONSTRAINT fk_schedule_ranges_prof FOREIGN KEY (professional_id) REFERENCES users(id),
+    CONSTRAINT fk_schedule_ranges_creator FOREIGN KEY (created_by) REFERENCES users(id),
+    CONSTRAINT fk_schedule_ranges_deleter FOREIGN KEY (deleted_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE schedule_exceptions (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    professional_id INT UNSIGNED NOT NULL,
+    kind ENUM('fechado','extra') NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    start_time TIME NULL,
+    end_time TIME NULL,
+    reason VARCHAR(120) NULL,
+    created_by INT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME NULL,
+    deleted_by INT UNSIGNED NULL,
+    KEY idx_schedule_exceptions_prof_start (professional_id, start_date),
+    CONSTRAINT fk_schedule_exceptions_prof FOREIGN KEY (professional_id) REFERENCES users(id),
+    CONSTRAINT fk_schedule_exceptions_creator FOREIGN KEY (created_by) REFERENCES users(id),
+    CONSTRAINT fk_schedule_exceptions_deleter FOREIGN KEY (deleted_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE appointments (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    professional_id INT UNSIGNED NOT NULL,
+    patient_id INT UNSIGNED NOT NULL,
+    starts_at DATETIME NOT NULL,
+    ends_at DATETIME NOT NULL,
+    kind ENUM('primeira','retorno') NOT NULL,
+    status ENUM('agendada','confirmada','realizada','faltou','cancelada','remarcada','reservada') NOT NULL DEFAULT 'agendada',
+    note VARCHAR(255) NULL,
+    cancel_reason VARCHAR(255) NULL,
+    rescheduled_from_id INT UNSIGNED NULL,
+    rescheduled_to_id INT UNSIGNED NULL,
+    status_changed_at DATETIME NULL,
+    created_by INT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by INT UNSIGNED NULL,
+    updated_at DATETIME NULL,
+    occupies TINYINT AS (IF(status IN ('cancelada','remarcada'), NULL, 1)) STORED,
+    UNIQUE KEY uq_appt_slot (professional_id, starts_at, occupies),
+    KEY idx_appointments_patient_start (patient_id, starts_at),
+    KEY idx_appointments_prof_start (professional_id, starts_at),
+    CONSTRAINT fk_appointments_prof FOREIGN KEY (professional_id) REFERENCES users(id),
+    CONSTRAINT fk_appointments_patient FOREIGN KEY (patient_id) REFERENCES patients(id),
+    CONSTRAINT fk_appointments_from FOREIGN KEY (rescheduled_from_id) REFERENCES appointments(id),
+    CONSTRAINT fk_appointments_to FOREIGN KEY (rescheduled_to_id) REFERENCES appointments(id),
+    CONSTRAINT fk_appointments_creator FOREIGN KEY (created_by) REFERENCES users(id),
+    CONSTRAINT fk_appointments_updater FOREIGN KEY (updated_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
