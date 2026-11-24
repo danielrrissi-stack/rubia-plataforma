@@ -47,7 +47,7 @@ final class GrowthController
 
         $childRows = [];
         $adultRows = [];
-        foreach ($measures as $m) {
+        foreach (array_reverse($measures) as $m) { // tabelas: medida mais recente na primeira linha
             $row = $this->describe($patient, $m);
             if ($row['adult']) {
                 $adultRows[] = $row;
