@@ -229,6 +229,11 @@ final class MealPlanController
         if ($errors !== [] || $structure === null) {
             return Response::json(['ok' => false, 'errors' => $errors], 422);
         }
+        // Nunca troca o formato do rascunho: um editor desatualizado (v1) gravaria um dia por cima de todos os dias.
+        $stored = is_array($plan['structure'] ?? null) ? $plan['structure'] : null;
+        if (PlanDays::isMulti($stored) !== PlanDays::isMulti($structure)) {
+            return Response::json(['ok' => false, 'errors' => ['Não foi possível salvar: o formato do plano mudou. Recarregue a página.']], 422);
+        }
         $base = isset($post['revisao']) && is_string($post['revisao']) && ctype_digit($post['revisao']) ? (int) $post['revisao'] : null;
         $auto = ($post['auto'] ?? '') === '1';
         try {
@@ -276,18 +281,48 @@ final class MealPlanController
         return [$title, $guidance, $structure, $errors];
     }
 
-    /** Totais por opcao, do dia e percentuais de macros (resposta JSON do editor estruturado). */
+    /**
+     * Totais por opcao, do dia e percentuais de macros (resposta JSON do editor estruturado).
+     * v1: {totals:{day, options}, percents}. v2: {totals:{days:[{day, options}]}, percents:[por dia], average}.
+     */
     public static function totalsPayload(array $structure): array
     {
+        if (PlanDays::isMulti($structure)) {
+            $days = [];
+            $percents = [];
+            foreach (PlanDays::days($structure) as $i => $_) {
+                $one = self::dayTotalsPayload(PlanDays::dayStructure($structure, $i));
+                $days[] = $one;
+                $percents[] = MealPlanCalculator::macroPercents($one['day']);
+            }
+            return [
+                'totals' => ['days' => $days], 'percents' => $percents,
+                'average' => MealPlanCalculator::plan($structure)['average'],
+            ];
+        }
+        $one = self::dayTotalsPayload($structure);
+        return ['totals' => $one, 'percents' => MealPlanCalculator::macroPercents($one['day'])];
+    }
+
+    /** @return array{day:array,options:list<list<array>>} */
+    private static function dayTotalsPayload(array $structure): array
+    {
         $options = [];
-        foreach ($structure['meals'] as $mi => $meal) {
+        foreach ((array) ($structure['meals'] ?? []) as $mi => $meal) {
             $options[$mi] = [];
-            foreach ($meal['options'] as $oi => $opt) {
-                $options[$mi][$oi] = MealPlanCalculator::option($opt);
+            foreach ((array) ($meal['options'] ?? []) as $oi => $opt) {
+                $options[$mi][$oi] = MealPlanCalculator::option((array) $opt);
             }
         }
-        $day = MealPlanCalculator::day($structure);
-        return ['totals' => ['day' => $day, 'options' => $options], 'percents' => MealPlanCalculator::macroPercents($day)];
+        return ['day' => MealPlanCalculator::day($structure), 'options' => $options];
+    }
+
+    /** Rotulo da aba do editor: "Seg 23/11". */
+    public static function dayTabLabel(string $ymd): string
+    {
+        $d = new \DateTimeImmutable($ymd);
+        $names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        return $names[(int) $d->format('w')] . ' ' . $d->format('d/m');
     }
 
     /**
@@ -333,24 +368,36 @@ final class MealPlanController
                 'measure_id' => $mid,
             ];
         };
-        $meals = [];
-        foreach ((array) ($structure['meals'] ?? []) as $meal) {
-            $opts = [];
-            foreach ((array) ($meal['options'] ?? []) as $opt) {
-                $items = [];
-                foreach ((array) ($opt['items'] ?? []) as $it) {
-                    $items[] = $line((array) $it) + [
-                        'note' => (string) ($it['note'] ?? ''),
-                        'subs' => array_map(static fn($sub): array => $line((array) $sub), (array) ($it['subs'] ?? [])),
-                    ];
+        $mealsOf = static function (mixed $list) use ($line): array {
+            $meals = [];
+            foreach ((array) $list as $meal) {
+                $opts = [];
+                foreach ((array) ($meal['options'] ?? []) as $opt) {
+                    $items = [];
+                    foreach ((array) ($opt['items'] ?? []) as $it) {
+                        $items[] = $line((array) $it) + [
+                            'note' => (string) ($it['note'] ?? ''),
+                            'subs' => array_map(static fn($sub): array => $line((array) $sub), (array) ($it['subs'] ?? [])),
+                        ];
+                    }
+                    $opts[] = ['items' => $items];
                 }
-                $opts[] = ['items' => $items];
+                $meals[] = [
+                    'name' => (string) ($meal['name'] ?? ''), 'time' => (string) ($meal['time'] ?? ''),
+                    'note' => (string) ($meal['note'] ?? ''), 'options' => $opts,
+                ];
             }
-            $meals[] = [
-                'name' => (string) ($meal['name'] ?? ''), 'time' => (string) ($meal['time'] ?? ''),
-                'note' => (string) ($meal['note'] ?? ''), 'options' => $opts,
-            ];
+            return $meals;
+        };
+        if ($structure !== null && PlanDays::isMulti($structure)) {
+            $days = [];
+            foreach (PlanDays::days($structure) as $day) {
+                $date = (string) $day['date'];
+                $days[] = ['date' => $date, 'label' => self::dayTabLabel($date), 'meals' => $mealsOf($day['meals'])];
+            }
+            return ['v' => 2, 'start' => (string) $structure['start'], 'days' => $days, 'foods' => array_values(array_filter($catalog))];
         }
+        $meals = $mealsOf($structure['meals'] ?? []);
         return ['meals' => $meals, 'foods' => array_values(array_filter($catalog))];
     }
 

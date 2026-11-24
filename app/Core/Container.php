@@ -339,4 +339,11 @@ final class Container
     {
         return self::$items['foodRestrictions'] ??= new \App\Diets\RestrictionRepository(self::db(), self::audit());
     }
+
+    public static function planContinuation(): \App\Diets\PlanContinuation
+    {
+        return self::$items['planContinuation'] ??= new \App\Diets\PlanContinuation(
+            self::db(), self::mealPlans(), self::energyGoals(), self::foods(), self::mailer(), self::gate(), self::audit(),
+        );
+    }
 }

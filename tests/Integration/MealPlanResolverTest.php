@@ -172,4 +172,37 @@ final class MealPlanResolverTest extends DbTestCase
         $this->assertStringContainsString('maior que zero', $e);
         $this->assertStringContainsString('observação do item inválida', $e);
     }
+
+    private function v2(string $start, int $n, array $badDay = []): array
+    {
+        $ok = ['food_id' => 53, 'qty' => '1', 'measure_id' => null, 'note' => ''];
+        $days = [];
+        for ($d = 0; $d < $n; $d++) {
+            $days[] = $this->plan(in_array($d, $badDay, true) ? ['qty' => '1', 'note' => ''] : $ok);
+        }
+        return ['v' => 2, 'start' => $start, 'days' => $days];
+    }
+
+    public function test_resolve_v2_keeps_days_and_start(): void
+    {
+        $out = $this->resolver()->resolve($this->v2('2026-11-23', 2));
+        $this->assertSame(2, $out['v']);
+        $this->assertSame('2026-11-23', $out['start']);
+        $this->assertCount(2, $out['days']);
+        $this->assertSame('Pão, trigo, francês', $out['days'][1]['meals'][0]['options'][0]['items'][0]['food_name']);
+    }
+
+    public function test_resolve_v2_rejects_bad_start_and_too_many_days(): void
+    {
+        $this->assertStringContainsString('início', implode(' ', $this->errors($this->v2('2026-13-01', 2))));
+        $this->assertStringContainsString('início', implode(' ', $this->errors($this->v2('2026-2-1', 2))));
+        $this->assertStringContainsString('31', implode(' ', $this->errors($this->v2('2026-11-23', 32))));
+        $this->assertNotSame([], $this->errors($this->v2('2026-11-23', 0)));
+    }
+
+    public function test_resolve_v2_error_names_the_date(): void
+    {
+        $errs = $this->errors($this->v2('2026-11-23', 2, [1]));
+        $this->assertStringStartsWith('Dia 24/11 (ter): ', $errs[0]);
+    }
 }

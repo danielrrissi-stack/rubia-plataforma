@@ -282,4 +282,48 @@ final class DiaryWeekPagesTest extends DbTestCase
         $this->assertStringContainsString('Pedidos começam em ' . date('d/m/Y', strtotime($start)), $body);
         $this->assertStringNotContainsString('Nenhum pedido de registro.', $body);
     }
-}
+
+    /** Plano v2 (14 dias, refeicoes "RefDnnX") publicado ha 20 dias, comecando em $start. */
+    private function planV2(string $start): int
+    {
+        $days = [];
+        for ($i = 0; $i < 14; $i++) {
+            $days[] = ['meals' => [['name' => sprintf('RefD%02dX', $i), 'time' => '', 'note' => null, 'options' => [['items' => [[
+                'food_id' => 1, 'food_name' => 'Arroz', 'qty' => 2, 'measure_id' => 1, 'measure_name' => 'colher', 'measure_plural' => 'colheres',
+                'grams' => 100.0, 'per100' => ['kcal' => 128.0, 'protein' => 2.5, 'carb' => 25.0, 'fat' => 0.2, 'fiber' => 1.6],
+                'note' => null, 'subs' => [],
+            ]]]]]]];
+        }
+        $id = Container::mealPlans()->createDraft($this->pid, 'estruturado', ['title' => 'Plano', 'structure' => ['v' => 2, 'start' => $start, 'days' => $days]], (int) $this->med['id']);
+        Container::mealPlans()->publish($id, (int) $this->med['id']);
+        $this->db->run('UPDATE meal_plans SET published_at = ? WHERE id = ?', [date('Y-m-d', strtotime('-20 days')) . ' 08:00:00', $id]);
+        return $id;
+    }
+
+    public function testDiaryShowsTheDayOfThePlan(): void
+    {
+        $this->food($this->request('alimentacao'));
+        $this->planV2(date('Y-m-d', strtotime('-3 days'))); // hoje = dia de indice 3
+        $body = $this->get($this->week())->body;
+        $this->assertStringContainsString('RefD03X', $body);
+        $this->assertSame(1, substr_count($body, 'RefD'));
+        $this->assertSame(1, substr_count($body, 'id="dia-' . $this->today . '"'));
+    }
+
+    public function testDiaryAfterEndShowsCycledDay(): void
+    {
+        $this->food($this->request('alimentacao'));
+        $this->planV2(date('Y-m-d', strtotime('-14 days'))); // ultimo dia = ontem; hoje = n-7
+        $body = $this->get($this->week())->body;
+        $this->assertStringContainsString('RefD07X', $body);
+        $this->assertSame(1, substr_count($body, 'RefD'));
+    }
+
+    public function testDiaryBeforePlanStartShowsNoPlan(): void
+    {
+        $this->food($this->request('alimentacao'));
+        $this->planV2(date('Y-m-d', strtotime('+5 days')));
+        $body = $this->get($this->week())->body;
+        $this->assertStringContainsString('Sem plano alimentar publicado neste dia.', $body);
+        $this->assertStringNotContainsString('RefD', $body);
+    }}

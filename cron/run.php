@@ -20,6 +20,7 @@ use App\Audit\AuditLog;
 use App\Backup\BackupService;
 use App\Backup\Dumper;
 use App\Core\Config;
+use App\Core\Container;
 use App\Core\Database;
 use App\Core\Mailer;
 
@@ -45,6 +46,14 @@ try {
     (new ReminderRound($db, $appointments, $reminderText, new AgendaMailer($db, $mailer, $reminderText), $mailer, $access))->runIfDue(date('Y-m-d H:i'));
 } catch (Throwable $e) {
     fwrite(STDERR, '[cron] agenda: ' . $e->getMessage() . PHP_EOL);
+    $failed = true;
+}
+
+// continuacao dos planos por dias: a partir das 06:00, uma vez por dia; o e-mail sai na passada seguinte
+try {
+    Container::planContinuation()->runIfDue(date('Y-m-d H:i'));
+} catch (Throwable $e) {
+    fwrite(STDERR, '[cron] continuacao: ' . $e->getMessage() . PHP_EOL);
     $failed = true;
 }
 

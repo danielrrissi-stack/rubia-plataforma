@@ -30,7 +30,10 @@
     l = l || {};
     return { food_id: l.food_id || null, food_name: String(l.food_name || ''), qty: fmtQty(l.qty), measure_id: l.measure_id || null };
   }
-  var meals = (Array.isArray(data.meals) ? data.meals : []).map(function (m) {
+  function mapMeals(arr) {
+    return (Array.isArray(arr) ? arr : []).map(mapMeal);
+  }
+  function mapMeal(m) {
     var options = (Array.isArray(m.options) ? m.options : []).map(function (o) {
       return { items: (Array.isArray(o.items) ? o.items : []).map(function (it) {
         var x = line(it);
@@ -41,7 +44,21 @@
     });
     if (options.length === 0) options.push({ items: [] });
     return { name: String(m.name || ''), time: String(m.time || ''), note: String(m.note || ''), options: options };
-  });
+  }
+  // Plano por dias (v2): uma aba por dia; "meals" aponta sempre para as refeicoes do dia aberto. v1: sem abas.
+  // plan-days.js e opcional aqui: sem ele (arquivo faltando no servidor) o plano por dias continua por dias,
+  // senao o editor salvaria um dia so por cima de todos. Os rotulos vem do servidor.
+  var PD = window.PlanDaysJs || {
+    dayLabel: function (startYmd, i) { return 'Dia ' + (Number(i) + 1); },
+    offTarget: function (kcal, m) { return typeof m === 'number' && m > 0 && Math.abs(Number(kcal) - m) > 0.10 * m; }
+  };
+  var multi = data.v === 2 && Array.isArray(data.days) && data.days.length > 0;
+  var start = multi ? String(data.start || '') : '';
+  var days = multi ? data.days.map(function (d, i) {
+    return { label: String(d.label || PD.dayLabel(start, i)), meals: mapMeals(d.meals) };
+  }) : null;
+  var cur = 0;
+  var meals = multi ? days[0].meals : mapMeals(data.meals);
 
   var list = document.getElementById('pe-refeicoes');
   var titleEl = document.getElementById('pe-titulo');
@@ -87,9 +104,9 @@
     });
     return sum;
   }
-  function dayTotals() {
+  function dayTotals(ms) {
     var sum = { kcal: 0, protein: 0, carb: 0, fat: 0, fiber: 0 };
-    meals.forEach(function (m) {
+    (ms || meals).forEach(function (m) {
       if (!m.options.length) return;
       var t = optionTotals(m.options[0]);
       KEYS.forEach(function (k) { sum[k] += t[k]; });
@@ -145,6 +162,7 @@
   function refreshTotals() {
     var day = dayTotals();
     showDay(day, percents(day));
+    if (multi) days.forEach(function (d, i) { showTabKcal(i, i === cur ? day.kcal : dayTotals(d.meals).kcal); });
     meals.forEach(function (m, mi) {
       m.options.forEach(function (o, oi) {
         showOption(mi, oi, optionTotals(o));
@@ -264,6 +282,95 @@
       var f = list.querySelector(focusSel);
       if (f) f.focus();
     }
+  }
+
+  // ---------- abas por dia (v2) ----------
+  var tabBar = null, copySel = null, dayLabelEl = document.getElementById('pe-total-dia-rotulo');
+  function showTabKcal(i, kcal) {
+    if (!tabBar) return;
+    var tab = tabBar.querySelector('[data-dia="' + i + '"]');
+    if (!tab) return;
+    var s = tab.querySelector('.pe-dia-kcal');
+    if (s) s.textContent = fmt(kcal, 0) + ' kcal';
+    tab.classList.toggle('pe-dia-fora', PD.offTarget(kcal, meta));
+  }
+  function confirmed(b) {
+    // Mesmo padrao do confirm-submit.js: a mensagem fica em data-confirm.
+    var msg = b.getAttribute('data-confirm');
+    return !msg || window.confirm(msg);
+  }
+  function buildDays() {
+    var totals = document.getElementById('pe-totais');
+    tabBar = el('div', { 'class': 'pe-dias', role: 'tablist', 'aria-label': 'Dias do plano' });
+    days.forEach(function (d, i) {
+      tabBar.appendChild(el('button', {
+        type: 'button', 'class': 'pe-dia', role: 'tab', id: 'pe-dia-' + i, 'data-dia': i, 'aria-controls': 'pe-refeicoes'
+      }, [el('span', { 'class': 'pe-dia-nome', text: d.label }), el('span', { 'class': 'pe-dia-kcal' })]));
+    });
+    copySel = el('select', { id: 'pe-copiar-de' });
+    var copyBtn = el('button', { type: 'button', 'class': 'btn btn-quiet pe-btn', id: 'pe-copiar', text: 'Copiar para este dia' });
+    var clearBtn = el('button', { type: 'button', 'class': 'btn btn-quiet pe-btn', id: 'pe-limpar-dia', text: 'Limpar dia' });
+    var tools = el('div', { 'class': 'pe-dias-acoes' }, [labeled('Copiar de outro dia', copySel), copyBtn, clearBtn]);
+    totals.parentNode.insertBefore(tabBar, totals);
+    totals.parentNode.insertBefore(tools, totals);
+    list.setAttribute('role', 'tabpanel');
+    tabBar.addEventListener('click', function (ev) {
+      var b = ev.target.closest ? ev.target.closest('[data-dia]') : null;
+      if (b) openDay(Number(b.getAttribute('data-dia')), false);
+    });
+    tabBar.addEventListener('keydown', function (ev) {
+      var n = days.length, to = null;
+      if (ev.key === 'ArrowRight') to = (cur + 1) % n;
+      else if (ev.key === 'ArrowLeft') to = (cur - 1 + n) % n;
+      else if (ev.key === 'Home') to = 0;
+      else if (ev.key === 'End') to = n - 1;
+      if (to === null) return;
+      ev.preventDefault();
+      openDay(to, true);
+    });
+    copySel.addEventListener('change', updateConfirms);
+    copyBtn.addEventListener('click', function () {
+      var from = Number(copySel.value);
+      if (!days[from] || from === cur || !confirmed(copyBtn)) return;
+      days[cur].meals = JSON.parse(JSON.stringify(days[from].meals)); // copia funda: editar um dia nunca muda o outro
+      meals = days[cur].meals;
+      changes++;
+      rerender(null);
+    });
+    clearBtn.addEventListener('click', function () {
+      if (!confirmed(clearBtn)) return;
+      // Mantem as refeicoes (nome e horario): dia sem refeicao nenhuma nao pode ser salvo.
+      meals.forEach(function (m) { m.note = ''; m.options = [{ items: [] }]; });
+      changes++;
+      rerender(null);
+    });
+    openDay(0, false);
+  }
+  function updateConfirms() {
+    var from = days[Number(copySel.value)];
+    var copyBtn = document.getElementById('pe-copiar');
+    copyBtn.disabled = !from;
+    copyBtn.setAttribute('data-confirm', from ? 'Substituir as refeições de ' + days[cur].label + ' pelas de ' + from.label + '?' : '');
+    document.getElementById('pe-limpar-dia').setAttribute('data-confirm', 'Limpar ' + days[cur].label + '? Todos os alimentos do dia saem e cada refeição fica só com uma opção, vazia (nome e horário continuam).');
+  }
+  function openDay(i, focusTab) {
+    if (!days[i]) return;
+    cur = i;
+    meals = days[i].meals;
+    closeResults(null);
+    tabBar.querySelectorAll('[data-dia]').forEach(function (b) {
+      var on = Number(b.getAttribute('data-dia')) === i;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.setAttribute('tabindex', on ? '0' : '-1');
+      b.classList.toggle('pe-dia-atual', on);
+      if (on && focusTab) b.focus();
+    });
+    list.setAttribute('aria-labelledby', 'pe-dia-' + i);
+    if (dayLabelEl) dayLabelEl.textContent = '(' + days[i].label + ')';
+    copySel.textContent = '';
+    days.forEach(function (d, j) { if (j !== i) copySel.appendChild(el('option', { value: j, text: d.label })); });
+    updateConfirms();
+    render();
   }
 
   // ---------- caminho "m.o.i.s" -> objeto ----------
@@ -423,8 +530,12 @@
 
   // ---------- salvar ----------
   function payload() {
+    if (multi) return { v: 2, start: start, days: days.map(function (d) { return { meals: mealsOut(d.meals) }; }) };
+    return { meals: mealsOut(meals) };
+  }
+  function mealsOut(ms) {
     function out(l) { return { food_id: l.food_id, qty: l.qty, measure_id: l.measure_id }; }
-    return { meals: meals.map(function (m) {
+    return ms.map(function (m) {
       return { name: m.name, time: m.time, note: m.note, options: m.options.map(function (o) {
         return { items: o.items.filter(function (it) { return it.food_id; }).map(function (it) {
           var x = out(it);
@@ -433,13 +544,18 @@
           return x;
         }) };
       }) };
-    }) };
+    });
   }
   // Linhas sem alimento escolhido na lista (o payload as deixa de fora): nunca somem em silencio.
   function incomplete() {
     var out = [];
-    meals.forEach(function (m, mi) {
-      var label = m.name || ('Refeição ' + (mi + 1));
+    if (multi) days.forEach(function (d) { incompleteIn(d.meals, d.label + ': ', out); });
+    else incompleteIn(meals, '', out);
+    return out;
+  }
+  function incompleteIn(ms, prefix, out) {
+    ms.forEach(function (m, mi) {
+      var label = prefix + (m.name || ('Refeição ' + (mi + 1)));
       m.options.forEach(function (o, oi) {
         o.items.forEach(function (it, ii) {
           var where = label + ', opção ' + (oi + 1) + ', item ' + (ii + 1);
@@ -450,7 +566,6 @@
         });
       });
     });
-    return out;
   }
   function showErrors(errs, focus) {
     if (!errorsBox) return;
@@ -541,11 +656,20 @@
         // Automatico com linhas sem alimento: salvou o resto e avisa quais ficaram de fora.
         showAutoNotice(missing.length ? 'Rascunho salvo em parte. Ficaram de fora as linhas sem alimento escolhido:' : '', missing);
         if (conflictBox && j.conflict) conflictBox.hidden = false;
-        if (at === changes && j.totals && j.totals.day) { // servidor e a referencia
-          showDay(j.totals.day, j.percents || percents(j.totals.day));
-          (j.totals.options || []).forEach(function (opts, mi) {
+        var srv = null, srvPct = null; // servidor e a referencia (v2: totais do dia aberto)
+        if (multi && j.totals && Array.isArray(j.totals.days)) {
+          srv = j.totals.days[cur] || null;
+          srvPct = Array.isArray(j.percents) ? j.percents[cur] : null;
+        } else if (!multi && j.totals && j.totals.day) {
+          srv = j.totals;
+          srvPct = j.percents;
+        }
+        if (at === changes && srv && srv.day) {
+          showDay(srv.day, srvPct || percents(srv.day));
+          (srv.options || []).forEach(function (opts, mi) {
             (opts || []).forEach(function (t, oi) { showOption(mi, oi, t); });
           });
+          if (multi) j.totals.days.forEach(function (d, i) { if (d && d.day) showTabKcal(i, d.day.kcal); });
         }
         setStatus((missing.length ? 'Rascunho salvo em parte às ' : 'Rascunho salvo às ') + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.');
         return j;
@@ -583,5 +707,6 @@
 
   var help = el('p', { id: 'pe-ajuda-busca', 'class': 'ajuda', text: 'Digite o nome do alimento; use as setas para escolher na lista e Enter para confirmar.' });
   list.parentNode.insertBefore(help, list);
-  render();
+  if (multi) buildDays();
+  else render();
 })();

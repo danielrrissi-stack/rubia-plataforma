@@ -3,6 +3,10 @@
 $pid = (int) $patient['id'];
 $status = ['rascunho' => 'Rascunho', 'publicado' => 'Vigente', 'substituido' => 'Substituído', 'encerrado' => 'Encerrado'];
 $family = false;
+$markToday = true;
+$multi = $plan['mode'] === 'estruturado' && \App\Nutrition\PlanDays::isMulti((array) $plan['structure']);
+$planDays = $multi ? \App\Nutrition\PlanDays::days((array) $plan['structure']) : [];
+$weekdays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 ?>
 <h1><?= e($plan['title']) ?></h1>
 <p><a href="<?= e(url('/pacientes/' . $pid . '/plano')) ?>">Voltar ao plano alimentar</a> ·
@@ -26,7 +30,7 @@ $family = false;
 <?php endif; ?>
 
 <?php if ($plan['mode'] === 'estruturado' && $plan['total_kcal'] !== null): ?>
-  <p class="ajuda">Total do dia: <?= e(fmt_num((float) $plan['total_kcal'], 0)) ?> kcal · proteína <?= e(fmt_num($plan['total_protein_g'] === null ? null : (float) $plan['total_protein_g'])) ?> g · carboidrato <?= e(fmt_num($plan['total_carb_g'] === null ? null : (float) $plan['total_carb_g'])) ?> g · gordura <?= e(fmt_num($plan['total_fat_g'] === null ? null : (float) $plan['total_fat_g'])) ?> g (calculado na publicação)</p>
+  <p class="ajuda"><?= $multi ? 'Média dos dias' : 'Total do dia' ?>: <?= e(fmt_num((float) $plan['total_kcal'], 0)) ?> kcal · proteína <?= e(fmt_num($plan['total_protein_g'] === null ? null : (float) $plan['total_protein_g'])) ?> g · carboidrato <?= e(fmt_num($plan['total_carb_g'] === null ? null : (float) $plan['total_carb_g'])) ?> g · gordura <?= e(fmt_num($plan['total_fat_g'] === null ? null : (float) $plan['total_fat_g'])) ?> g (calculado na publicação)</p>
 <?php endif; ?>
 <section class="cartao plano-leitura"><?php require __DIR__ . '/_plan_body.php'; ?></section>
 
@@ -35,6 +39,14 @@ $family = false;
   <p class="ajuda">Cria um modelo da equipe com o conteúdo deste plano (sem dados do paciente).</p>
   <form method="post" action="<?= e(url('/planos/' . $plan['id'] . '/salvar-como-modelo')) ?>"><?= csrf_field() ?>
     <label>Título do modelo <input name="titulo" value="<?= e($plan['title']) ?>" maxlength="150" required data-ditado></label>
+    <?php if ($multi): ?>
+      <label>Dia do plano <select name="dia" required>
+        <?php foreach ($planDays as $i => $d): $dt = new DateTimeImmutable((string) $d['date']); ?>
+          <option value="<?= e($i) ?>"><?= e($weekdays[(int) $dt->format('w')] . ', ' . $dt->format('d/m')) ?></option>
+        <?php endforeach; ?>
+      </select></label>
+      <p class="ajuda">O modelo leva um único dia.</p>
+    <?php endif; ?>
     <button type="submit" class="btn btn-quiet">Salvar como modelo</button>
   </form>
 </section>
