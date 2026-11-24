@@ -20,6 +20,8 @@ return static function (string $slug, string $as): array {
             'steps' => [
                 'Na ficha, no cartão "Crescimento", clique em "Ver crescimento".',
                 'Escolha a curva ("IMC/idade", "Peso/idade" ou "Altura/idade") e se quer ver em "Escore Z" ou "Percentil".',
+                'Abaixo das curvas, "Altura, peso e IMC por faixa" mostra as mesmas medidas sobre faixas coloridas: verde é adequado, amarelo é atenção, vermelho e cinza são as categorias fora do adequado. Se houver medidas de várias idades, escolha a faixa de idade.',
+                'O "Resumo do IMC" usa a última medida com peso e altura: mostra a categoria (a cor acompanha) e o peso mínimo e máximo para a altura. A categoria segue a OMS; de 6 a 15 anos aparece também, só para comparação, a faixa da calculadora infantil da ABRAN.',
                 'Para lançar uma medida, clique em "Registrar medida", preencha a data, o peso, a altura e o que mais tiver medido, e clique em "Salvar".',
                 'Errou um valor? Use "Corrigir" na tabela de medidas; o sistema guarda a versão anterior em "Versões".',
             ],

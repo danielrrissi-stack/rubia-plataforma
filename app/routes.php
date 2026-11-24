@@ -157,6 +157,7 @@ $router->post('/pacientes/{id:\d+}/maioridade', [AccessGrantController::class, '
 
 $router->get('/pacientes/{id:\d+}/crescimento', [GrowthController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/curvas.json', [GrowthController::class, 'curves'], $authMw);
+$router->get('/pacientes/{id:\d+}/faixas.json', [GrowthController::class, 'bands'], $authMw);
 $router->get('/pacientes/{id:\d+}/linha-do-tempo', [TimelineController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/meta-peso', [WeightGoalController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/meta-peso.json', [WeightGoalController::class, 'data'], $authMw);

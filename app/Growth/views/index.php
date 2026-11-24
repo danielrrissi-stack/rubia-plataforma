@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $patient @var string $today @var array $childRows @var array $adultRows @var array $velocity
- * @var array<string,string> $tabs @var bool $adultPatient @var bool $canWrite @var bool $isStaff
+ * @var array<string,string> $tabs @var bool $adultPatient @var array<string,string> $bandAges @var ?string $bandCurrent @var ?array $bmiSummary @var bool $canWrite @var bool $isStaff
  */
 use App\Growth\GrowthFormat;
 
@@ -76,6 +76,9 @@ $flags = static function (array $row): string {
     <div class="grafico"><canvas aria-label="Gráfico de crescimento" role="img"></canvas></div>
   </div>
 </section>
+
+<?php if ($bandCurrent !== null) { include __DIR__ . '/_bands.php'; } ?>
+<?php include __DIR__ . '/_bmi_summary.php'; ?>
 
 <?php if ($childRows !== []): ?>
 <section class="cartao" aria-labelledby="h-crianca">
@@ -159,3 +162,4 @@ $flags = static function (array $row): string {
 
 <script src="<?= e(url('/assets/vendor/chart.umd.min.js')) ?>"></script>
 <script src="<?= e(url('/assets/js/growth-chart.js')) ?>"></script>
+<?php if ($bandCurrent !== null): ?><script src="<?= e(asset('/assets/js/growth-bands.js')) ?>"></script><?php endif; ?>
