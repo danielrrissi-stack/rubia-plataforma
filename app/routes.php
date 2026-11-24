@@ -30,6 +30,7 @@ use App\Labs\LabController;
 use App\Medications\AdverseEventController;
 use App\Medications\PortalTreatmentController;
 use App\Medications\PrescriptionController;
+use App\Letterhead\LetterheadController;
 use App\Medications\PrescriptionPrintController;
 use App\Portal\PortalController;
 use App\Records\RecordController;
@@ -78,6 +79,7 @@ $router->post('/equipe/{id:\d+}/redefinir-2fa', [UserController::class, 'resetTw
 
 $router->get('/admin/receita', [PrescriptionPrintController::class, 'settingsForm'], $staffMw);
 $router->post('/admin/receita', [PrescriptionPrintController::class, 'saveSettings'], $staffMw);
+$router->get('/admin/receita/papel/{tipo}', [LetterheadController::class, 'blank'], $staffMw);
 $router->get('/admin/agenda', [AgendaSettingsController::class, 'form'], $staffMw);
 $router->post('/admin/agenda', [AgendaSettingsController::class, 'save'], $staffMw);
 $router->get('/admin/backups', [BackupController::class, 'index'], $staffMw);
@@ -238,6 +240,7 @@ $router->post('/exames/{collectionId:\d+}/anexos', [LabController::class, 'addAt
 $router->get('/pacientes/{id:\d+}/tratamento', [PrescriptionController::class, 'index'], $authMw);
 $router->get('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'createForm'], $authMw);
 $router->post('/pacientes/{id:\d+}/tratamento/nova', [PrescriptionController::class, 'create'], $authMw);
+$router->get('/pacientes/{id:\d+}/papel/{tipo}', [LetterheadController::class, 'patient'], $authMw);
 $router->get('/pacientes/{id:\d+}/receita', [PrescriptionPrintController::class, 'choose'], $authMw);
 $router->get('/pacientes/{id:\d+}/receita/imprimir', [PrescriptionPrintController::class, 'print'], $authMw);
 $router->get('/pacientes/{id:\d+}/receita/pdf', [PrescriptionPrintController::class, 'pdf'], $authMw);

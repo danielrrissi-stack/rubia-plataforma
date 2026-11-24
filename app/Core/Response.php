@@ -47,14 +47,14 @@ final class Response
         return $r;
     }
 
-    /** PDF para download (nome com acento vai em filename*, com fallback ASCII). */
-    public static function pdf(string $bytes, string $downloadName): self
+    /** PDF para download, ou para abrir na aba com $inline (nome com acento vai em filename*, com fallback ASCII). */
+    public static function pdf(string $bytes, string $downloadName, bool $inline = false): self
     {
         $safe = str_replace(['"', "\r", "\n", '\\'], '', $downloadName);
         $ascii = preg_replace('/[^\x20-\x7E]/u', '_', $safe) ?? 'documento.pdf';
         return new self($bytes, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $ascii . '"; filename*=UTF-8\'\'' . rawurlencode($safe),
+            'Content-Disposition' => ($inline ? 'inline' : 'attachment') . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . rawurlencode($safe),
             'Content-Length' => (string) strlen($bytes),
             'Cache-Control' => 'no-store',
             'X-Content-Type-Options' => 'nosniff',

@@ -94,6 +94,8 @@ final class SmokeAllRoutesTest extends DbTestCase
         '/pacientes/{id}/receita/imprimir'         => [302, 403, 403, 403, 403, 302], // sem p[] volta para a escolha
         '/pacientes/{id}/receita/pdf'              => [302, 403, 403, 403, 403, 302], // idem
         '/admin/receita'                           => [200, 403, 403, 403, 403, 302], // so is_admin (M e admin no fixture)
+        '/admin/receita/papel/{tipo}'              => [200, 403, 403, 403, 403, 302], // papel timbrado em branco
+        '/pacientes/{id}/papel/{tipo}'             => [200, 403, 403, 403, 403, 302], // papel timbrado do paciente: so a medica
         '/pacientes/{id}/atestados'                => [200, 403, 403, 403, 403, 302], // so a medica; C vai para a area dele
         '/pacientes/{id}/atestados/novo'           => [200, 403, 403, 403, 403, 302],
         '/pacientes/{id}/atestados/{certId}'       => [200, 403, 403, 403, 403, 302],
@@ -304,6 +306,7 @@ final class SmokeAllRoutesTest extends DbTestCase
                 'nome' => 'backup-20200101-000000.rbk',
                 'kind' => 'evolucao',
                 'perfil' => 'medica',
+                'tipo' => 'receita',
                 'planId' => (string) $this->fx['plan'],
                 'foodId' => '53',
                 'code' => '1500kcalSemana5',
