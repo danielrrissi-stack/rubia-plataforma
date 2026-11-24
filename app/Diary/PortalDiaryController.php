@@ -17,6 +17,8 @@ final class PortalDiaryController
     private const FAMILY = ['paciente', 'responsavel'];
     private const STAFF = ['medico', 'nutricionista', 'secretaria'];
     private const WINDOW_DAYS = 7;
+    /** Dias a frente mostrados (so leitura) para a familia se programar. */
+    private const UPCOMING_DAYS = 7;
     private const FIELDS = ['meal', 'meal_time', 'description', 'glasses', 'slept_at', 'woke_at', 'sleep_quality', 'activity', 'minutes'];
 
     /** GET /portal/p/{id}/diario */
@@ -28,7 +30,7 @@ final class PortalDiaryController
         }
         $pid = (int) $patient['id'];
         $today = date('Y-m-d');
-        $day = $this->dayOf($r, $today);
+        $day = $this->dayOf($r, $today, false, true);
         Container::audit()->record((int) $user['id'], 'view', 'diary', null, $pid, null, ['section' => 'diario', 'portal' => true], $r);
 
         $repo = Container::diaryRequests();
@@ -47,12 +49,36 @@ final class PortalDiaryController
             }
         }
         $measured = isset(Container::diaryWeek()->measuredDays($pid, $day, $day)[$day]);
+        // Botao so nos dias com algo para anotar; o dia aberto sempre aparece (marcado), mesmo vazio.
+        // Proximos dias: so para ver o que vem (anotar, so no proprio dia).
+        $from = date('Y-m-d', strtotime($today . ' -' . self::WINDOW_DAYS . ' days'));
+        $until = date('Y-m-d', strtotime($today . ' +' . self::UPCOMING_DAYS . ' days'));
+        $windowRequests = $repo->forViewer($pid, $user, $from, $until);
+        $asked = function (string $d) use ($windowRequests, $repo): bool {
+            foreach ($windowRequests as $req) {
+                if ($repo->appliesOn($req, $d)) {
+                    return true;
+                }
+            }
+            return false;
+        };
         $links = [];
         for ($i = 0; $i <= self::WINDOW_DAYS; $i++) {
-            $links[] = date('Y-m-d', strtotime($today . ' -' . $i . ' days'));
+            $d = date('Y-m-d', strtotime($today . ' -' . $i . ' days'));
+            if ($d === $day || $asked($d)) {
+                $links[] = $d;
+            }
+        }
+        $upcoming = [];
+        for ($i = 1; $i <= self::UPCOMING_DAYS; $i++) {
+            $d = date('Y-m-d', strtotime($today . ' +' . $i . ' days'));
+            if ($d === $day || $asked($d)) {
+                $upcoming[] = $d;
+            }
         }
         return $this->render('Portal/views/diary.php', 'Diário', $user, $patient, [
-            'items' => $items, 'day' => $day, 'today' => $today, 'links' => $links, 'measured' => $measured,
+            'items' => $items, 'day' => $day, 'today' => $today, 'links' => $links, 'upcoming' => $upcoming,
+            'future' => $day > $today, 'measured' => $measured,
         ]);
     }
 
@@ -163,17 +189,18 @@ final class PortalDiaryController
         return Container::diaryPhotos()->response($entry);
     }
 
-    /** Cartao do inicio: ha pedido visivel que vale em algum dia de hoje-7 a hoje. */
+    /** Cartao do inicio: ha pedido visivel que vale em algum dia de hoje-7 a hoje+7 (proximos dias tambem aparecem). */
     public static function hasRequests(array $user, int $pid, string $today): bool
     {
         if (!Container::policy()->allows($user, 'view', Policy::DIARIO)) {
             return false;
         }
         $from = date('Y-m-d', strtotime($today . ' -' . self::WINDOW_DAYS . ' days'));
+        $until = date('Y-m-d', strtotime($today . ' +' . self::UPCOMING_DAYS . ' days'));
         $repo = Container::diaryRequests();
-        foreach ($repo->forViewer($pid, $user, $from, $today) as $req) {
-            for ($i = 0; $i <= self::WINDOW_DAYS; $i++) {
-                if ($repo->appliesOn($req, date('Y-m-d', strtotime($today . ' -' . $i . ' days')))) {
+        foreach ($repo->forViewer($pid, $user, $from, $until) as $req) {
+            for ($i = -self::UPCOMING_DAYS; $i <= self::WINDOW_DAYS; $i++) {
+                if ($repo->appliesOn($req, date('Y-m-d', strtotime($today . ' ' . ($i >= 0 ? '-' : '+') . abs($i) . ' days')))) {
                     return true;
                 }
             }
@@ -217,7 +244,7 @@ final class PortalDiaryController
     }
 
     /** ?dia= (no POST, tambem o campo do formulario); invalido ou fora da janela = hoje. Com $keep, o valor enviado passa como veio e o repositorio decide. */
-    private function dayOf(Request $r, string $today, bool $keep = false): string
+    private function dayOf(Request $r, string $today, bool $keep = false, bool $upcoming = false): string
     {
         $raw = $r->query['dia'] ?? ($keep ? ($r->post['dia'] ?? '') : '');
         $raw = is_string($raw) ? $raw : '';
@@ -228,7 +255,8 @@ final class PortalDiaryController
             return $raw === '' && !isset($r->query['dia']) && !isset($r->post['dia']) ? $today : $raw;
         }
         $from = date('Y-m-d', strtotime($today . ' -' . self::WINDOW_DAYS . ' days'));
-        return $valid && $raw >= $from && $raw <= $today ? $raw : $today;
+        $to = $upcoming ? date('Y-m-d', strtotime($today . ' +' . self::UPCOMING_DAYS . ' days')) : $today;
+        return $valid && $raw >= $from && $raw <= $to ? $raw : $today;
     }
 
     /** @return array<string,string> */

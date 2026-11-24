@@ -131,6 +131,54 @@ final class PortalDiaryTest extends DbTestCase
         $this->assertSame(7, (int) $this->db->one('SELECT glasses FROM diary_entries WHERE deleted_at IS NULL')['glasses']);
     }
 
+    public function test_day_links_only_for_days_with_something_to_record(): void
+    {
+        $n = (int) date('N');
+        $this->ask('atividade', ['weekdays' => [$n]]); // so no dia da semana de hoje
+        $this->loginAs($this->resp);
+
+        $body = $this->get($this->base(), ['dia' => $this->day(-7)])->body;
+        $this->assertStringContainsString('?dia=' . $this->today . '"', $body);
+        for ($i = 1; $i <= 6; $i++) {
+            $this->assertStringNotContainsString('?dia=' . $this->day(-$i) . '"', $body, "dia -$i sem pedido nao tem botao");
+        }
+        $this->assertStringContainsString('aria-current="date"', $body);
+
+        // dia sem pedido aberto pela URL: continua mostrando a mensagem, e o botao dos dias com pedido
+        $empty = $this->get($this->base(), ['dia' => $this->day(-1)])->body;
+        $this->assertStringContainsString('Nada para anotar neste dia.', $empty);
+        $this->assertStringContainsString('?dia=' . $this->day(-7) . '"', $empty);
+    }
+
+    public function test_upcoming_days_are_shown_but_not_recordable(): void
+    {
+        $tomorrow = $this->day(1);
+        $req = $this->ask('atividade', ['weekdays' => [(int) date('N', strtotime($tomorrow))], 'guidance' => 'Brincar na rua']);
+        $this->loginAs($this->resp);
+
+        $page = $this->get($this->base())->body;
+        $this->assertStringContainsString('Próximos dias', $page);
+        $this->assertStringContainsString('?dia=' . $tomorrow . '"', $page);
+        $this->assertStringContainsString('amanhã', $page);
+        $this->assertStringNotContainsString('?dia=' . $this->day(8) . '"', $page);
+
+        $future = $this->get($this->base(), ['dia' => $tomorrow])->body;
+        $this->assertStringContainsString('Brincar na rua', $future);
+        $this->assertStringContainsString('Dá para anotar a partir do dia', $future);
+        $this->assertStringNotContainsString('/anotar?dia=' . $tomorrow, $future);
+
+        $res = $this->post($this->base() . '/' . $req . '/anotar', ['activity' => 'bola', 'minutes' => '30'], ['dia' => $tomorrow]);
+        $this->assertSame(422, $res->status);
+        $this->assertSame(0, $this->rows());
+
+        // pedido que so comeca amanha tambem leva a familia ao diario pelo inicio do portal
+        $this->db->run('UPDATE diary_requests SET start_date = ? WHERE id = ?', [$tomorrow, $req]);
+        $this->assertStringContainsString('Anote o que a equipe pediu.', $this->get('/portal/p/' . $this->pid)->body);
+
+        // alem da janela de 7 dias: volta para hoje
+        $this->assertStringContainsString('aria-current="date">hoje', $this->get($this->base(), ['dia' => $this->day(8)])->body);
+    }
+
     public function test_guardian_records_meal_with_photo_and_sees_it(): void
     {
         $req = $this->ask('alimentacao');
