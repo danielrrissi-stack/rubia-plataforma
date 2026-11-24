@@ -261,6 +261,27 @@ final class GrowthPagesTest extends DbTestCase
         $this->assertSame(['faixa' => null, 'charts' => []], json_decode($this->get('/pacientes/' . $p['id'] . '/faixas.json')->body, true));
     }
 
+    public function testMeasureTablesShowNewestFirst(): void
+    {
+        $med = $this->makeUser('medico');
+        // 19 anos completos em 2024: medidas nas duas tabelas
+        $p = $this->childPatient('2005-01-10');
+        foreach (['2015-03-10', '2025-03-10', '2017-04-11', '2026-05-12', '2016-06-13'] as $on) {
+            Container::measurements()->create((int) $p['id'], ['measured_on' => $on, 'weight_kg' => 50.0, 'height_cm' => 150.0, 'position' => null] + $this->blank(), 'equipe', (int) $med['id']);
+        }
+        $this->loginAs($med);
+        $body = $this->get('/pacientes/' . $p['id'] . '/crescimento')->body;
+        $dates = static function (string $id) use ($body): array {
+            $start = (int) strpos($body, 'id="' . $id . '"');
+            preg_match_all('~<tr>\s*<td>(\d{2}/\d{2}/\d{4})~', substr($body, $start, strpos($body, '</section>', $start) - $start), $m);
+            return $m[1];
+        };
+        $this->assertSame(['11/04/2017', '13/06/2016', '10/03/2015'], $dates('h-crianca'));
+        $this->assertSame(['12/05/2026', '10/03/2025'], $dates('h-adulto'));
+        // o resumo continua usando a medida mais nova
+        $this->assertStringContainsString('Medida de 12/05/2026', $body);
+    }
+
     public function testSummaryWithoutMeasures(): void
     {
         $p = $this->childPatient('2018-01-01');
